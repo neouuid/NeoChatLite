@@ -1,0 +1,71 @@
+# Dependencies
+node_modules/
+vendor/
+
+# React Native
+*.log.ios
+*.log.android
+*.hprof
+*.pyc
+*.swp
+.DS_Store
+*.jsbundle
+*.jsbundle.map
+*.ipa
+*.apk
+*.aab
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+
+# Android
+.gradle/
+local.properties
+*.iml
+*.idea/
+*.nav/
+*.o
+*.obj
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Go
+bin/
+pkg/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+go.work
+
+# Testing
+coverage.txt
+coverage.html
+*.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

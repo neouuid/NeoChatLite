@@ -1,0 +1,21 @@
+{
+  "name": "neochat",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "mobile",
+    "desktop"
+  ],
+  "scripts": {
+    "mobile": "cd mobile && npm start",
+    "mobile:ios": "cd mobile && npm run ios",
+    "mobile:android": "cd mobile && npm run android",
+    "desktop": "cd desktop && npm start",
+    "desktop:windows": "cd desktop && npm run windows",
+    "desktop:macos": "cd desktop && npm run macos"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
