@@ -40,7 +40,7 @@ local.properties
 
 # Go
 bin/
-pkg/
+/pkg/
 *.exe
 *.exe~
 *.dll
