@@ -111,6 +111,8 @@ func main() {
 			authGroup.POST("/login", authHandler.Login)
 			authGroup.POST("/refresh", authHandler.RefreshToken)
 			authGroup.GET("/profile", authMiddleware.AuthMiddleware(), authHandler.GetProfile)
+			authGroup.POST("/forgot-password", authHandler.ForgotPassword)
+			authGroup.POST("/change-password", authMiddleware.AuthMiddleware(), authHandler.ChangePassword)
 		}
 
 		// 用户路由

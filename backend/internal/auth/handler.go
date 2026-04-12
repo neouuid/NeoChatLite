@@ -7,6 +7,17 @@ import (
 	"github.com/neochat/backend/pkg/response"
 )
 
+// ForgotPasswordRequest 忘记密码请求
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+// ChangePasswordRequest 修改密码请求
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
+
 type Handler struct {
 	service *Service
 }
@@ -156,4 +167,95 @@ func (h *Handler) GetProfile(c *gin.Context) {
 	u.Password = ""
 
 	response.Success(c, u)
+}
+
+// ForgotPassword 忘记密码接口
+// @Summary 忘记密码
+// @Description 发送验证码到邮箱以重置密码
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body ForgotPasswordRequest true "邮箱信息"
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Failure 404 {object} response.ApiResponse
+// @Router /api/v1/auth/forgot-password [post]
+func (h *Handler) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if req.Email == "" {
+		response.BadRequest(c, "email is required")
+		return
+	}
+
+	if err := h.service.ForgotPassword(&req); err != nil {
+		if err.Error() == "email not found" {
+			response.NotFound(c, err.Error())
+		} else {
+			response.BadRequest(c, err.Error())
+		}
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "verification code sent to email",
+	})
+}
+
+// ChangePassword 修改密码接口
+// @Summary 修改密码
+// @Description 已登录用户修改密码
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body ChangePasswordRequest true "密码信息"
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/auth/change-password [post]
+func (h *Handler) ChangePassword(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		response.Unauthorized(c, "invalid user ID")
+		return
+	}
+
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if req.OldPassword == "" {
+		response.BadRequest(c, "old_password is required")
+		return
+	}
+	if req.NewPassword == "" {
+		response.BadRequest(c, "new_password is required")
+		return
+	}
+
+	if err := h.service.ChangePassword(userID, &req); err != nil {
+		if err.Error() == "invalid old password" {
+			response.Unauthorized(c, err.Error())
+		} else {
+			response.BadRequest(c, err.Error())
+		}
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "password changed successfully",
+	})
 }
