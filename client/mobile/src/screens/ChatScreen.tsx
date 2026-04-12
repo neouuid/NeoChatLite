@@ -19,6 +19,9 @@ import {
   COLORS,
   SPACING,
   formatDisplayName,
+  useMediaPicker,
+  useMediaUpload,
+  type MediaItem,
 } from '@neochat/shared';
 
 import { MessageList } from '@neochat/shared/src/components/MessageList';
@@ -47,6 +50,77 @@ export const ChatScreen: React.FC = () => {
   } = useChatStore();
 
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
+
+  // 媒体上传 hook
+  const { isUploading, uploadImage, uploadFile } = useMediaUpload({
+    onUploadStart: () => {
+      setSending(true);
+    },
+    onUploadComplete: async (result) => {
+      // 发送媒体消息
+      await sendMediaMessage(result);
+    },
+    onUploadError: (error) => {
+      setSending(false);
+      Alert.alert('上传失败', error.message);
+    },
+  });
+
+  // 发送媒体消息
+  const sendMediaMessage = useCallback(async (result: any) => {
+    if (!user) return;
+
+    try {
+      const response = await chatService.sendMessage({
+        conversation_id: conversationId,
+        type: result.type === 'image' ? 'image' : 'file',
+        content: '',
+        media_url: result.url,
+        file_name: result.filename,
+        file_size: result.fileSize,
+        reply_to_id: replyingTo?.id,
+      });
+
+      if (response.success && response.data) {
+        addMessage(conversationId, response.data);
+      } else {
+        Alert.alert('错误', response.message || '发送消息失败');
+      }
+    } catch (error) {
+      console.error('Failed to send media message:', error);
+      Alert.alert('错误', '发送消息失败');
+    } finally {
+      setSending(false);
+      setReplyingTo(null);
+    }
+  }, [user, conversationId, replyingTo, addMessage, setSending]);
+
+  // 媒体选择 hook
+  const { pickImage, pickFile } = useMediaPicker({
+    onImageSelected: async (item: MediaItem) => {
+      if (item.uri) {
+        await uploadImage(item.uri, item.filename);
+      }
+    },
+    onFileSelected: async (item: MediaItem) => {
+      if (item.uri && item.filename) {
+        await uploadFile(item.uri, item.filename, item.mimeType || 'application/octet-stream');
+      }
+    },
+    onError: (error) => {
+      Alert.alert('选择失败', error.message);
+    },
+  });
+
+  // 处理选择图片
+  const handleSendImage = useCallback(async () => {
+    await pickImage();
+  }, [pickImage]);
+
+  // 处理选择文件
+  const handleSendFile = useCallback(async () => {
+    await pickFile();
+  }, [pickFile]);
 
   // 处理图片点击
   const handleImagePress = useCallback((message: Message) => {
@@ -213,9 +287,9 @@ export const ChatScreen: React.FC = () => {
       {/* 输入框 */}
       <ChatInput
         onSendMessage={handleSendMessage}
-        onSendImage={() => {}}
-        onSendFile={() => {}}
-        isSending={isSending}
+        onSendImage={handleSendImage}
+        onSendFile={handleSendFile}
+        isSending={isSending || isUploading}
         replyingTo={replyingTo}
         onCancelReply={handleCancelReply}
       />
