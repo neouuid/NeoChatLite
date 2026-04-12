@@ -12,6 +12,8 @@ interface WebSocketOptions {
   onTyping?: (data: any, fromId: string, convId?: string) => void;
   onStopTyping?: (data: any, fromId: string, convId?: string) => void;
   onOnlineStatus?: (data: { user_id: string; online: boolean }, fromId: string) => void;
+  onFriendRequest?: (data: { user_id: string; username: string; avatar?: string }, fromId: string) => void;
+  onFriendAccepted?: (data: { user_id: string; username: string; avatar?: string }, fromId: string) => void;
   onError?: (error: any) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -86,6 +88,12 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       onOnlineStatus: (data: { user_id: string; online: boolean }, fromId: string) => {
         optionsRef.current.onOnlineStatus?.(data, fromId);
       },
+      onFriendRequest: (data: { user_id: string; username: string; avatar?: string }, fromId: string) => {
+        optionsRef.current.onFriendRequest?.(data, fromId);
+      },
+      onFriendAccepted: (data: { user_id: string; username: string; avatar?: string }, fromId: string) => {
+        optionsRef.current.onFriendAccepted?.(data, fromId);
+      },
       onError: (error: any) => {
         optionsRef.current.onError?.(error);
       },
@@ -107,6 +115,8 @@ export function useWebSocket(options: WebSocketOptions = {}) {
     websocket.on('typing', handlers.onTyping);
     websocket.on('stop_typing', handlers.onStopTyping);
     websocket.on('online_status', handlers.onOnlineStatus);
+    websocket.on('friend_request', handlers.onFriendRequest);
+    websocket.on('friend_accepted', handlers.onFriendAccepted);
     websocket.on('error', handlers.onError);
     websocket.on('connected', handlers.onConnected);
     websocket.on('disconnected', handlers.onDisconnected);
@@ -120,6 +130,8 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       websocket.off('typing', handlers.onTyping);
       websocket.off('stop_typing', handlers.onStopTyping);
       websocket.off('online_status', handlers.onOnlineStatus);
+      websocket.off('friend_request', handlers.onFriendRequest);
+      websocket.off('friend_accepted', handlers.onFriendAccepted);
       websocket.off('error', handlers.onError);
       websocket.off('connected', handlers.onConnected);
       websocket.off('disconnected', handlers.onDisconnected);
