@@ -1,0 +1,33 @@
+module.exports = {
+  root: true,
+  extends: '@react-native',
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
+  overrides: [
+    {
+      files: ['*.ts', '*.tsx'],
+      rules: {
+        '@typescript-eslint/no-shadow': ['error'],
+        'no-shadow': 'off',
+        'no-undef': 'off',
+      },
+    },
+  ],
+  rules: {
+    'react/react-in-jsx-scope': 'off',
+    'react-native/no-inline-styles': 'off',
+    'prettier/prettier': [
+      'error',
+      {
+        singleQuote: true,
+        trailingComma: 'all',
+        bracketSpacing: true,
+        jsxBracketSameLine: false,
+        printWidth: 100,
+        tabWidth: 2,
+        useTabs: false,
+        semi: true,
+      },
+    ],
+  },
+};
