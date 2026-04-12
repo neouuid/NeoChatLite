@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/neochat/backend/internal/auth"
 	"github.com/neochat/backend/internal/chat"
@@ -86,6 +88,9 @@ func main() {
 	r.GET("/health", healthHandler)
 	r.GET("/health/db", dbHealthHandler)
 	r.GET("/health/redis", redisHealthHandler)
+
+	// Swagger API 文档
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// 静态文件服务 - 上传文件访问
 	uploadDir := cfg.Storage.UploadDir
