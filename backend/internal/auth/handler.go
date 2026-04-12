@@ -7,17 +7,6 @@ import (
 	"github.com/neochat/backend/pkg/response"
 )
 
-// ForgotPasswordRequest 忘记密码请求
-type ForgotPasswordRequest struct {
-	Email string `json:"email"`
-}
-
-// ChangePasswordRequest 修改密码请求
-type ChangePasswordRequest struct {
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
-}
-
 type Handler struct {
 	service *Service
 }
@@ -192,7 +181,8 @@ func (h *Handler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ForgotPassword(&req); err != nil {
+	token, err := h.service.ForgotPassword(&req)
+	if err != nil {
 		if err.Error() == "email not found" {
 			response.NotFound(c, err.Error())
 		} else {
@@ -203,6 +193,43 @@ func (h *Handler) ForgotPassword(c *gin.Context) {
 
 	response.Success(c, gin.H{
 		"message": "verification code sent to email",
+		"token":   token, // 仅用于测试，生产环境应移除
+	})
+}
+
+// ResetPassword 重置密码接口
+// @Summary 重置密码
+// @Description 使用验证码重置密码
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body ResetPasswordRequest true "重置密码信息"
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Router /api/v1/auth/reset-password [post]
+func (h *Handler) ResetPassword(c *gin.Context) {
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if req.Token == "" {
+		response.BadRequest(c, "token is required")
+		return
+	}
+	if req.NewPassword == "" {
+		response.BadRequest(c, "new_password is required")
+		return
+	}
+
+	if err := h.service.ResetPassword(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "password reset successfully",
 	})
 }
 
@@ -257,5 +284,73 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 
 	response.Success(c, gin.H{
 		"message": "password changed successfully",
+	})
+}
+
+// SendEmailVerification 发送邮箱验证邮件
+// @Summary 发送邮箱验证邮件
+// @Description 向已登录用户发送邮箱验证邮件
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/auth/send-verification-email [post]
+func (h *Handler) SendEmailVerification(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		response.Unauthorized(c, "invalid user ID")
+		return
+	}
+
+	token, err := h.service.SendEmailVerification(userID)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "verification email sent",
+		"code":    token, // 仅用于测试，生产环境应移除
+	})
+}
+
+// VerifyEmail 验证邮箱
+// @Summary 验证邮箱
+// @Description 使用验证码验证邮箱
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body VerifyEmailRequest true "验证码"
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Router /api/v1/auth/verify-email [post]
+func (h *Handler) VerifyEmail(c *gin.Context) {
+	var req VerifyEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if req.Code == "" {
+		response.BadRequest(c, "code is required")
+		return
+	}
+
+	if err := h.service.VerifyEmail(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "email verified successfully",
 	})
 }

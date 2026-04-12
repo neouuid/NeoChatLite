@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/neochat/backend/internal/user"
@@ -39,16 +42,27 @@ type ForgotPasswordRequest struct {
 	Email string `json:"email"`
 }
 
+// ResetPasswordRequest 重置密码请求
+type ResetPasswordRequest struct {
+	Token       string `json:"token"`
+	NewPassword string `json:"new_password"`
+}
+
 // ChangePasswordRequest 修改密码请求
 type ChangePasswordRequest struct {
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }
 
+// VerifyEmailRequest 验证邮箱请求
+type VerifyEmailRequest struct {
+	Code string `json:"code"`
+}
+
 // AuthResponse 认证响应
 type AuthResponse struct {
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token"`
+	AccessToken  string     `json:"access_token"`
+	RefreshToken string     `json:"refresh_token"`
 	User         *user.User `json:"user"`
 }
 
@@ -164,20 +178,85 @@ func (s *Service) GetUser(id uuid.UUID) (*user.User, error) {
 }
 
 // ForgotPassword 忘记密码（发送验证码）
-func (s *Service) ForgotPassword(req *ForgotPasswordRequest) error {
+func (s *Service) ForgotPassword(req *ForgotPasswordRequest) (string, error) {
 	// 检查邮箱是否存在
 	exists, err := s.repo.CheckEmailExists(req.Email)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !exists {
-		return errors.New("email not found")
+		return "", errors.New("email not found")
+	}
+
+	// 获取用户
+	u, err := s.repo.GetUserByEmail(req.Email)
+	if err != nil {
+		return "", err
+	}
+
+	// 删除用户之前的密码重置令牌
+	if err := s.repo.DeleteUserVerificationTokens(u.ID, TokenTypePasswordReset); err != nil {
+		return "", err
+	}
+
+	// 生成新的重置令牌
+	token, err := generateRandomToken(32)
+	if err != nil {
+		return "", err
+	}
+
+	vt := &VerificationToken{
+		UserID:    u.ID,
+		Token:     token,
+		Type:      TokenTypePasswordReset,
+		ExpiresAt: time.Now().Add(1 * time.Hour), // 1小时过期
+	}
+
+	if err := s.repo.CreateVerificationToken(vt); err != nil {
+		return "", err
 	}
 
 	// TODO: 这里应该发送验证码到邮箱
-	// 暂时只返回成功，后续集成邮件服务
+	// 暂时返回token用于测试
+	return token, nil
+}
 
-	return nil
+// ResetPassword 重置密码
+func (s *Service) ResetPassword(req *ResetPasswordRequest) error {
+	// 获取验证令牌
+	vt, err := s.repo.GetVerificationToken(req.Token, TokenTypePasswordReset)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("invalid or expired token")
+		}
+		return err
+	}
+
+	// 检查令牌是否过期
+	if vt.IsExpired() {
+		return errors.New("token has expired")
+	}
+
+	// 获取用户
+	u, err := s.repo.GetUserByID(vt.UserID)
+	if err != nil {
+		return err
+	}
+
+	// 加密新密码
+	hashedPassword, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		return err
+	}
+
+	// 更新密码
+	u.Password = hashedPassword
+	if err := s.repo.UpdateUser(u); err != nil {
+		return err
+	}
+
+	// 删除已使用的令牌
+	return s.repo.DeleteVerificationToken(vt.ID)
 }
 
 // ChangePassword 修改密码
@@ -204,6 +283,65 @@ func (s *Service) ChangePassword(userID uuid.UUID, req *ChangePasswordRequest) e
 	return s.repo.UpdateUser(u)
 }
 
+// SendEmailVerification 发送邮箱验证邮件
+func (s *Service) SendEmailVerification(userID uuid.UUID) (string, error) {
+	// 获取用户
+	u, err := s.repo.GetUserByID(userID)
+	if err != nil {
+		return "", err
+	}
+
+	if u.Email == "" {
+		return "", errors.New("user has no email")
+	}
+
+	// 删除用户之前的邮箱验证令牌
+	if err := s.repo.DeleteUserVerificationTokens(u.ID, TokenTypeEmailVerification); err != nil {
+		return "", err
+	}
+
+	// 生成新的验证令牌
+	token, err := generateRandomToken(32)
+	if err != nil {
+		return "", err
+	}
+
+	vt := &VerificationToken{
+		UserID:    u.ID,
+		Token:     token,
+		Type:      TokenTypeEmailVerification,
+		ExpiresAt: time.Now().Add(24 * time.Hour), // 24小时过期
+	}
+
+	if err := s.repo.CreateVerificationToken(vt); err != nil {
+		return "", err
+	}
+
+	// TODO: 这里应该发送验证邮件到用户邮箱
+	// 暂时返回token用于测试
+	return token, nil
+}
+
+// VerifyEmail 验证邮箱
+func (s *Service) VerifyEmail(req *VerifyEmailRequest) error {
+	// 获取验证令牌
+	vt, err := s.repo.GetVerificationToken(req.Code, TokenTypeEmailVerification)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("invalid or expired code")
+		}
+		return err
+	}
+
+	// 检查令牌是否过期
+	if vt.IsExpired() {
+		return errors.New("code has expired")
+	}
+
+	// 删除已使用的令牌
+	return s.repo.DeleteVerificationToken(vt.ID)
+}
+
 // generateAuthResponse 生成认证响应
 func (s *Service) generateAuthResponse(u *user.User) (*AuthResponse, error) {
 	accessToken, err := utils.GenerateToken(u.ID, u.Username, s.config)
@@ -225,4 +363,13 @@ func (s *Service) generateAuthResponse(u *user.User) (*AuthResponse, error) {
 		RefreshToken: refreshToken,
 		User:         &userCopy,
 	}, nil
+}
+
+// generateRandomToken 生成随机令牌
+func generateRandomToken(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }

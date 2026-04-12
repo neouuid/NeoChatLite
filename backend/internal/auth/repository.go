@@ -115,3 +115,28 @@ func (r *Repository) GetUserByUsernameOrEmailOrPhone(identifier string) (*user.U
 	}
 	return &u, nil
 }
+
+// CreateVerificationToken 创建验证令牌
+func (r *Repository) CreateVerificationToken(token *VerificationToken) error {
+	return r.db.Create(token).Error
+}
+
+// GetVerificationToken 获取验证令牌
+func (r *Repository) GetVerificationToken(token string, tokenType string) (*VerificationToken, error) {
+	var vt VerificationToken
+	err := r.db.Where("token = ? AND type = ?", token, tokenType).First(&vt).Error
+	if err != nil {
+		return nil, err
+	}
+	return &vt, nil
+}
+
+// DeleteVerificationToken 删除验证令牌
+func (r *Repository) DeleteVerificationToken(id uuid.UUID) error {
+	return r.db.Delete(&VerificationToken{}, id).Error
+}
+
+// DeleteUserVerificationTokens 删除用户的所有指定类型验证令牌
+func (r *Repository) DeleteUserVerificationTokens(userID uuid.UUID, tokenType string) error {
+	return r.db.Where("user_id = ? AND type = ?", userID, tokenType).Delete(&VerificationToken{}).Error
+}

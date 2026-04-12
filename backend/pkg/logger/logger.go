@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
@@ -29,77 +30,67 @@ func SetLevel(level int) {
 // Debug 输出调试日志
 func Debug(v ...interface{}) {
 	if currentLevel <= LevelDebug {
-		debugLogger.Output(2, format(v...))
+		debugLogger.Output(2, fmt.Sprintln(v...))
 	}
 }
 
 // Debugf 输出格式化调试日志
 func Debugf(format string, v ...interface{}) {
 	if currentLevel <= LevelDebug {
-		debugLogger.Output(2, format)
+		debugLogger.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 // Info 输出信息日志
 func Info(v ...interface{}) {
 	if currentLevel <= LevelInfo {
-		infoLogger.Output(2, format(v...))
+		infoLogger.Output(2, fmt.Sprintln(v...))
 	}
 }
 
 // Infof 输出格式化信息日志
 func Infof(format string, v ...interface{}) {
 	if currentLevel <= LevelInfo {
-		infoLogger.Output(2, format)
+		infoLogger.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 // Warn 输出警告日志
 func Warn(v ...interface{}) {
 	if currentLevel <= LevelWarn {
-		warnLogger.Output(2, format(v...))
+		warnLogger.Output(2, fmt.Sprintln(v...))
 	}
 }
 
 // Warnf 输出格式化警告日志
 func Warnf(format string, v ...interface{}) {
 	if currentLevel <= LevelWarn {
-		warnLogger.Output(2, format)
+		warnLogger.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 // Error 输出错误日志
 func Error(v ...interface{}) {
 	if currentLevel <= LevelError {
-		errorLogger.Output(2, format(v...))
+		errorLogger.Output(2, fmt.Sprintln(v...))
 	}
 }
 
 // Errorf 输出格式化错误日志
 func Errorf(format string, v ...interface{}) {
 	if currentLevel <= LevelError {
-		errorLogger.Output(2, format)
+		errorLogger.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 // Fatal 输出致命错误并退出
 func Fatal(v ...interface{}) {
-	errorLogger.Output(2, format(v...))
+	errorLogger.Output(2, fmt.Sprintln(v...))
 	os.Exit(1)
 }
 
 // Fatalf 输出格式化致命错误并退出
 func Fatalf(format string, v ...interface{}) {
-	errorLogger.Output(2, format)
+	errorLogger.Output(2, fmt.Sprintf(format, v...))
 	os.Exit(1)
-}
-
-func format(v ...interface{}) string {
-	if len(v) == 0 {
-		return ""
-	}
-	if str, ok := v[0].(string); ok && len(v) > 1 {
-		return log.Printf(str, v[1:]...)
-	}
-	return log.Sprintln(v...)
 }

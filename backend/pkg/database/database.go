@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/neochat/backend/internal/auth"
 	"github.com/neochat/backend/internal/chat"
 	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/config"
@@ -61,12 +62,14 @@ func AutoMigrate() error {
 		&user.User{},
 		&user.Friend{},
 		&user.Blocklist{},
+		&auth.VerificationToken{},
 		&chat.Conversation{},
 		&chat.ConversationMember{},
 		&chat.Message{},
 		&chat.MessageRead{},
 		&chat.Group{},
 		&chat.Favorite{},
+		&chat.CallRecord{},
 	)
 
 	if err != nil {
