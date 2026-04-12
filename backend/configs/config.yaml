@@ -1,4 +1,6 @@
-# NeoChat Backend Configuration
+# NeoChat 后端配置文件
+# 复制此文件为 config.yaml 并根据需要修改
+
 server:
   port: 8080
   read_timeout: 30
@@ -19,10 +21,38 @@ redis:
   db: 0
 
 nats:
-  url: "nats://localhost:4222"
+  url: nats://localhost:4222
   user: ""
   pass: ""
 
 jwt:
-  secret: "neochat-secret-key-change-in-production-please"
+  secret: neochat-secret-key-change-in-production-please
   expiry_hour: 24
+
+storage:
+  upload_dir: ./uploads
+  max_file_size: 104857600
+  max_image_size: 10485760
+  allowed_image_types:
+    - image/jpeg
+    - image/jpg
+    - image/png
+    - image/gif
+    - image/webp
+  allowed_file_types:
+    - image/jpeg
+    - image/jpg
+    - image/png
+    - image/gif
+    - image/webp
+    - application/pdf
+    - application/msword
+    - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+    - application/vnd.ms-excel
+    - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+    - application/vnd.ms-powerpoint
+    - application/vnd.openxmlformats-officedocument.presentationml.presentation
+    - application/zip
+    - application/x-rar-compressed
+    - application/x-7z-compressed
+    - text/plain

@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { useAuthStore, AuthService } from '@neochat/shared';
+import { useAuthStore, AuthService, Input, Button } from '@neochat/shared';
 import type { RootStackParamList } from '@neochat/shared';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '@neochat/shared';
 
@@ -22,19 +22,20 @@ export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { setAuth, setLoading } = useAuthStore();
 
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    if (!username || !password) {
-      Alert.alert('提示', '请输入用户名和密码');
+    if (!identifier || !password) {
+      Alert.alert('提示', '请输入用户名/手机号和密码');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const auth = await AuthService.login({ username, password });
+      const auth = await AuthService.login({ identifier, password });
       setAuth(auth);
     } catch (error) {
       Alert.alert('登录失败', error instanceof Error ? error.message : '请稍后重试');
@@ -61,32 +62,34 @@ export const LoginScreen: React.FC = () => {
 
           {/* Form Section */}
           <View style={styles.formSection}>
-            {/* Username Input */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>用户名/手机号</Text>
-              <View style={styles.inputContainer}>
-                {/* TODO: Replace with actual Input component */}
-                <View style={styles.inputPlaceholder}>
-                  <Text style={styles.inputText}>{username || '请输入用户名'}</Text>
-                </View>
-              </View>
-            </View>
+            {/* Identifier Input */}
+            <Input
+              label="用户名/邮箱/手机号"
+              placeholder="请输入用户名、邮箱或手机号"
+              value={identifier}
+              onChangeText={setIdentifier}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
 
             {/* Password Input */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>密码</Text>
-              <View style={styles.inputContainer}>
-                {/* TODO: Replace with actual Input component */}
-                <View style={styles.inputPlaceholder}>
-                  <Text style={styles.inputText}>{password ? '••••••••' : '请输入密码'}</Text>
-                </View>
-              </View>
-            </View>
+            <Input
+              label="密码"
+              placeholder="请输入密码"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              rightIcon={
+                <Text style={styles.eyeIcon}>
+                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                </Text>
+              }
+              onRightIconPress={() => setShowPassword(!showPassword)}
+            />
 
             {/* Options Row */}
             <View style={styles.optionsRow}>
               <View style={styles.rememberRow}>
-                {/* TODO: Add checkbox */}
                 <Text style={styles.rememberText}>记住我</Text>
               </View>
               <Text
@@ -98,11 +101,13 @@ export const LoginScreen: React.FC = () => {
             </View>
 
             {/* Login Button */}
-            <View style={styles.loginButton}>
-              <Text style={styles.loginButtonText}>
-                {isSubmitting ? '登录中...' : '登录'}
-              </Text>
-            </View>
+            <Button
+              title={isSubmitting ? '登录中...' : '登录'}
+              onPress={handleLogin}
+              disabled={isSubmitting}
+              loading={isSubmitting}
+              size="lg"
+            />
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
@@ -172,29 +177,6 @@ const styles = StyleSheet.create({
   formSection: {
     gap: SPACING.lg,
   },
-  fieldContainer: {
-    gap: SPACING.sm,
-  },
-  fieldLabel: {
-    color: '#ffffff',
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.medium,
-  },
-  inputContainer: {
-    backgroundColor: COLORS.dark.surface,
-    borderRadius: BORDER_RADIUS.md,
-    height: 48,
-    paddingHorizontal: SPACING.md,
-    justifyContent: 'center',
-  },
-  inputPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  inputText: {
-    color: '#ffffff',
-    fontSize: TYPOGRAPHY.sizes.md,
-  },
   optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -212,18 +194,6 @@ const styles = StyleSheet.create({
   forgotLink: {
     color: COLORS.primary,
     fontSize: TYPOGRAPHY.sizes.sm,
-  },
-  loginButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: BORDER_RADIUS.md,
-    height: 52,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loginButtonText: {
-    color: '#ffffff',
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -254,5 +224,8 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.medium,
+  },
+  eyeIcon: {
+    fontSize: 20,
   },
 });

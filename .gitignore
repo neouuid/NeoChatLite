@@ -65,6 +65,9 @@ coverage.html
 .env.local
 .env.*.local
 
+# Claude
+.claude/
+
 # Temporary files
 *.tmp
 *.temp

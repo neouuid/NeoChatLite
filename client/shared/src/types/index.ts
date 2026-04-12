@@ -89,9 +89,26 @@ export interface Favorite {
   message?: Message;
 }
 
+export interface CallRecord {
+  id: string;
+  caller_id: string;
+  callee_id: string;
+  conversation_id?: string;
+  type: 'video' | 'voice';
+  status: 'calling' | 'in_progress' | 'completed' | 'missed' | 'rejected' | 'cancelled';
+  started_at?: string;
+  answered_at?: string;
+  ended_at?: string;
+  duration: number;
+  created_at: string;
+  updated_at: string;
+  caller?: User;
+  callee?: User;
+}
+
 // Auth types
 export interface LoginRequest {
-  username: string;
+  identifier: string;
   password: string;
 }
 

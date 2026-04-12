@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/neochat/backend/internal/auth"
+	"github.com/neochat/backend/internal/chat"
+	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/config"
 	"github.com/neochat/backend/pkg/database"
 	"github.com/neochat/backend/pkg/redis"
@@ -51,10 +55,37 @@ func main() {
 	// 设置 Gin
 	r := gin.Default()
 
+	// 初始化认证模块
+	authRepo := auth.NewRepository(database.DB)
+	authService := auth.NewService(authRepo, cfg)
+	authHandler := auth.NewHandler(authService)
+	authMiddleware := auth.NewMiddleware(cfg)
+
+	// 初始化用户/好友模块
+	userRepo := user.NewRepository(database.DB)
+	userService := user.NewService(userRepo)
+	userHandler := user.NewHandler(userService)
+
+	// 初始化聊天模块
+	chatRepo := chat.NewRepository(database.DB)
+	chatService := chat.NewService(chatRepo)
+	chatHandler := chat.NewHandler(chatService)
+	uploadHandler := chat.NewUploadHandler(chatService, cfg)
+	wsHub := chat.NewWebSocketHub(chatService, cfg)
+	chatService.SetWebSocketHub(wsHub)
+	go wsHub.Run()
+
 	// 健康检查
 	r.GET("/health", healthHandler)
 	r.GET("/health/db", dbHealthHandler)
 	r.GET("/health/redis", redisHealthHandler)
+
+	// 静态文件服务 - 上传文件访问
+	uploadDir := cfg.Storage.UploadDir
+	if uploadDir == "" {
+		uploadDir = "./uploads"
+	}
+	r.Static("/uploads", uploadDir)
 
 	// API 路由
 	api := r.Group("/api/v1")
@@ -65,11 +96,115 @@ func main() {
 				"version": "1.0.0",
 			})
 		})
+
+		// 认证路由
+		authGroup := api.Group("/auth")
+		{
+			authGroup.POST("/register", authHandler.Register)
+			authGroup.POST("/login", authHandler.Login)
+			authGroup.POST("/refresh", authHandler.RefreshToken)
+			authGroup.GET("/profile", authMiddleware.AuthMiddleware(), authHandler.GetProfile)
+		}
+
+		// 用户路由
+		userGroup := api.Group("/user")
+		userGroup.Use(authMiddleware.AuthMiddleware())
+		{
+			userGroup.GET("/profile", userHandler.GetProfile)
+			userGroup.PUT("/profile", userHandler.UpdateProfile)
+			userGroup.GET("/search", userHandler.SearchUsers)
+			userGroup.GET("/:id", userHandler.GetUserByID)
+		}
+
+		// 好友路由
+		friendGroup := api.Group("/friend")
+		friendGroup.Use(authMiddleware.AuthMiddleware())
+		{
+			friendGroup.GET("/list", userHandler.GetFriends)
+			friendGroup.DELETE("/:id", userHandler.DeleteFriend)
+			friendGroup.PUT("/:id/alias", userHandler.UpdateFriendAlias)
+			friendGroup.POST("/request", userHandler.SendFriendRequest)
+			friendGroup.GET("/requests", userHandler.GetFriendRequests)
+			friendGroup.POST("/request/:id/accept", userHandler.AcceptFriendRequest)
+			friendGroup.POST("/request/:id/reject", userHandler.RejectFriendRequest)
+			friendGroup.POST("/request/:id/cancel", userHandler.CancelFriendRequest)
+		}
+
+		// 黑名单路由
+		blockGroup := api.Group("/block")
+		blockGroup.Use(authMiddleware.AuthMiddleware())
+		{
+			blockGroup.GET("/list", userHandler.GetBlocklist)
+			blockGroup.POST("/", userHandler.BlockUser)
+			blockGroup.DELETE("/:id", userHandler.UnblockUser)
+		}
+
+		// 聊天路由
+		chatGroup := api.Group("/chat")
+		chatGroup.Use(authMiddleware.AuthMiddleware())
+		{
+			// 会话路由
+			chatGroup.GET("/conversations", chatHandler.GetUserConversations)
+			chatGroup.GET("/conversation/:id", chatHandler.GetConversation)
+			chatGroup.POST("/conversation/single", chatHandler.CreateSingleConversation)
+			chatGroup.POST("/conversation/:id/read", chatHandler.MarkConversationAsRead)
+
+			// 消息路由
+			chatGroup.GET("/conversation/:id/messages", chatHandler.GetConversationMessages)
+			chatGroup.POST("/message", chatHandler.SendMessage)
+			chatGroup.PUT("/message/:id", chatHandler.EditMessage)
+			chatGroup.DELETE("/message/:id", chatHandler.DeleteMessage)
+
+			// 收藏路由
+			chatGroup.GET("/favorites", chatHandler.GetUserFavorites)
+			chatGroup.POST("/favorite", chatHandler.AddFavorite)
+			chatGroup.DELETE("/favorite/:id", chatHandler.RemoveFavorite)
+
+			// 消息转发路由
+			chatGroup.POST("/messages/forward", chatHandler.ForwardMessage)
+
+			// WebSocket
+			chatGroup.GET("/ws", wsHub.WebSocketHandler)
+		}
+
+		// 文件上传路由
+		uploadGroup := api.Group("/upload")
+		uploadGroup.Use(authMiddleware.AuthMiddleware())
+		{
+			uploadGroup.POST("", uploadHandler.UploadFile)
+		}
+
+		// 群组路由
+		groupGroup := api.Group("/group")
+		groupGroup.Use(authMiddleware.AuthMiddleware())
+		{
+			groupGroup.POST("/", chatHandler.CreateGroup)
+			groupGroup.GET("/:id", chatHandler.GetGroup)
+			groupGroup.PUT("/:id", chatHandler.UpdateGroup)
+			groupGroup.DELETE("/:id", chatHandler.DisbandGroup)
+			groupGroup.POST("/:id/leave", chatHandler.LeaveGroup)
+			groupGroup.GET("/:id/members", chatHandler.GetGroupMembers)
+			groupGroup.POST("/:id/members", chatHandler.AddGroupMember)
+			groupGroup.DELETE("/:id/members/:user_id", chatHandler.RemoveGroupMember)
+			groupGroup.PUT("/:id/members/:user_id/role", chatHandler.UpdateMemberRole)
+		}
+
+		// 通话路由
+		callGroup := api.Group("/call")
+		callGroup.Use(authMiddleware.AuthMiddleware())
+		{
+			callGroup.POST("/initiate", chatHandler.InitiateCall)
+			callGroup.POST("/:id/accept", chatHandler.AcceptCall)
+			callGroup.POST("/:id/reject", chatHandler.RejectCall)
+			callGroup.POST("/:id/end", chatHandler.EndCall)
+			callGroup.GET("/:id", chatHandler.GetCallRecord)
+			callGroup.GET("/s", chatHandler.GetUserCallRecords)
+		}
 	}
 
 	// 启动服务器
 	srv := &http.Server{
-		Addr:         ":" + string(rune(cfg.Server.Port)),
+		Addr:         ":" + fmt.Sprintf("%d", cfg.Server.Port),
 		Handler:      r,
 		ReadTimeout:  time.Duration(cfg.Server.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,

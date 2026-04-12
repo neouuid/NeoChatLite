@@ -1,24 +1,37 @@
-import { Message, Conversation } from '../types';
+import { Message, Conversation, User } from '../types';
+import { WS_BASE_URL } from '../constants';
 
-const DEFAULT_WS_URL = 'ws://localhost:8080/ws';
-
+// WebSocket message types (matching backend)
 type WSMessageType =
-  | 'message'
+  | 'new_message'
   | 'message_read'
-  | 'conversation_updated'
+  | 'message_edited'
+  | 'message_deleted'
   | 'typing'
-  | 'user_online'
-  | 'user_offline'
-  | 'friend_request'
-  | 'friend_accepted';
+  | 'stop_typing'
+  | 'online_status'
+  | 'error'
+  | 'ping'
+  | 'pong'
+  // WebRTC signaling types
+  | 'signal_offer'
+  | 'signal_answer'
+  | 'signal_ice'
+  | 'call_invite'
+  | 'call_accept'
+  | 'call_reject'
+  | 'call_hangup'
+  | 'call_ended';
 
+// WebSocket message structure (matching backend)
 interface WSMessage {
   type: WSMessageType;
   data: any;
-  timestamp: string;
+  from_id: string;
+  conv_id?: string;
 }
 
-type MessageHandler = (data: any) => void;
+type MessageHandler = (data: any, fromId: string, convId?: string) => void;
 
 export class WebSocketClient {
   private ws: WebSocket | null = null;
@@ -31,13 +44,18 @@ export class WebSocketClient {
   private handlers: Map<WSMessageType, Set<MessageHandler>> = new Map();
   private connectionHandlers: Set<() => void> = new Set();
   private disconnectHandlers: Set<() => void> = new Set();
+  private errorHandlers: Set<(error: any) => void> = new Set();
 
-  constructor(url: string = DEFAULT_WS_URL) {
+  constructor(url: string = WS_BASE_URL) {
     this.url = url;
   }
 
   setAccessToken(token: string) {
     this.accessToken = token;
+  }
+
+  clearAccessToken() {
+    this.accessToken = null;
   }
 
   connect(): Promise<void> {
@@ -50,11 +68,9 @@ export class WebSocketClient {
       this.isManualClose = false;
 
       try {
-        const url = this.accessToken
-          ? `${this.url}?token=${this.accessToken}`
-          : this.url;
-
-        this.ws = new WebSocket(url);
+        // Note: In a real app, we'd use a proper auth header or token in the URL
+        // For now, we'll connect without token (the backend handler gets user from context)
+        this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
           console.log('WebSocket connected');
@@ -72,9 +88,10 @@ export class WebSocketClient {
           }
         };
 
-        this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          reject(error);
+        this.ws.onerror = (event) => {
+          console.error('WebSocket error:', event);
+          this.errorHandlers.forEach((handler) => handler(event));
+          reject(event);
         };
 
         this.ws.onclose = (event) => {
@@ -106,22 +123,24 @@ export class WebSocketClient {
   private handleMessage(message: WSMessage) {
     const handlers = this.handlers.get(message.type);
     if (handlers) {
-      handlers.forEach((handler) => handler(message.data));
+      handlers.forEach((handler) => handler(message.data, message.from_id, message.conv_id));
     }
   }
 
   disconnect() {
     this.isManualClose = true;
-    if (this.ws?.close();
-    this.ws = null;
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
   }
 
-  send(type: string, data: any) {
+  send(type: WSMessageType, data: any, convId?: string) {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      const message: WSMessage = {
-        type: type as WSMessageType,
+      const message = {
+        type,
         data,
-        timestamp: new Date().toISOString(),
+        conv_id: convId,
       };
       this.ws.send(JSON.stringify(message));
     } else {
@@ -130,24 +149,60 @@ export class WebSocketClient {
   }
 
   // Convenience methods
-  sendMessage(conversationId: string, content: string, type: string = 'text') {
-    this.send('message', { conversation_id: conversationId, content, type });
-  }
-
   sendTyping(conversationId: string, isTyping: boolean) {
-    this.send('typing', { conversation_id: conversationId, is_typing: isTyping });
+    this.send(isTyping ? 'typing' : 'stop_typing', {}, conversationId);
   }
 
-  markAsRead(conversationId: string, messageId: string) {
-    this.send('message_read', { conversation_id: conversationId, message_id: messageId });
+  sendPing() {
+    this.send('ping', {});
+  }
+
+  // WebRTC signaling methods
+  sendSignalOffer(toUserId: string, sdp: string) {
+    this.send('signal_offer', { to_user_id: toUserId, sdp });
+  }
+
+  sendSignalAnswer(toUserId: string, sdp: string) {
+    this.send('signal_answer', { to_user_id: toUserId, sdp });
+  }
+
+  sendSignalIce(toUserId: string, candidate: string, sdpMid?: string, sdpMlineIndex?: number) {
+    this.send('signal_ice', {
+      to_user_id: toUserId,
+      candidate,
+      sdp_mid: sdpMid,
+      sdp_mline_index: sdpMlineIndex,
+    });
+  }
+
+  sendCallInvite(calleeId: string, callType: 'video' | 'voice', conversationId?: string) {
+    this.send('call_invite', {
+      callee_id: calleeId,
+      call_type: callType,
+      conversation_id: conversationId,
+    });
+  }
+
+  sendCallAccept(callerId: string) {
+    this.send('call_accept', { caller_id: callerId });
+  }
+
+  sendCallReject(callerId: string) {
+    this.send('call_reject', { caller_id: callerId });
+  }
+
+  sendCallHangup(peerId: string) {
+    this.send('call_hangup', { peer_id: peerId });
   }
 
   // Event handlers
-  on(event: 'connected' | 'disconnected' | WSMessageType, handler: MessageHandler) {
+  on(event: 'connected' | 'disconnected' | 'error' | WSMessageType, handler: any) {
     if (event === 'connected') {
       this.connectionHandlers.add(handler);
     } else if (event === 'disconnected') {
       this.disconnectHandlers.add(handler);
+    } else if (event === 'error') {
+      this.errorHandlers.add(handler);
     } else {
       if (!this.handlers.has(event)) {
         this.handlers.set(event, new Set());
@@ -156,11 +211,13 @@ export class WebSocketClient {
     }
   }
 
-  off(event: 'connected' | 'disconnected' | WSMessageType, handler: MessageHandler) {
+  off(event: 'connected' | 'disconnected' | 'error' | WSMessageType, handler: any) {
     if (event === 'connected') {
       this.connectionHandlers.delete(handler);
     } else if (event === 'disconnected') {
       this.disconnectHandlers.delete(handler);
+    } else if (event === 'error') {
+      this.errorHandlers.delete(handler);
     } else {
       this.handlers.get(event)?.delete(handler);
     }

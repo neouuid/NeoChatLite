@@ -5,15 +5,20 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'react-native';
 
 import { AppNavigator } from './navigation/AppNavigator';
-import { useAuthStore } from '@neochat/shared';
+import { CallInviteModal } from './components';
+import { useWebRTC } from '@neochat/shared';
 
 const App: React.FC = () => {
+  const { callState } = useWebRTC();
+  const isCallModalVisible = callState.status === 'incoming' || callState.status === 'calling';
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <NavigationContainer>
           <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
           <AppNavigator />
+          <CallInviteModal visible={isCallModalVisible} />
         </NavigationContainer>
       </SafeAreaProvider>
     </GestureHandlerRootView>

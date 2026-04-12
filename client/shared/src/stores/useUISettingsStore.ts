@@ -14,9 +14,13 @@ interface UISettingsState {
   setTheme: (theme: Theme) => void;
   setChatBackground: (background: string | null) => void;
   setNotificationsEnabled: (enabled: boolean) => void;
+  toggleNotifications: () => void;
   setMessagePreviewEnabled: (enabled: boolean) => void;
+  toggleMessagePreview: () => void;
   setSoundEnabled: (enabled: boolean) => void;
+  toggleSound: () => void;
   setVibrateEnabled: (enabled: boolean) => void;
+  toggleVibrate: () => void;
   resetSettings: () => void;
 }
 
@@ -44,16 +48,32 @@ export const useUISettingsStore = create<UISettingsState>((set, get) => ({
     set({ notificationsEnabled: enabled });
   },
 
+  toggleNotifications: () => {
+    set((state) => ({ notificationsEnabled: !state.notificationsEnabled }));
+  },
+
   setMessagePreviewEnabled: (enabled: boolean) => {
     set({ messagePreviewEnabled: enabled });
+  },
+
+  toggleMessagePreview: () => {
+    set((state) => ({ messagePreviewEnabled: !state.messagePreviewEnabled }));
   },
 
   setSoundEnabled: (enabled: boolean) => {
     set({ soundEnabled: enabled });
   },
 
+  toggleSound: () => {
+    set((state) => ({ soundEnabled: !state.soundEnabled }));
+  },
+
   setVibrateEnabled: (enabled: boolean) => {
     set({ vibrateEnabled: enabled });
+  },
+
+  toggleVibrate: () => {
+    set((state) => ({ vibrateEnabled: !state.vibrateEnabled }));
   },
 
   resetSettings: () => {

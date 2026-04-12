@@ -6,37 +6,22 @@ import {
   Friend,
   Group,
   Favorite,
+  CallRecord,
   PaginatedResponse,
 } from '../types';
 
 export class ChatService {
   // Conversations
-  static async getConversations(): Promise<Conversation[]> {
-    const response = await api.get<Conversation[]>('/chat/conversations');
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to get conversations');
+  static async getUserConversations(): Promise<{ success: boolean; data?: Conversation[]; message?: string }> {
+    return await api.get<Conversation[]>('/chat/conversations');
   }
 
-  static async getConversation(id: string): Promise<Conversation> {
-    const response = await api.get<Conversation>(`/chat/conversations/${id}`);
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to get conversation');
+  static async getConversation(id: string): Promise<{ success: boolean; data?: Conversation; message?: string }> {
+    return await api.get<Conversation>(`/chat/conversation/${id}`);
   }
 
-  static async createConversation(data: {
-    type: 'single' | 'group';
-    user_ids?: string[];
-    name?: string;
-  }): Promise<Conversation> {
-    const response = await api.post<Conversation>('/chat/conversations', data);
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to create conversation');
+  static async createSingleConversation(userId: string): Promise<{ success: boolean; data?: Conversation; message?: string }> {
+    return await api.post<Conversation>('/chat/conversation/single', { user_id: userId });
   }
 
   static async updateConversation(
@@ -58,215 +43,245 @@ export class ChatService {
   }
 
   // Messages
-  static async getMessages(
+  static async getConversationMessages(
     conversationId: string,
-    page: number = 1,
-    pageSize: number = 50
-  ): Promise<PaginatedResponse<Message>> {
-    const response = await api.get<PaginatedResponse<Message>>(
-      `/chat/conversations/${conversationId}/messages`,
-      {
-        params: { page, page_size: pageSize },
-      }
-    );
-    if (response.success && response.data) {
-      return response.data;
+    before?: string,
+    limit: number = 50
+  ): Promise<{ success: boolean; data?: Message[]; message?: string }> {
+    const params: any = { limit };
+    if (before) {
+      params.before = before;
     }
-    throw new Error(response.message || 'Failed to get messages');
+    return await api.get<Message[]>(`/chat/conversation/${conversationId}/messages`, { params });
   }
 
   static async sendMessage(
-    conversationId: string,
     data: {
-      type: 'text' | 'image' | 'file';
+      conversation_id: string;
+      type: 'text' | 'image' | 'file' | 'system';
       content: string;
       media_url?: string;
+      file_name?: string;
+      file_size?: number;
       reply_to_id?: string;
     }
-  ): Promise<Message> {
-    const response = await api.post<Message>(
-      `/chat/conversations/${conversationId}/messages`,
-      data
-    );
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to send message');
+  ): Promise<{ success: boolean; data?: Message; message?: string }> {
+    return await api.post<Message>('/chat/message', data);
   }
 
-  static async deleteMessage(conversationId: string, messageId: string): Promise<void> {
-    const response = await api.delete(
-      `/chat/conversations/${conversationId}/messages/${messageId}`
-    );
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to delete message');
-    }
+  static async editMessage(
+    messageId: string,
+    content: string
+  ): Promise<{ success: boolean; data?: Message; message?: string }> {
+    return await api.put<Message>(`/chat/message/${messageId}`, { content });
   }
 
-  static async markAsRead(conversationId: string): Promise<void> {
-    const response = await api.post(`/chat/conversations/${conversationId}/read`);
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to mark as read');
-    }
+  static async deleteMessage(messageId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.delete(`/chat/message/${messageId}`);
+  }
+
+  static async markConversationAsRead(conversationId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.post(`/chat/conversation/${conversationId}/read`);
   }
 
   // Friends
-  static async getFriends(): Promise<Friend[]> {
-    const response = await api.get<Friend[]>('/friends');
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to get friends');
+  static async getFriends(): Promise<{ success: boolean; data?: Friend[]; message?: string }> {
+    return await api.get<Friend[]>('/friend/list');
   }
 
-  static async getFriendRequests(): Promise<Friend[]> {
-    const response = await api.get<Friend[]>('/friends/requests');
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to get friend requests');
+  static async getFriendRequests(): Promise<{ success: boolean; data?: Friend[]; message?: string }> {
+    return await api.get<Friend[]>('/friend/requests');
   }
 
-  static async sendFriendRequest(userId: string): Promise<Friend> {
-    const response = await api.post<Friend>('/friends/requests', { user_id: userId });
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to send friend request');
+  static async sendFriendRequest(userId: string): Promise<{ success: boolean; data?: Friend; message?: string }> {
+    return await api.post<Friend>('/friend/request', { user_id: userId });
   }
 
-  static async acceptFriendRequest(requestId: string): Promise<Friend> {
-    const response = await api.post<Friend>(`/friends/requests/${requestId}/accept`);
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to accept friend request');
+  static async acceptFriendRequest(requestId: string): Promise<{ success: boolean; data?: Friend; message?: string }> {
+    return await api.post<Friend>(`/friend/request/${requestId}/accept`);
   }
 
-  static async rejectFriendRequest(requestId: string): Promise<void> {
-    const response = await api.post(`/friends/requests/${requestId}/reject`);
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to reject friend request');
-    }
+  static async rejectFriendRequest(requestId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.post(`/friend/request/${requestId}/reject`);
   }
 
-  static async removeFriend(friendId: string): Promise<void> {
-    const response = await api.delete(`/friends/${friendId}`);
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to remove friend');
-    }
+  static async cancelFriendRequest(requestId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.post(`/friend/request/${requestId}/cancel`);
+  }
+
+  static async deleteFriend(friendId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.delete(`/friend/${friendId}`);
+  }
+
+  static async updateFriendAlias(friendId: string, alias: string): Promise<{ success: boolean; message?: string }> {
+    return await api.put(`/friend/${friendId}/alias`, { alias });
   }
 
   // Blocklist
-  static async getBlocklist(): Promise<User[]> {
-    const response = await api.get<User[]>('/blocklist');
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to get blocklist');
+  static async getBlocklist(): Promise<{ success: boolean; data?: User[]; message?: string }> {
+    return await api.get<User[]>('/block/list');
   }
 
-  static async blockUser(userId: string, reason?: string): Promise<void> {
-    const response = await api.post('/blocklist', { user_id: userId, reason });
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to block user');
-    }
+  static async blockUser(userId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.post('/block/', { user_id: userId });
   }
 
-  static async unblockUser(userId: string): Promise<void> {
-    const response = await api.delete(`/blocklist/${userId}`);
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to unblock user');
-    }
+  static async unblockUser(userId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.delete(`/block/${userId}`);
   }
 
   // Groups
   static async createGroup(data: {
     name: string;
     description?: string;
-    user_ids: string[];
+    member_ids: string[];
     avatar?: string;
-  }): Promise<Group> {
-    const response = await api.post<Group>('/groups', data);
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to create group');
+  }): Promise<{ success: boolean; data?: Group; message?: string }> {
+    return await api.post<Group>('/group/', data);
   }
 
-  static async getGroup(groupId: string): Promise<Group> {
-    const response = await api.get<Group>(`/groups/${groupId}`);
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to get group');
+  static async getGroup(groupId: string): Promise<{ success: boolean; data?: Group; message?: string }> {
+    return await api.get<Group>(`/group/${groupId}`);
   }
 
-  static async updateGroup(groupId: string, data: Partial<Group>): Promise<Group> {
-    const response = await api.put<Group>(`/groups/${groupId}`, data);
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to update group');
+  static async updateGroup(groupId: string, data: Partial<Group>): Promise<{ success: boolean; data?: Group; message?: string }> {
+    return await api.put<Group>(`/group/${groupId}`, data);
   }
 
-  static async leaveGroup(groupId: string): Promise<void> {
-    const response = await api.post(`/groups/${groupId}/leave`);
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to leave group');
-    }
+  static async disbandGroup(groupId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.delete(`/group/${groupId}`);
+  }
+
+  static async leaveGroup(groupId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.post(`/group/${groupId}/leave`);
+  }
+
+  static async getGroupMembers(groupId: string): Promise<{ success: boolean; data?: any[]; message?: string }> {
+    return await api.get(`/group/${groupId}/members`);
+  }
+
+  static async addGroupMember(groupId: string, userId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.post(`/group/${groupId}/members`, { user_id: userId });
+  }
+
+  static async removeGroupMember(groupId: string, userId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.delete(`/group/${groupId}/members/${userId}`);
+  }
+
+  static async updateMemberRole(groupId: string, userId: string, role: string): Promise<{ success: boolean; message?: string }> {
+    return await api.put(`/group/${groupId}/members/${userId}/role`, { role });
   }
 
   // Users
-  static async searchUsers(query: string): Promise<User[]> {
-    const response = await api.get<User[]>('/users/search', { params: { q: query } });
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to search users');
+  static async searchUsers(query: string): Promise<{ success: boolean; data?: User[]; message?: string }> {
+    return await api.get<User[]>('/user/search', { params: { q: query } });
   }
 
-  static async getUser(userId: string): Promise<User> {
-    const response = await api.get<User>(`/users/${userId}`);
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to get user');
+  static async getUser(userId: string): Promise<{ success: boolean; data?: User; message?: string }> {
+    return await api.get<User>(`/user/${userId}`);
+  }
+
+  static async getProfile(): Promise<{ success: boolean; data?: User; message?: string }> {
+    return await api.get<User>('/user/profile');
+  }
+
+  static async updateProfile(data: Partial<User>): Promise<{ success: boolean; data?: User; message?: string }> {
+    return await api.put<User>('/user/profile', data);
   }
 
   // Favorites
-  static async getFavorites(): Promise<Favorite[]> {
-    const response = await api.get<Favorite[]>('/favorites');
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to get favorites');
+  static async getUserFavorites(): Promise<{ success: boolean; data?: Favorite[]; message?: string }> {
+    return await api.get<Favorite[]>('/chat/favorites');
   }
 
-  static async addFavorite(messageId: string, note?: string): Promise<Favorite> {
-    const response = await api.post<Favorite>('/favorites', { message_id: messageId, note });
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to add favorite');
+  static async addFavorite(messageId: string, note?: string): Promise<{ success: boolean; data?: Favorite; message?: string }> {
+    return await api.post<Favorite>('/chat/favorite', { message_id: messageId, note });
   }
 
-  static async removeFavorite(favoriteId: string): Promise<void> {
-    const response = await api.delete(`/favorites/${favoriteId}`);
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to remove favorite');
-    }
+  static async removeFavorite(favoriteId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.delete(`/chat/favorite/${favoriteId}`);
   }
 
-  // Forward message
-  static async forwardMessage(messageId: string, conversationIds: string[]): Promise<void> {
-    const response = await api.post('/chat/messages/forward', {
+  // File Upload
+  static async uploadFile(
+    file: File,
+    type: 'image' | 'file' = 'file',
+    onProgress?: (progress: number) => void
+  ): Promise<{ success: boolean; data?: { url: string; file_name: string; file_size: number; mime_type: string }; message?: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+
+    // 直接使用 axios 实例来处理 form-data
+    const response = await api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      // @ts-ignore - onUploadProgress 是 axios 的特性
+      onUploadProgress: (progressEvent: any) => {
+        if (onProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(progress);
+        }
+      },
+    });
+    return response;
+  }
+
+  // Message Forward
+  static async forwardMessage(
+    messageId: string,
+    conversationIds: string[],
+    additionalText?: string
+  ): Promise<{ success: boolean; data?: Message[]; message?: string }> {
+    return await api.post<Message[]>('/chat/messages/forward', {
       message_id: messageId,
       conversation_ids: conversationIds,
+      additional_text: additionalText,
     });
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to forward message');
-    }
+  }
+
+  // Calls
+  static async initiateCall(
+    calleeId: string,
+    callType: 'video' | 'voice',
+    conversationId?: string
+  ): Promise<{ success: boolean; data?: CallRecord; message?: string }> {
+    return await api.post<CallRecord>('/call/initiate', {
+      callee_id: calleeId,
+      type: callType,
+      conversation_id: conversationId,
+    });
+  }
+
+  static async acceptCall(
+    callId: string
+  ): Promise<{ success: boolean; data?: CallRecord; message?: string }> {
+    return await api.post<CallRecord>(`/call/${callId}/accept`);
+  }
+
+  static async rejectCall(
+    callId: string
+  ): Promise<{ success: boolean; message?: string }> {
+    return await api.post(`/call/${callId}/reject`);
+  }
+
+  static async endCall(
+    callId: string
+  ): Promise<{ success: boolean; data?: CallRecord; message?: string }> {
+    return await api.post<CallRecord>(`/call/${callId}/end`);
+  }
+
+  static async getCallRecord(
+    callId: string
+  ): Promise<{ success: boolean; data?: CallRecord; message?: string }> {
+    return await api.get<CallRecord>(`/call/${callId}`);
+  }
+
+  static async getUserCallRecords(
+    limit: number = 50
+  ): Promise<{ success: boolean; data?: CallRecord[]; message?: string }> {
+    return await api.get<CallRecord[]>('/call/s', { params: { limit } });
   }
 }
 

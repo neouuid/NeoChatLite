@@ -13,6 +13,7 @@ type Config struct {
 	Redis    RedisConfig
 	NATS     NATSConfig
 	JWT      JWTConfig
+	Storage  StorageConfig
 }
 
 type ServerConfig struct {
@@ -46,6 +47,14 @@ type NATSConfig struct {
 type JWTConfig struct {
 	Secret     string
 	ExpiryHour int
+}
+
+type StorageConfig struct {
+	UploadDir         string
+	MaxFileSize       int64
+	MaxImageSize      int64
+	AllowedImageTypes []string
+	AllowedFileTypes  []string
 }
 
 var AppConfig *Config
@@ -93,6 +102,13 @@ func Load() *Config {
 			Secret:     viper.GetString("jwt.secret"),
 			ExpiryHour: viper.GetInt("jwt.expiry_hour"),
 		},
+		Storage: StorageConfig{
+			UploadDir:         viper.GetString("storage.upload_dir"),
+			MaxFileSize:       viper.GetInt64("storage.max_file_size"),
+			MaxImageSize:      viper.GetInt64("storage.max_image_size"),
+			AllowedImageTypes: viper.GetStringSlice("storage.allowed_image_types"),
+			AllowedFileTypes:  viper.GetStringSlice("storage.allowed_file_types"),
+		},
 	}
 
 	AppConfig = config
@@ -122,6 +138,35 @@ func setDefaults() {
 
 	viper.SetDefault("jwt.secret", "neochat-secret-key-change-in-production")
 	viper.SetDefault("jwt.expiry_hour", 24)
+
+	viper.SetDefault("storage.upload_dir", "./uploads")
+	viper.SetDefault("storage.max_file_size", 104857600)
+	viper.SetDefault("storage.max_image_size", 10485760)
+	viper.SetDefault("storage.allowed_image_types", []string{
+		"image/jpeg",
+		"image/jpg",
+		"image/png",
+		"image/gif",
+		"image/webp",
+	})
+	viper.SetDefault("storage.allowed_file_types", []string{
+		"image/jpeg",
+		"image/jpg",
+		"image/png",
+		"image/gif",
+		"image/webp",
+		"application/pdf",
+		"application/msword",
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+		"application/vnd.ms-excel",
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		"application/vnd.ms-powerpoint",
+		"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+		"application/zip",
+		"application/x-rar-compressed",
+		"application/x-7z-compressed",
+		"text/plain",
+	})
 }
 
 func (c *DatabaseConfig) DSN() string {

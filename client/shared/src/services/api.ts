@@ -83,28 +83,60 @@ class ApiClient {
 
   // Generic request methods
   async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.get<ApiResponse<T>>(url, config);
-    return response.data;
+    const response = await this.client.get(url, config);
+    // Handle both wrapped and unwrapped responses
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      return response.data;
+    }
+    // Backend returns unwrapped data directly for some endpoints
+    return {
+      success: response.status >= 200 && response.status < 300,
+      data: response.data,
+    };
   }
 
   async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.post<ApiResponse<T>>(url, data, config);
-    return response.data;
+    const response = await this.client.post(url, data, config);
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      return response.data;
+    }
+    return {
+      success: response.status >= 200 && response.status < 300,
+      data: response.data,
+    };
   }
 
   async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.put<ApiResponse<T>>(url, data, config);
-    return response.data;
+    const response = await this.client.put(url, data, config);
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      return response.data;
+    }
+    return {
+      success: response.status >= 200 && response.status < 300,
+      data: response.data,
+    };
   }
 
   async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.patch<ApiResponse<T>>(url, data, config);
-    return response.data;
+    const response = await this.client.patch(url, data, config);
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      return response.data;
+    }
+    return {
+      success: response.status >= 200 && response.status < 300,
+      data: response.data,
+    };
   }
 
   async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.delete<ApiResponse<T>>(url, config);
-    return response.data;
+    const response = await this.client.delete(url, config);
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      return response.data;
+    }
+    return {
+      success: response.status >= 200 && response.status < 300,
+      data: response.data,
+    };
   }
 
   // File upload
