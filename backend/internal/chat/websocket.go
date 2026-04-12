@@ -37,6 +37,8 @@ const (
 	// 好友请求消息类型
 	WSMessageTypeFriendRequest   = "friend_request"
 	WSMessageTypeFriendAccepted  = "friend_accepted"
+	// 提及消息类型
+	WSMessageTypeMention         = "mention"
 )
 
 // WSMessage WebSocket消息结构
@@ -220,6 +222,22 @@ func (h *WebSocketHub) SendFriendAccepted(toUserID uuid.UUID, fromUserID uuid.UU
 			"user_id":   fromUserID,
 			"username":  fromUserName,
 			"avatar":    fromUserAvatar,
+		},
+	})
+}
+
+// SendMention 发送提及通知
+func (h *WebSocketHub) SendMention(toUserID uuid.UUID, messageID uuid.UUID, conversationID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string, messageContent string) {
+	h.SendToUser(toUserID, WSMessage{
+		Type:   WSMessageTypeMention,
+		FromID: fromUserID,
+		ConvID: conversationID,
+		Data: map[string]interface{}{
+			"message_id":   messageID,
+			"user_id":      fromUserID,
+			"username":     fromUserName,
+			"avatar":       fromUserAvatar,
+			"content":      messageContent,
 		},
 	})
 }

@@ -120,8 +120,9 @@ type Message struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Associations
-	Sender  *user.User `gorm:"foreignKey:SenderID" json:"sender,omitempty"`
-	ReplyTo *Message   `gorm:"foreignKey:ReplyToID" json:"reply_to,omitempty"`
+	Sender   *user.User `gorm:"foreignKey:SenderID" json:"sender,omitempty"`
+	ReplyTo  *Message   `gorm:"foreignKey:ReplyToID" json:"reply_to,omitempty"`
+	Mentions []*Mention `gorm:"foreignKey:MessageID" json:"mentions,omitempty"`
 }
 
 func (m *Message) BeforeCreate(tx *gorm.DB) error {
@@ -132,10 +133,10 @@ func (m *Message) BeforeCreate(tx *gorm.DB) error {
 }
 
 type MessageRead struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
-	MessageID   uuid.UUID `gorm:"type:uuid;index;not null" json:"message_id"`
-	UserID      uuid.UUID `gorm:"type:uuid;index;not null" json:"user_id"`
-	ReadAt      time.Time `json:"read_at"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
+	MessageID uuid.UUID `gorm:"type:uuid;index;not null" json:"message_id"`
+	UserID    uuid.UUID `gorm:"type:uuid;index;not null" json:"user_id"`
+	ReadAt    time.Time `json:"read_at"`
 }
 
 func (mr *MessageRead) BeforeCreate(tx *gorm.DB) error {
@@ -209,6 +210,27 @@ type CallRecord struct {
 func (cr *CallRecord) BeforeCreate(tx *gorm.DB) error {
 	if cr.ID == uuid.Nil {
 		cr.ID = uuid.New()
+	}
+	return nil
+}
+
+// Mention @提及模型
+type Mention struct {
+	ID        uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	MessageID uuid.UUID      `gorm:"type:uuid;index;not null" json:"message_id"`
+	UserID    uuid.UUID      `gorm:"type:uuid;index;not null" json:"user_id"`
+	HasRead   bool           `gorm:"default:false" json:"has_read"`
+	ReadAt    *time.Time     `json:"read_at"`
+	CreatedAt time.Time      `json:"created_at"`
+
+	// Associations
+	Message *Message   `gorm:"foreignKey:MessageID" json:"message,omitempty"`
+	User    *user.User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+}
+
+func (m *Mention) BeforeCreate(tx *gorm.DB) error {
+	if m.ID == uuid.Nil {
+		m.ID = uuid.New()
 	}
 	return nil
 }

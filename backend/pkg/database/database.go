@@ -70,6 +70,7 @@ func AutoMigrate() error {
 		&chat.Group{},
 		&chat.Favorite{},
 		&chat.CallRecord{},
+		&chat.Mention{},
 	)
 
 	if err != nil {

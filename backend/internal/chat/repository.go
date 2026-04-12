@@ -406,3 +406,75 @@ func (r *Repository) EndCall(callID uuid.UUID) error {
 		}).Error
 }
 
+// ==================== Mention Repository Methods ====================
+
+// CreateMention 创建提及
+func (r *Repository) CreateMention(mention *Mention) error {
+	return r.db.Create(mention).Error
+}
+
+// CreateMentions 批量创建提及
+func (r *Repository) CreateMentions(mentions []*Mention) error {
+	return r.db.Create(mentions).Error
+}
+
+// GetMessageMentions 获取消息的所有提及
+func (r *Repository) GetMessageMentions(messageID uuid.UUID) ([]*Mention, error) {
+	var mentions []*Mention
+	err := r.db.Where("message_id = ?", messageID).
+		Preload("User").
+		Find(&mentions).Error
+	if err != nil {
+		return nil, err
+	}
+	return mentions, nil
+}
+
+// GetUserMentions 获取用户的提及列表
+func (r *Repository) GetUserMentions(userID uuid.UUID, limit int) ([]*Mention, error) {
+	var mentions []*Mention
+	if limit <= 0 {
+		limit = 50
+	}
+	err := r.db.Where("user_id = ?", userID).
+		Preload("Message").Preload("Message.Sender").
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&mentions).Error
+	if err != nil {
+		return nil, err
+	}
+	return mentions, nil
+}
+
+// MarkMentionAsRead 标记提及为已读
+func (r *Repository) MarkMentionAsRead(mentionID uuid.UUID) error {
+	now := time.Now()
+	return r.db.Model(&Mention{}).Where("id = ?", mentionID).
+		Updates(map[string]interface{}{
+			"has_read": true,
+			"read_at":  now,
+		}).Error
+}
+
+// MarkUserMentionsAsRead 标记用户的所有提及为已读
+func (r *Repository) MarkUserMentionsAsRead(userID uuid.UUID) error {
+	now := time.Now()
+	return r.db.Model(&Mention{}).Where("user_id = ? AND has_read = ?", userID, false).
+		Updates(map[string]interface{}{
+			"has_read": true,
+			"read_at":  now,
+		}).Error
+}
+
+// GetUnreadMentionCount 获取用户未读提及数量
+func (r *Repository) GetUnreadMentionCount(userID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.Model(&Mention{}).Where("user_id = ? AND has_read = ?", userID, false).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
