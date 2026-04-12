@@ -5,6 +5,18 @@ server:
   port: 8080
   read_timeout: 30
   write_timeout: 30
+  log_level: info
+  cors:
+    allow_origins:
+      - "*"
+    allow_methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "OPTIONS"
+    allow_headers:
+      - "*"
 
 database:
   host: localhost

@@ -9,6 +9,55 @@ import (
 	"github.com/neochat/backend/pkg/utils"
 )
 
+// CORSMiddleware CORS中间件
+func CORSMiddleware(cfg *config.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		allowOrigins := cfg.Server.CORS.AllowOrigins
+		if len(allowOrigins) == 0 {
+			allowOrigins = []string{"*"}
+		}
+
+		allowMethods := cfg.Server.CORS.AllowMethods
+		if len(allowMethods) == 0 {
+			allowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+		}
+
+		allowHeaders := cfg.Server.CORS.AllowHeaders
+		if len(allowHeaders) == 0 {
+			allowHeaders = []string{"*"}
+		}
+
+		origin := c.Request.Header.Get("Origin")
+		if origin != "" {
+			// 检查origin是否在允许列表中
+			allowed := false
+			for _, o := range allowOrigins {
+				if o == "*" || o == origin {
+					allowed = true
+					break
+				}
+			}
+			if allowed {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			}
+		} else {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", allowOrigins[0])
+		}
+
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", strings.Join(allowMethods, ", "))
+		c.Writer.Header().Set("Access-Control-Allow-Headers", strings.Join(allowHeaders, ", "))
+
+		// 处理OPTIONS预检请求
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 // Middleware 认证中间件
 type Middleware struct {
 	config *config.Config

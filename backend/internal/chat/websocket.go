@@ -2,7 +2,6 @@ package chat
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/neochat/backend/pkg/config"
+	"github.com/neochat/backend/pkg/logger"
 )
 
 // WebSocket message types
@@ -34,6 +34,9 @@ const (
 	WSMessageTypeCallReject      = "call_reject"
 	WSMessageTypeCallHangup      = "call_hangup"
 	WSMessageTypeCallEnded       = "call_ended"
+	// 好友请求消息类型
+	WSMessageTypeFriendRequest   = "friend_request"
+	WSMessageTypeFriendAccepted  = "friend_accepted"
 )
 
 // WSMessage WebSocket消息结构
@@ -95,7 +98,7 @@ func (h *WebSocketHub) Run() {
 			}
 			h.userConns[client.UserID][client.ID] = true
 			h.mu.Unlock()
-			log.Printf("Client connected: user=%s, client=%s", client.UserID, client.ID)
+			logger.Infof("Client connected: user=%s, client=%s", client.UserID, client.ID)
 
 			// 广播在线状态
 			h.BroadcastOnlineStatus(client.UserID, true)
@@ -115,7 +118,7 @@ func (h *WebSocketHub) Run() {
 				close(client.Send)
 			}
 			h.mu.Unlock()
-			log.Printf("Client disconnected: user=%s, client=%s", client.UserID, client.ID)
+			logger.Infof("Client disconnected: user=%s, client=%s", client.UserID, client.ID)
 
 		case message := <-h.broadcast:
 			h.handleBroadcast(message)
@@ -195,6 +198,32 @@ func (h *WebSocketHub) IsUserOnline(userID uuid.UUID) bool {
 	return ok
 }
 
+// SendFriendRequest 发送好友请求通知
+func (h *WebSocketHub) SendFriendRequest(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string) {
+	h.SendToUser(toUserID, WSMessage{
+		Type:   WSMessageTypeFriendRequest,
+		FromID: fromUserID,
+		Data: map[string]interface{}{
+			"user_id":   fromUserID,
+			"username":  fromUserName,
+			"avatar":    fromUserAvatar,
+		},
+	})
+}
+
+// SendFriendAccepted 发送好友已接受通知
+func (h *WebSocketHub) SendFriendAccepted(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string) {
+	h.SendToUser(toUserID, WSMessage{
+		Type:   WSMessageTypeFriendAccepted,
+		FromID: fromUserID,
+		Data: map[string]interface{}{
+			"user_id":   fromUserID,
+			"username":  fromUserName,
+			"avatar":    fromUserAvatar,
+		},
+	})
+}
+
 // Client Read Pump
 func (c *Client) ReadPump() {
 	defer func() {
@@ -208,7 +237,7 @@ func (c *Client) ReadPump() {
 		_, msg, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket read error: %v", err)
+				logger.Errorf("WebSocket read error: %v", err)
 			}
 			break
 		}
@@ -371,7 +400,6 @@ func (c *Client) SendError(errMsg string) {
 	}
 }
 
-
 // WebSocketHandler WebSocket连接处理器
 func (h *WebSocketHub) WebSocketHandler(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
@@ -382,7 +410,7 @@ func (h *WebSocketHub) WebSocketHandler(c *gin.Context) {
 
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade error: %v", err)
+		logger.Errorf("WebSocket upgrade error: %v", err)
 		return
 	}
 

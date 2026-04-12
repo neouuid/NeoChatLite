@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,6 +16,7 @@ import (
 	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/config"
 	"github.com/neochat/backend/pkg/database"
+	"github.com/neochat/backend/pkg/logger"
 	"github.com/neochat/backend/pkg/redis"
 )
 
@@ -24,36 +24,43 @@ func main() {
 	// 加载配置
 	cfg := config.Load()
 
+	// 初始化日志
+	initLogger(cfg.Server.LogLevel)
+	logger.Info("Starting NeoChat API Gateway...")
+
 	// 初始化数据库
 	if err := database.Init(cfg); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		logger.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer func() {
 		if err := database.Close(); err != nil {
-			log.Printf("Error closing database: %v", err)
+			logger.Errorf("Error closing database: %v", err)
 		}
 	}()
 
 	// 自动迁移数据库
 	if err := database.AutoMigrate(); err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
+		logger.Fatalf("Failed to migrate database: %v", err)
 	}
 
 	// 初始化 Redis
 	if err := redis.Init(cfg); err != nil {
-		log.Printf("Warning: Failed to initialize Redis: %v", err)
-		log.Println("Continuing without Redis...")
+		logger.Warnf("Failed to initialize Redis: %v", err)
+		logger.Info("Continuing without Redis...")
 	}
 	defer func() {
 		if redis.Client != nil {
 			if err := redis.Close(); err != nil {
-				log.Printf("Error closing Redis: %v", err)
+				logger.Errorf("Error closing Redis: %v", err)
 			}
 		}
 	}()
 
 	// 设置 Gin
 	r := gin.Default()
+
+	// 添加 CORS 中间件
+	r.Use(auth.CORSMiddleware(cfg))
 
 	// 初始化认证模块
 	authRepo := auth.NewRepository(database.DB)
@@ -212,9 +219,9 @@ func main() {
 
 	// 在 goroutine 中启动服务器
 	go func() {
-		log.Printf("Server starting on port %d", cfg.Server.Port)
+		logger.Infof("Server starting on port %d", cfg.Server.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+			logger.Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
@@ -222,17 +229,17 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down server...")
+	logger.Info("Shutting down server...")
 
 	// 设置 5 秒的超时时间
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		logger.Fatal("Server forced to shutdown:", err)
 	}
 
-	log.Println("Server exiting")
+	logger.Info("Server exiting")
 }
 
 // healthHandler 总健康检查
@@ -292,4 +299,21 @@ func redisHealthHandler(c *gin.Context) {
 		"status": "ok",
 		"redis":  pong,
 	})
+}
+
+// initLogger 初始化日志系统
+func initLogger(level string) {
+	switch level {
+	case "debug":
+		logger.SetLevel(logger.LevelDebug)
+	case "info":
+		logger.SetLevel(logger.LevelInfo)
+	case "warn":
+		logger.SetLevel(logger.LevelWarn)
+	case "error":
+		logger.SetLevel(logger.LevelError)
+	default:
+		logger.SetLevel(logger.LevelInfo)
+	}
+	logger.Infof("Log level set to: %s", level)
 }

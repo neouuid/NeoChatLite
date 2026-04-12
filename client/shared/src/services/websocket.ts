@@ -21,7 +21,10 @@ type WSMessageType =
   | 'call_accept'
   | 'call_reject'
   | 'call_hangup'
-  | 'call_ended';
+  | 'call_ended'
+  // Friend request types
+  | 'friend_request'
+  | 'friend_accepted';
 
 // WebSocket message structure (matching backend)
 interface WSMessage {

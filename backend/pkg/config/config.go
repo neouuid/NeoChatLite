@@ -20,6 +20,8 @@ type ServerConfig struct {
 	Port         int
 	ReadTimeout  int
 	WriteTimeout int
+	LogLevel     string
+	CORS         CORSConfig
 }
 
 type DatabaseConfig struct {
@@ -47,6 +49,12 @@ type NATSConfig struct {
 type JWTConfig struct {
 	Secret     string
 	ExpiryHour int
+}
+
+type CORSConfig struct {
+	AllowOrigins []string
+	AllowMethods []string
+	AllowHeaders []string
 }
 
 type StorageConfig struct {
@@ -78,6 +86,12 @@ func Load() *Config {
 			Port:         viper.GetInt("server.port"),
 			ReadTimeout:  viper.GetInt("server.read_timeout"),
 			WriteTimeout: viper.GetInt("server.write_timeout"),
+			LogLevel:     viper.GetString("server.log_level"),
+			CORS: CORSConfig{
+				AllowOrigins: viper.GetStringSlice("server.cors.allow_origins"),
+				AllowMethods: viper.GetStringSlice("server.cors.allow_methods"),
+				AllowHeaders: viper.GetStringSlice("server.cors.allow_headers"),
+			},
 		},
 		Database: DatabaseConfig{
 			Host:     viper.GetString("database.host"),
@@ -119,6 +133,10 @@ func setDefaults() {
 	viper.SetDefault("server.port", 8080)
 	viper.SetDefault("server.read_timeout", 30)
 	viper.SetDefault("server.write_timeout", 30)
+	viper.SetDefault("server.log_level", "info")
+	viper.SetDefault("server.cors.allow_origins", []string{"*"})
+	viper.SetDefault("server.cors.allow_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
+	viper.SetDefault("server.cors.allow_headers", []string{"*"})
 
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", 5432)
