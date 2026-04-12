@@ -158,6 +158,29 @@ class ApiClient {
 
     return response.data;
   }
+
+  // Generic upload for React Native FormData
+  async upload<T = any>(url: string, formData: FormData, onProgress?: (progress: number) => void): Promise<ApiResponse<T>> {
+    const response = await this.client.post<ApiResponse<T>>(url, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(progress);
+        }
+      },
+    });
+
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      return response.data;
+    }
+    return {
+      success: response.status >= 200 && response.status < 300,
+      data: response.data,
+    };
+  }
 }
 
 // Export singleton instance
