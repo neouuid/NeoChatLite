@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { Conversation, Message } from '../types';
 
+// 内存优化常量
+const MAX_MESSAGES_PER_CONVERSATION = 200; // 每个会话最多保留 200 条消息
+const MAX_CONVERSATIONS = 100; // 最多保留 100 个会话
+
 interface ChatState {
   conversations: Conversation[];
   currentConversation: Conversation | null;
@@ -21,6 +25,9 @@ interface ChatState {
   setLoading: (loading: boolean) => void;
   setSending: (sending: boolean) => void;
   clearChat: () => void;
+  // 内存优化 actions
+  trimMessages: (conversationId: string, maxCount?: number) => void;
+  clearOldConversations: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -31,13 +38,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isSending: false,
 
   setConversations: (conversations: Conversation[]) => {
-    set({ conversations });
+    // 内存优化：限制会话数量
+    const trimmedConversations = conversations.slice(0, MAX_CONVERSATIONS);
+    set({ conversations: trimmedConversations });
   },
 
   addConversation: (conversation: Conversation) => {
-    set((state) => ({
-      conversations: [conversation, ...state.conversations],
-    }));
+    set((state) => {
+      const newConversations = [conversation, ...state.conversations];
+      // 内存优化：限制会话数量
+      const trimmedConversations = newConversations.slice(0, MAX_CONVERSATIONS);
+      return { conversations: trimmedConversations };
+    });
   },
 
   updateConversation: (id: string, updates: Partial<Conversation>) => {
@@ -53,11 +65,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   removeConversation: (id: string) => {
-    set((state) => ({
-      conversations: state.conversations.filter((conv) => conv.id !== id),
-      currentConversation:
-        state.currentConversation?.id === id ? null : state.currentConversation,
-    }));
+    set((state) => {
+      // 同时删除该会话的消息以释放内存
+      const newMessages = { ...state.messages };
+      delete newMessages[id];
+
+      return {
+        conversations: state.conversations.filter((conv) => conv.id !== id),
+        currentConversation:
+          state.currentConversation?.id === id ? null : state.currentConversation,
+        messages: newMessages,
+      };
+    });
   },
 
   setCurrentConversation: (conversation: Conversation | null) => {
@@ -65,21 +84,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setMessages: (conversationId: string, messages: Message[]) => {
+    // 内存优化：限制消息数量
+    const trimmedMessages = messages.slice(-MAX_MESSAGES_PER_CONVERSATION);
     set((state) => ({
       messages: {
         ...state.messages,
-        [conversationId]: messages,
+        [conversationId]: trimmedMessages,
       },
     }));
   },
 
   addMessage: (conversationId: string, message: Message) => {
-    set((state) => ({
-      messages: {
-        ...state.messages,
-        [conversationId]: [...(state.messages[conversationId] || []), message],
-      },
-    }));
+    set((state) => {
+      const currentMsgs = state.messages[conversationId] || [];
+      const newMsgs = [...currentMsgs, message];
+      // 内存优化：自动裁剪旧消息
+      const trimmedMsgs = newMsgs.slice(-MAX_MESSAGES_PER_CONVERSATION);
+
+      return {
+        messages: {
+          ...state.messages,
+          [conversationId]: trimmedMsgs,
+        },
+      };
+    });
     // Also update conversation last message
     get().updateConversation(conversationId, {
       last_message: message.type === 'text' ? message.content : `[${message.type}]`,
@@ -122,6 +150,38 @@ export const useChatStore = create<ChatState>((set, get) => ({
       conversations: [],
       currentConversation: null,
       messages: {},
+    });
+  },
+
+  // 内存优化：裁剪指定会话的消息
+  trimMessages: (conversationId: string, maxCount: number = MAX_MESSAGES_PER_CONVERSATION) => {
+    set((state) => {
+      const currentMsgs = state.messages[conversationId] || [];
+      if (currentMsgs.length <= maxCount) return state;
+
+      return {
+        messages: {
+          ...state.messages,
+          [conversationId]: currentMsgs.slice(-maxCount),
+        },
+      };
+    });
+  },
+
+  // 内存优化：清理不在会话列表中的旧消息
+  clearOldConversations: () => {
+    set((state) => {
+      const validConversationIds = new Set(state.conversations.map(c => c.id));
+      const newMessages: Record<string, Message[]> = {};
+
+      // 只保留有效会话的消息
+      Object.keys(state.messages).forEach(id => {
+        if (validConversationIds.has(id)) {
+          newMessages[id] = state.messages[id];
+        }
+      });
+
+      return { messages: newMessages };
     });
   },
 }));
