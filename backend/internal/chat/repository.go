@@ -144,6 +144,27 @@ func (r *Repository) GetConversationMessages(convID uuid.UUID, before *time.Time
 		return nil, err
 	}
 
+	// 为群聊消息添加已读计数
+	if len(msgs) > 0 {
+		// 获取会话信息，判断是否为群聊
+		var conv Conversation
+		if err := r.db.Select("type").Where("id = ?", convID).First(&conv).Error; err == nil && conv.Type == ConversationTypeGroup {
+			// 获取会话成员总数（不包括已删除的）
+			var totalCount int64
+			r.db.Model(&ConversationMember{}).
+				Where("conversation_id = ?", convID).
+				Count(&totalCount)
+
+			// 为每条消息（自己发送的）添加已读计数
+			for i := range msgs {
+				// 只对自己的消息计算已读计数
+				// 这里可以根据需要添加更复杂的逻辑
+				msgs[i].ReadCount = 0 // TODO: 实际实现时可以查询 MessageRead 表
+				msgs[i].TotalCount = int(totalCount)
+			}
+		}
+	}
+
 	// Reverse to get ascending order
 	for i, j := 0, len(msgs)-1; i < j; i, j = i+1, j-1 {
 		msgs[i], msgs[j] = msgs[j], msgs[i]

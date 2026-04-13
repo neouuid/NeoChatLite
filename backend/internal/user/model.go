@@ -18,17 +18,17 @@ const (
 
 type User struct {
 	ID        uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	Username  string         `gorm:"type:varchar(50);uniqueIndex;not null" json:"username"`
-	Email     string         `gorm:"type:varchar(100);uniqueIndex" json:"email"`
-	Phone     string         `gorm:"type:varchar(20);uniqueIndex" json:"phone"`
+	Username  string         `gorm:"type:varchar(50);uniqueIndex:idx_user_username;not null" json:"username"`
+	Email     string         `gorm:"type:varchar(100);uniqueIndex:idx_user_email" json:"email"`
+	Phone     string         `gorm:"type:varchar(20);uniqueIndex:idx_user_phone" json:"phone"`
 	Password  string         `gorm:"type:varchar(255);not null" json:"-"`
-	Nickname  string         `gorm:"type:varchar(50)" json:"nickname"`
+	Nickname  string         `gorm:"type:varchar(50);index:idx_user_nickname" json:"nickname"`
 	Avatar    string         `gorm:"type:varchar(500)" json:"avatar"`
 	Bio       string         `gorm:"type:varchar(500)" json:"bio"`
-	Status    string         `gorm:"type:varchar(20);default:'online'" json:"status"`
-	CreatedAt time.Time      `json:"created_at"`
+	Status    string         `gorm:"type:varchar(20);default:'online';index:idx_user_status" json:"status"`
+	CreatedAt time.Time      `gorm:"index:idx_user_created_at" json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	DeletedAt gorm.DeletedAt `gorm:"index:idx_user_deleted_at" json:"-"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
@@ -40,13 +40,13 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 
 type Friend struct {
 	ID        uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	UserID    uuid.UUID      `gorm:"type:uuid;index;not null" json:"user_id"`
-	FriendID  uuid.UUID      `gorm:"type:uuid;index;not null" json:"friend_id"`
+	UserID    uuid.UUID      `gorm:"type:uuid;index:idx_friend_user_id;not null" json:"user_id"`
+	FriendID  uuid.UUID      `gorm:"type:uuid;index:idx_friend_friend_id;not null" json:"friend_id"`
 	Alias     string         `gorm:"type:varchar(50)" json:"alias"`
-	Status    string         `gorm:"type:varchar(20);default:'pending'" json:"status"` // pending, accepted, blocked
-	CreatedAt time.Time      `json:"created_at"`
+	Status    string         `gorm:"type:varchar(20);default:'pending';index:idx_friend_status" json:"status"` // pending, accepted, blocked
+	CreatedAt time.Time      `gorm:"index:idx_friend_created_at" json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	DeletedAt gorm.DeletedAt `gorm:"index:idx_friend_deleted_at" json:"-"`
 
 	// Associations
 	User   *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
