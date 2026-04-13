@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -28,7 +29,15 @@ func Init(cfg *config.Config) error {
 		},
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), gormConfig)
+	var db *gorm.DB
+	var err error
+
+	if cfg.Database.Driver == "sqlite" {
+		db, err = gorm.Open(sqlite.Open(dsn), gormConfig)
+	} else {
+		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}

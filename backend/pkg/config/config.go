@@ -25,6 +25,7 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
+	Driver   string // "postgres" or "sqlite"
 	Host     string
 	Port     int
 	User     string
@@ -94,6 +95,7 @@ func Load() *Config {
 			},
 		},
 		Database: DatabaseConfig{
+			Driver:   viper.GetString("database.driver"),
 			Host:     viper.GetString("database.host"),
 			Port:     viper.GetInt("database.port"),
 			User:     viper.GetString("database.user"),
@@ -138,6 +140,7 @@ func setDefaults() {
 	viper.SetDefault("server.cors.allow_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	viper.SetDefault("server.cors.allow_headers", []string{"*"})
 
+	viper.SetDefault("database.driver", "postgres")
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", 5432)
 	viper.SetDefault("database.user", "postgres")
@@ -188,10 +191,54 @@ func setDefaults() {
 }
 
 func (c *DatabaseConfig) DSN() string {
+	if c.Driver == "sqlite" {
+		if c.DBName == ":memory:" {
+			return "file::memory:?mode=memory&cache=shared"
+		}
+		return c.DBName
+	}
 	return fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		c.Host, c.Port, c.User, c.Password, c.DBName, c.SSLMode,
 	)
+}
+
+// TestConfig 返回测试用的配置
+func TestConfig() *Config {
+	return &Config{
+		Server: ServerConfig{
+			Port:         8080,
+			ReadTimeout:  30,
+			WriteTimeout: 30,
+			LogLevel:     "error",
+			CORS: CORSConfig{
+				AllowOrigins: []string{"*"},
+				AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+				AllowHeaders: []string{"*"},
+			},
+		},
+		Database: DatabaseConfig{
+			Driver: "sqlite",
+			DBName: ":memory:",
+		},
+		Redis: RedisConfig{
+			Host:     "localhost",
+			Port:     6379,
+			Password: "",
+			DB:       0,
+		},
+		JWT: JWTConfig{
+			Secret:     "test-secret-key",
+			ExpiryHour: 24,
+		},
+		Storage: StorageConfig{
+			UploadDir:         "./test_uploads",
+			MaxFileSize:       104857600,
+			MaxImageSize:      10485760,
+			AllowedImageTypes: []string{"image/jpeg", "image/png"},
+			AllowedFileTypes:  []string{"image/jpeg", "image/png"},
+		},
+	}
 }
 
 func (c *RedisConfig) Addr() string {

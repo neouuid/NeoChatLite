@@ -22,6 +22,15 @@ func NewService(repo *Repository, cfg *config.Config) *Service {
 	return &Service{repo: repo, config: cfg}
 }
 
+// GenerateToken 生成访问令牌（用于测试）
+func (s *Service) GenerateToken(userID uuid.UUID) (string, error) {
+	u, err := s.repo.GetUserByID(userID)
+	if err != nil {
+		return "", err
+	}
+	return utils.GenerateToken(u.ID, u.Username, s.config)
+}
+
 // RegisterRequest 注册请求
 type RegisterRequest struct {
 	Username string `json:"username"`
