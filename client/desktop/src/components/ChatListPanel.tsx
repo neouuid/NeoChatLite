@@ -80,6 +80,7 @@ export const ChatListPanel: React.FC<ChatListPanelProps> = ({
       ]}>
         <ConversationItem
           conversation={item}
+          currentUserId={user?.id}
           onPress={() => handleConversationPress(item)}
         />
       </View>

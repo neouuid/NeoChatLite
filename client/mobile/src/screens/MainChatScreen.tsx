@@ -72,9 +72,10 @@ export const MainChatScreen: React.FC = () => {
   const renderConversationItem = useCallback(({ item }: { item: Conversation }) => (
     <ConversationItem
       conversation={item}
+      currentUserId={user?.id}
       onPress={() => handleConversationPress(item)}
     />
-  ), [handleConversationPress]);
+  ), [user?.id, handleConversationPress]);
 
   // Memoized empty component
   const renderEmptyComponent = useCallback(() => (
@@ -125,7 +126,8 @@ const MemoizedConversationItem = React.memo(ConversationItem, (prevProps, nextPr
     prevConv.last_msg_at === nextConv.last_msg_at &&
     prevConv.unread_count === nextConv.unread_count &&
     prevConv.name === nextConv.name &&
-    prevConv.avatar === nextConv.avatar
+    prevConv.avatar === nextConv.avatar &&
+    prevProps.currentUserId === nextProps.currentUserId
   );
 });
 

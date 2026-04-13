@@ -2,42 +2,65 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Conversation } from '../types';
+import { Conversation, User } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
 import { formatRelativeTime, formatDisplayName } from '../utils';
 import { Avatar } from './Avatar';
 
 interface ConversationItemProps {
   conversation: Conversation;
+  currentUserId?: string;
   onPress: () => void;
 }
 
 const ConversationItemComponent: React.FC<ConversationItemProps> = ({
   conversation,
+  currentUserId,
   onPress,
 }) => {
+  // 找到对方用户（单聊时）
+  const getOtherMember = useMemo((): User | undefined => {
+    if (conversation.type !== 'single' || !conversation.members) {
+      return undefined;
+    }
+    // 单聊：找到不是当前用户的成员
+    const otherMember = conversation.members.find(
+      (m) => m.user_id !== currentUserId && m.user
+    );
+    return otherMember?.user;
+  }, [conversation, currentUserId]);
+
   // Memoized display name
   const displayName = useMemo((): string => {
     if (conversation.type === 'group') {
       return conversation.name || '群聊';
     }
-    // 单聊：找到对方用户并显示名称
+    // 单聊：显示对方用户名称
+    const otherUser = getOtherMember;
+    if (otherUser) {
+      return formatDisplayName(otherUser.nickname, otherUser.username);
+    }
+    // 回退方案
     if (conversation.members && conversation.members.length > 0) {
-      // TODO: 需要根据当前用户ID过滤，找到对方用户
       const member = conversation.members[0];
       if (member.user) {
         return formatDisplayName(member.user.nickname, member.user.username);
       }
     }
     return '聊天';
-  }, [conversation]);
+  }, [conversation, getOtherMember]);
 
   // Memoized avatar URI
   const avatarUri = useMemo((): string | undefined => {
     if (conversation.type === 'group') {
       return conversation.avatar;
     }
-    // 单聊：找到对方用户并显示头像
+    // 单聊：显示对方用户头像
+    const otherUser = getOtherMember;
+    if (otherUser) {
+      return otherUser.avatar;
+    }
+    // 回退方案
     if (conversation.members && conversation.members.length > 0) {
       const member = conversation.members[0];
       if (member.user) {
@@ -45,7 +68,7 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
       }
     }
     return undefined;
-  }, [conversation]);
+  }, [conversation, getOtherMember]);
 
   const unreadCount = conversation.unread_count || 0;
 
