@@ -1,6 +1,6 @@
 // 主聊天界面 - 会话列表
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -59,48 +59,75 @@ export const MainChatScreen: React.FC = () => {
     loadConversations();
   }, [loadConversations]);
 
-  // 处理会话点击
-  const handleConversationPress = (conversation: Conversation) => {
+  // 处理会话点击 - memoized
+  const handleConversationPress = useCallback((conversation: Conversation) => {
     setCurrentConversation(conversation);
     navigation.navigate('Chat', { conversationId: conversation.id });
-  };
+  }, [setCurrentConversation, navigation]);
 
-  // 渲染会话项
-  const renderConversationItem = ({ item }: { item: Conversation }) => (
+  // Memoized key extractor
+  const keyExtractor = useCallback((item: Conversation) => item.id, []);
+
+  // Memoized render item
+  const renderConversationItem = useCallback(({ item }: { item: Conversation }) => (
     <ConversationItem
       conversation={item}
       onPress={() => handleConversationPress(item)}
     />
-  );
+  ), [handleConversationPress]);
 
-  // 会话列表为空时的渲染
-  const renderEmptyComponent = () => (
+  // Memoized empty component
+  const renderEmptyComponent = useCallback(() => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>暂无会话</Text>
       <Text style={styles.emptySubtext}>开始聊天吧！</Text>
     </View>
-  );
+  ), []);
+
+  // Memoized refresh control
+  const refreshControl = useMemo(() => (
+    <RefreshControl
+      refreshing={isLoading}
+      onRefresh={loadConversations}
+      colors={[COLORS.primary]}
+      tintColor={COLORS.primary}
+    />
+  ), [isLoading, loadConversations]);
 
   return (
     <View style={styles.container}>
       <FlatList
         data={conversations}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         renderItem={renderConversationItem}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={loadConversations}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
+        refreshControl={refreshControl}
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={conversations.length === 0 ? styles.emptyList : undefined}
+        // 性能优化属性
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        initialNumToRender={15}
+        updateCellsBatchingPeriod={50}
       />
     </View>
   );
 };
+
+// Memoized ConversationItem for better performance
+const MemoizedConversationItem = React.memo(ConversationItem, (prevProps, nextProps) => {
+  // Only re-render if conversation changed significantly
+  const prevConv = prevProps.conversation;
+  const nextConv = nextProps.conversation;
+  return (
+    prevConv.id === nextConv.id &&
+    prevConv.last_message === nextConv.last_message &&
+    prevConv.last_msg_at === nextConv.last_msg_at &&
+    prevConv.unread_count === nextConv.unread_count &&
+    prevConv.name === nextConv.name &&
+    prevConv.avatar === nextConv.avatar
+  );
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -1,6 +1,6 @@
 // 会话列表项组件
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Conversation } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
@@ -12,12 +12,12 @@ interface ConversationItemProps {
   onPress: () => void;
 }
 
-export const ConversationItem: React.FC<ConversationItemProps> = ({
+const ConversationItemComponent: React.FC<ConversationItemProps> = ({
   conversation,
   onPress,
 }) => {
-  // 获取显示名称（单聊时显示对方名称，群聊时显示群名）
-  const getDisplayName = (): string => {
+  // Memoized display name
+  const displayName = useMemo((): string => {
     if (conversation.type === 'group') {
       return conversation.name || '群聊';
     }
@@ -30,10 +30,10 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
       }
     }
     return '聊天';
-  };
+  }, [conversation]);
 
-  // 获取头像（单聊时显示对方头像，群聊时显示群头像）
-  const getAvatarUri = (): string | undefined => {
+  // Memoized avatar URI
+  const avatarUri = useMemo((): string | undefined => {
     if (conversation.type === 'group') {
       return conversation.avatar;
     }
@@ -45,10 +45,8 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
       }
     }
     return undefined;
-  };
+  }, [conversation]);
 
-  const displayName = getDisplayName();
-  const avatarUri = getAvatarUri();
   const unreadCount = conversation.unread_count || 0;
 
   return (
@@ -149,4 +147,19 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
   },
+});
+
+// Export memoized version as the default export
+export const ConversationItem = React.memo(ConversationItemComponent, (prevProps, nextProps) => {
+  // Only re-render if conversation changed significantly
+  const prevConv = prevProps.conversation;
+  const nextConv = nextProps.conversation;
+  return (
+    prevConv.id === nextConv.id &&
+    prevConv.last_message === nextConv.last_message &&
+    prevConv.last_msg_at === nextConv.last_msg_at &&
+    prevConv.unread_count === nextConv.unread_count &&
+    prevConv.name === nextConv.name &&
+    prevConv.avatar === nextConv.avatar
+  );
 });

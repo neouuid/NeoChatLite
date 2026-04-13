@@ -1,6 +1,6 @@
 // 消息列表组件
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -43,15 +43,18 @@ export const MessageList: React.FC<MessageListProps> = ({
   const flatListRef = useRef<FlatList>(null);
   const isGroupChat = conversation?.type === 'group';
 
-  // 渲染消息项
+  // Memoized key extractor for stable keys
+  const keyExtractor = useCallback((item: Message) => item.id, []);
+
+  // Memoized render item with stable dependencies
   const renderMessageItem = useCallback(({ item, index }: { item: Message; index: number }) => {
     const isOwn = item.sender_id === currentUserId;
-    const showAvatar = !isOwn && (index === 0 || messages[index - 1].sender_id !== item.sender_id);
-    const showSenderName = isGroupChat && !isOwn && (index === 0 || messages[index - 1].sender_id !== item.sender_id);
-    const isLastOwnMessage = isOwn && (index === 0 || messages[index - 1].sender_id !== currentUserId);
+    const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_id !== item.sender_id);
+    const showSenderName = isGroupChat && !isOwn && (index === 0 || messages[index - 1]?.sender_id !== item.sender_id);
+    const isLastOwnMessage = isOwn && (index === 0 || messages[index - 1]?.sender_id !== currentUserId);
 
     return (
-      <MessageBubble
+      <MemoizedMessageBubble
         message={item}
         isOwn={isOwn}
         showAvatar={showAvatar}
@@ -68,20 +71,20 @@ export const MessageList: React.FC<MessageListProps> = ({
   }, [currentUserId, messages, isGroupChat, onMessagePress, onMessageLongPress, onAvatarPress, onImagePress, onFilePress]);
 
   // 渲染加载更多指示器
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (!isLoadingMore) return null;
     return (
       <View style={styles.footerContainer}>
         <Text style={styles.loadingText}>加载中...</Text>
       </View>
     );
-  };
+  }, [isLoadingMore]);
 
   return (
     <FlatList
       ref={flatListRef}
       data={messages}
-      keyExtractor={(item) => item.id}
+      keyExtractor={keyExtractor}
       renderItem={renderMessageItem}
       inverted
       onEndReached={onLoadMore}
@@ -89,6 +92,12 @@ export const MessageList: React.FC<MessageListProps> = ({
       ListFooterComponent={renderFooter}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
+      // 性能优化属性
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={10}
+      windowSize={5}
+      initialNumToRender={20}
+      updateCellsBatchingPeriod={50}
     />
   );
 };
@@ -502,4 +511,20 @@ const styles = StyleSheet.create({
     color: COLORS.dark.text.secondary,
     fontSize: TYPOGRAPHY.sizes.sm,
   },
+});
+
+// Memoized MessageBubble for better FlatList performance
+const MemoizedMessageBubble = React.memo(MessageBubble, (prevProps, nextProps) => {
+  // Only re-render if message content or relevant props changed
+  return (
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.message.content === nextProps.message.content &&
+    prevProps.message.media_url === nextProps.message.media_url &&
+    prevProps.message.is_edited === nextProps.message.is_edited &&
+    prevProps.message.read_count === nextProps.message.read_count &&
+    prevProps.isOwn === nextProps.isOwn &&
+    prevProps.showAvatar === nextProps.showAvatar &&
+    prevProps.showSenderName === nextProps.showSenderName &&
+    prevProps.showReadStatus === nextProps.showReadStatus
+  );
 });
