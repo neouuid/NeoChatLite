@@ -274,6 +274,7 @@ export const ChatScreen: React.FC = () => {
         <MessageList
           messages={conversationMessages}
           currentUserId={user?.id}
+          conversation={currentConversation}
           onLoadMore={handleLoadMore}
           onMessagePress={handleMessagePress}
           onMessageLongPress={handleMessageLongPress}

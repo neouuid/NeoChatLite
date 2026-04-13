@@ -66,6 +66,9 @@ export interface Message {
   updated_at: string;
   sender?: User;
   reply_to?: Message;
+  // 消息已读统计（群聊使用）
+  read_count?: number;
+  total_count?: number;
 }
 
 export interface Group {

@@ -10,7 +10,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Message, User } from '../types';
+import { Message, User, Conversation } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
 import { formatChatTime, formatDisplayName } from '../utils';
 import { Avatar } from './Avatar';
@@ -18,6 +18,7 @@ import { Avatar } from './Avatar';
 interface MessageListProps {
   messages: Message[];
   currentUserId?: string;
+  conversation?: Conversation;
   onLoadMore?: () => void;
   onMessagePress?: (message: Message) => void;
   onMessageLongPress?: (message: Message) => void;
@@ -30,6 +31,7 @@ interface MessageListProps {
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
   currentUserId,
+  conversation,
   onLoadMore,
   onMessagePress,
   onMessageLongPress,
@@ -39,12 +41,14 @@ export const MessageList: React.FC<MessageListProps> = ({
   isLoadingMore,
 }) => {
   const flatListRef = useRef<FlatList>(null);
+  const isGroupChat = conversation?.type === 'group';
 
   // 渲染消息项
   const renderMessageItem = useCallback(({ item, index }: { item: Message; index: number }) => {
     const isOwn = item.sender_id === currentUserId;
     const showAvatar = !isOwn && (index === 0 || messages[index - 1].sender_id !== item.sender_id);
-    const showSenderName = !isOwn && (index === 0 || messages[index - 1].sender_id !== item.sender_id);
+    const showSenderName = isGroupChat && !isOwn && (index === 0 || messages[index - 1].sender_id !== item.sender_id);
+    const isLastOwnMessage = isOwn && (index === 0 || messages[index - 1].sender_id !== currentUserId);
 
     return (
       <MessageBubble
@@ -52,6 +56,8 @@ export const MessageList: React.FC<MessageListProps> = ({
         isOwn={isOwn}
         showAvatar={showAvatar}
         showSenderName={showSenderName}
+        showReadStatus={isOwn && isLastOwnMessage}
+        isGroupChat={isGroupChat}
         onPress={onMessagePress}
         onLongPress={onMessageLongPress}
         onAvatarPress={onAvatarPress}
@@ -59,7 +65,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         onFilePress={onFilePress}
       />
     );
-  }, [currentUserId, messages, onMessagePress, onMessageLongPress, onAvatarPress, onImagePress, onFilePress]);
+  }, [currentUserId, messages, isGroupChat, onMessagePress, onMessageLongPress, onAvatarPress, onImagePress, onFilePress]);
 
   // 渲染加载更多指示器
   const renderFooter = () => {
@@ -93,6 +99,8 @@ interface MessageBubbleProps {
   isOwn: boolean;
   showAvatar: boolean;
   showSenderName: boolean;
+  showReadStatus?: boolean;
+  isGroupChat?: boolean;
   onPress?: (message: Message) => void;
   onLongPress?: (message: Message) => void;
   onAvatarPress?: (user: User) => void;
@@ -105,6 +113,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   isOwn,
   showAvatar,
   showSenderName,
+  showReadStatus = false,
+  isGroupChat = false,
   onPress,
   onLongPress,
   onAvatarPress,
@@ -288,17 +298,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             styles.metaContainer,
             isOwn ? styles.ownMetaContainer : styles.otherMetaContainer,
           ]}>
-            <Text style={[
-              styles.timeText,
-              isOwn ? styles.ownTimeText : styles.otherTimeText,
-            ]}>
-              {formatChatTime(message.created_at)}
-            </Text>
-            {isOwn && (
-              <Text style={styles.statusText}>
-                {/* TODO: 消息状态（已发送/已读） */}
-              </Text>
-            )}
             {message.is_edited && (
               <Text style={[
                 styles.editedText,
@@ -306,6 +305,30 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               ]}>
                 已编辑
               </Text>
+            )}
+            <Text style={[
+              styles.timeText,
+              isOwn ? styles.ownTimeText : styles.otherTimeText,
+            ]}>
+              {formatChatTime(message.created_at)}
+            </Text>
+            {showReadStatus && (
+              <View style={styles.statusContainer}>
+                {isGroupChat ? (
+                  // 群聊：显示已读人数
+                  <Text style={styles.readCountText}>
+                    {message.read_count !== undefined ? `${message.read_count}人已读` : ''}
+                  </Text>
+                ) : (
+                  // 单聊：显示已读/发送状态图标
+                  <Ionicons
+                    name={message.read_count && message.read_count > 0 ? 'checkmark-done' : 'checkmark'}
+                    size={16}
+                    color={message.read_count && message.read_count > 0 ? COLORS.primary : COLORS.dark.text.tertiary}
+                    style={styles.statusIcon}
+                  />
+                )}
+              </View>
             )}
           </View>
         </TouchableOpacity>
@@ -381,6 +404,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: SPACING.xs,
+    gap: SPACING.xs,
   },
   ownMetaContainer: {
     justifyContent: 'flex-end',
@@ -397,13 +421,20 @@ const styles = StyleSheet.create({
   otherTimeText: {
     color: COLORS.dark.text.secondary,
   },
-  statusText: {
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusIcon: {
+    marginLeft: 2,
+  },
+  readCountText: {
     fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.primary,
     marginLeft: SPACING.xs,
   },
   editedText: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    marginLeft: SPACING.xs,
   },
   imageContainer: {
     minWidth: 150,
