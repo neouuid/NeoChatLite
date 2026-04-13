@@ -155,11 +155,36 @@ func (r *Repository) GetConversationMessages(convID uuid.UUID, before *time.Time
 				Where("conversation_id = ?", convID).
 				Count(&totalCount)
 
-			// 为每条消息（自己发送的）添加已读计数
+			// 收集所有消息ID
+			msgIDs := make([]uuid.UUID, len(msgs))
+			for i, msg := range msgs {
+				msgIDs[i] = msg.ID
+			}
+
+			// 批量查询每条消息的已读计数
+			type msgReadCount struct {
+				MessageID uuid.UUID
+				ReadCount int64
+			}
+			var readCounts []msgReadCount
+
+			if len(msgIDs) > 0 {
+				r.db.Model(&MessageRead{}).
+					Select("message_id, COUNT(*) as read_count").
+					Where("message_id IN ?", msgIDs).
+					Group("message_id").
+					Scan(&readCounts)
+			}
+
+			// 构建已读计数映射
+			readCountMap := make(map[uuid.UUID]int64)
+			for _, rc := range readCounts {
+				readCountMap[rc.MessageID] = rc.ReadCount
+			}
+
+			// 为每条消息设置已读计数
 			for i := range msgs {
-				// 只对自己的消息计算已读计数
-				// 这里可以根据需要添加更复杂的逻辑
-				msgs[i].ReadCount = 0 // TODO: 实际实现时可以查询 MessageRead 表
+				msgs[i].ReadCount = int(readCountMap[msgs[i].ID])
 				msgs[i].TotalCount = int(totalCount)
 			}
 		}

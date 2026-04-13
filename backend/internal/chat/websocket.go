@@ -142,9 +142,37 @@ func (h *WebSocketHub) handleBroadcast(message WSMessage) {
 }
 
 func (h *WebSocketHub) broadcastToConversation(message WSMessage) {
-	// TODO: 这里需要根据会话ID获取会话成员，然后只发送给这些成员
-	// 暂时先广播给所有用户
-	h.broadcastToAll(message)
+	if message.ConvID == uuid.Nil {
+		h.broadcastToAll(message)
+		return
+	}
+
+	// 获取会话成员
+	members, err := h.service.repo.GetConversationMembers(message.ConvID)
+	if err != nil {
+		logger.Errorf("Failed to get conversation members: %v", err)
+		h.broadcastToAll(message)
+		return
+	}
+
+	// 只发送给会话成员
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for _, member := range members {
+		if clientIDs, ok := h.userConns[member.UserID]; ok {
+			for clientID := range clientIDs {
+				if client, ok := h.clients[clientID]; ok {
+					select {
+					case client.Send <- message:
+					default:
+						close(client.Send)
+						delete(h.clients, client.ID)
+					}
+				}
+			}
+		}
+	}
 }
 
 func (h *WebSocketHub) broadcastToAll(message WSMessage) {
