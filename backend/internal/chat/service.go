@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/neochat/backend/pkg/logger"
+	"github.com/neochat/backend/pkg/redis"
 )
 
 type Service struct {
@@ -78,14 +81,35 @@ func (s *Service) CreateSingleConversation(userID1, userID2 uuid.UUID) (*Convers
 
 // GetConversation 获取会话
 func (s *Service) GetConversation(convID, userID uuid.UUID) (*Conversation, error) {
-	conv, err := s.repo.GetConversationByID(convID)
+	// 尝试从 Redis 缓存获取
+	cacheKey := redis.KeyPrefixConversation + convID.String()
+	var conv Conversation
+
+	if err := redis.GetJSON(cacheKey, &conv); err == nil && conv.ID != uuid.Nil {
+		logger.Debugf("Cache hit for conversation: %s", convID)
+		// 仍然需要验证用户是否是成员
+		isMember := false
+		for _, m := range conv.Members {
+			if m.UserID == userID {
+				isMember = true
+				break
+			}
+		}
+		if isMember {
+			return &conv, nil
+		}
+	}
+
+	// 缓存未命中或用户不是成员，从数据库获取
+	logger.Debugf("Cache miss for conversation: %s", convID)
+	convFromDB, err := s.repo.GetConversationByID(convID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 验证用户是否是会话成员
 	isMember := false
-	for _, m := range conv.Members {
+	for _, m := range convFromDB.Members {
 		if m.UserID == userID {
 			isMember = true
 			break
@@ -95,12 +119,48 @@ func (s *Service) GetConversation(convID, userID uuid.UUID) (*Conversation, erro
 		return nil, errors.New("not a member of this conversation")
 	}
 
-	return conv, nil
+	// 写入缓存
+	if err := redis.SetJSON(cacheKey, convFromDB, redis.ConversationTTL); err != nil {
+		logger.Warnf("Failed to cache conversation: %v", err)
+	}
+
+	return convFromDB, nil
 }
 
 // GetUserConversations 获取用户的会话列表
 func (s *Service) GetUserConversations(userID uuid.UUID) ([]*Conversation, error) {
-	return s.repo.GetUserConversations(userID)
+	// 尝试从 Redis 缓存获取
+	cacheKey := redis.KeyPrefixConversations + userID.String()
+	var convs []*Conversation
+
+	if err := redis.GetJSON(cacheKey, &convs); err == nil && len(convs) > 0 {
+		logger.Debugf("Cache hit for user conversations: %s", userID)
+		return convs, nil
+	}
+
+	// 缓存未命中，从数据库获取
+	logger.Debugf("Cache miss for user conversations: %s", userID)
+	convs, err := s.repo.GetUserConversations(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 写入缓存
+	if err := redis.SetJSON(cacheKey, convs, redis.ConversationTTL); err != nil {
+		logger.Warnf("Failed to cache user conversations: %v", err)
+	}
+
+	return convs, nil
+}
+
+// UpdateConversation 更新会话
+func (s *Service) UpdateConversation(conv *Conversation) error {
+	err := s.repo.UpdateConversation(conv)
+	if err == nil {
+		// 失效缓存
+		_ = redis.InvalidateConversationCache(conv.ID.String())
+	}
+	return err
 }
 
 // ==================== Message Service Methods ====================
@@ -164,6 +224,17 @@ func (s *Service) SendMessage(convID, senderID uuid.UUID, msgType, content, medi
 	if msgType == MessageTypeText && content != "" {
 		go s.processMentions(fullMsg, conv, senderID)
 	}
+
+	// 失效会话相关缓存
+	go func() {
+		_ = redis.InvalidateConversationCache(convID.String())
+		// 失效所有成员的会话列表缓存
+		if conv != nil {
+			for _, member := range conv.Members {
+				_ = redis.Delete(redis.KeyPrefixConversations + member.UserID.String())
+			}
+		}
+	}()
 
 	return fullMsg, nil
 }
@@ -304,6 +375,9 @@ func (s *Service) EditMessage(msgID, userID uuid.UUID, content string) (*Message
 		return nil, err
 	}
 
+	// 失效会话缓存
+	_ = redis.InvalidateConversationCache(msg.ConversationID.String())
+
 	return msg, nil
 }
 
@@ -319,7 +393,12 @@ func (s *Service) DeleteMessage(msgID, userID uuid.UUID) error {
 		return errors.New("not authorized to delete this message")
 	}
 
-	return s.repo.DeleteMessage(msgID)
+	err = s.repo.DeleteMessage(msgID)
+	if err == nil {
+		// 失效会话缓存
+		_ = redis.InvalidateConversationCache(msg.ConversationID.String())
+	}
+	return err
 }
 
 // MarkConversationAsRead 标记会话为已读
@@ -549,6 +628,9 @@ func (s *Service) UpdateGroup(groupID, userID uuid.UUID, name, description, avat
 		_ = s.repo.UpdateConversation(conv)
 	}
 
+	// 失效会话缓存
+	_ = redis.InvalidateConversationCache(groupID.String())
+
 	return group, nil
 }
 
@@ -575,7 +657,12 @@ func (s *Service) AddGroupMember(groupID, userID, newMemberID uuid.UUID) error {
 		JoinedAt:       time.Now(),
 	}
 
-	return s.repo.AddConversationMember(newMember)
+	err = s.repo.AddConversationMember(newMember)
+	if err == nil {
+		// 失效会话缓存
+		_ = redis.InvalidateConversationCache(groupID.String())
+	}
+	return err
 }
 
 // RemoveGroupMember 移除群成员
@@ -605,7 +692,12 @@ func (s *Service) RemoveGroupMember(groupID, userID, targetUserID uuid.UUID) err
 		}
 	}
 
-	return s.repo.RemoveConversationMember(groupID, targetUserID)
+	err = s.repo.RemoveConversationMember(groupID, targetUserID)
+	if err == nil {
+		// 失效会话缓存
+		_ = redis.InvalidateConversationCache(groupID.String())
+	}
+	return err
 }
 
 // UpdateMemberRole 更新成员角色
@@ -631,7 +723,12 @@ func (s *Service) UpdateMemberRole(groupID, userID, targetUserID uuid.UUID, role
 	}
 
 	targetMember.Role = role
-	return s.repo.UpdateConversationMember(targetMember)
+	err = s.repo.UpdateConversationMember(targetMember)
+	if err == nil {
+		// 失效会话缓存
+		_ = redis.InvalidateConversationCache(groupID.String())
+	}
+	return err
 }
 
 // LeaveGroup 退出群组
@@ -646,7 +743,12 @@ func (s *Service) LeaveGroup(groupID, userID uuid.UUID) error {
 		return errors.New("owner cannot leave group, transfer ownership or disband first")
 	}
 
-	return s.repo.RemoveConversationMember(groupID, userID)
+	err = s.repo.RemoveConversationMember(groupID, userID)
+	if err == nil {
+		// 失效会话缓存
+		_ = redis.InvalidateConversationCache(groupID.String())
+	}
+	return err
 }
 
 // DisbandGroup 解散群组
@@ -665,6 +767,9 @@ func (s *Service) DisbandGroup(groupID, userID uuid.UUID) error {
 	if err := s.repo.DeleteGroup(groupID); err != nil {
 		return err
 	}
+
+	// 失效会话缓存
+	_ = redis.InvalidateConversationCache(groupID.String())
 
 	// 会话会通过级联删除或软删除处理
 	return nil
@@ -750,6 +855,9 @@ func (s *Service) ForwardMessage(msgID, userID uuid.UUID, convIDs []uuid.UUID, a
 					Data:   fullMsg,
 				}
 			}
+
+			// 失效会话缓存
+			_ = redis.InvalidateConversationCache(convID.String())
 		}
 	}
 
@@ -876,4 +984,3 @@ func (s *Service) GetCallRecord(callID, userID uuid.UUID) (*CallRecord, error) {
 func (s *Service) GetUserCallRecords(userID uuid.UUID, limit int) ([]*CallRecord, error) {
 	return s.repo.GetUserCallRecords(userID, limit)
 }
-
