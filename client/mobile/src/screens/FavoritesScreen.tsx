@@ -25,51 +25,6 @@ import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
 import type { Favorite, Message, User } from '@neochat/shared/src/types';
 
-// Mock data
-const mockFavorites: (Favorite & { message?: Message; user?: User })[] = [
-  {
-    id: '1',
-    user_id: 'user1',
-    message_id: 'msg1',
-    note: '重要消息',
-    created_at: new Date().toISOString(),
-    message: {
-      id: 'msg1',
-      conversation_id: 'conv1',
-      sender_id: 'user2',
-      type: 'text',
-      content: '这是一条重要的消息内容',
-      is_edited: false,
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 86400000).toISOString(),
-      sender: {
-        id: 'user2',
-        username: 'testuser',
-        nickname: '测试好友',
-        status: 'online',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    },
-  },
-  {
-    id: '2',
-    user_id: 'user1',
-    message_id: 'msg2',
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-    message: {
-      id: 'msg2',
-      conversation_id: 'conv1',
-      sender_id: 'user1',
-      type: 'text',
-      content: '自己收藏的消息',
-      is_edited: false,
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-      updated_at: new Date(Date.now() - 172800000).toISOString(),
-    },
-  },
-];
-
 export const FavoritesScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user: currentUser } = useAuthStore();
@@ -82,20 +37,14 @@ export const FavoritesScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: 调用 API
-      // const response = await chatService.getUserFavorites();
-      // if (response.success && response.data) {
-      //   setFavorites(response.data);
-      // }
-
-      // 使用 mock 数据
-      setTimeout(() => {
-        setFavorites(mockFavorites);
-        setIsLoading(false);
-      }, 500);
+      const response = await chatService.getUserFavorites();
+      if (response.success && response.data) {
+        setFavorites(response.data);
+      }
     } catch (error) {
       console.error('Failed to load favorites:', error);
       Alert.alert('错误', '加载收藏列表失败');
+    } finally {
       setIsLoading(false);
     }
   }, [currentUser]);
@@ -112,10 +61,13 @@ export const FavoritesScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // TODO: 调用 API
-              // await chatService.removeFavorite(favorite.id);
-              setFavorites((prev) => prev.filter((f) => f.id !== favorite.id));
-              Alert.alert('成功', '已取消收藏');
+              const response = await chatService.removeFavorite(favorite.id);
+              if (response.success) {
+                setFavorites((prev) => prev.filter((f) => f.id !== favorite.id));
+                Alert.alert('成功', '已取消收藏');
+              } else {
+                Alert.alert('错误', response.message || '操作失败');
+              }
             } catch (error) {
               Alert.alert('错误', error instanceof Error ? error.message : '操作失败');
             }
