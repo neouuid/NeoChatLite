@@ -27,6 +27,7 @@ import type { User } from '@neochat/shared/src/types';
 type GroupInfoScreenRouteProp = {
   params: {
     groupId: string;
+    conversationId?: string;
   };
 };
 
@@ -92,7 +93,7 @@ const mockMembers: (User & { role: 'owner' | 'admin' | 'member' })[] = [
 export const GroupInfoScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<GroupInfoScreenRouteProp>();
-  const { groupId } = route.params;
+  const { groupId, conversationId } = route.params;
 
   const [muted, setMuted] = useState(false);
   const [stickToTop, setStickToTop] = useState(false);
@@ -102,14 +103,12 @@ export const GroupInfoScreen: React.FC = () => {
 
   // 查看群组成员
   const handleViewAllMembers = () => {
-    // TODO: 导航到群成员列表页面
-    console.log('View all members');
+    navigation.navigate('GroupMembers' as never, { conversationId: conversationId || groupId } as never);
   };
 
   // 添加成员
   const handleAddMembers = () => {
-    // TODO: 导航到添加成员页面
-    console.log('Add members');
+    navigation.navigate('AddGroupMembers' as never, { conversationId: conversationId || groupId } as never);
   };
 
   // 退出群组

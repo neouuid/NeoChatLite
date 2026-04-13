@@ -23,6 +23,8 @@ import { SearchScreen } from '../screens/SearchScreen';
 import { ForwardScreen } from '../screens/ForwardScreen';
 import { AccountSecurityScreen } from '../screens/AccountSecurityScreen';
 import { GroupInfoScreen } from '../screens/GroupInfoScreen';
+import { GroupMembersScreen } from '../screens/GroupMembersScreen';
+import { AddGroupMembersScreen } from '../screens/AddGroupMembersScreen';
 import { ChatBackgroundScreen } from '../screens/ChatBackgroundScreen';
 import { ChatBackupScreen } from '../screens/ChatBackupScreen';
 import { DataClearScreen } from '../screens/DataClearScreen';
@@ -190,6 +192,16 @@ export const AppNavigator = () => {
           <Stack.Screen
             name="GroupInfo"
             component={GroupInfoScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="GroupMembers"
+            component={GroupMembersScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="AddGroupMembers"
+            component={AddGroupMembersScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen
