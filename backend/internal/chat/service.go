@@ -2,6 +2,7 @@ package chat
 
 import (
 	"errors"
+	"regexp"
 	"time"
 
 	"github.com/google/uuid"
@@ -159,7 +160,114 @@ func (s *Service) SendMessage(convID, senderID uuid.UUID, msgType, content, medi
 		}
 	}
 
+	// 处理 @提及
+	if msgType == MessageTypeText && content != "" {
+		go s.processMentions(fullMsg, conv, senderID)
+	}
+
 	return fullMsg, nil
+}
+
+// processMentions 处理消息中的 @提及
+func (s *Service) processMentions(msg *Message, conv *Conversation, senderID uuid.UUID) {
+	// 解析 @提及
+	mentionedUserIDs := s.parseMentions(msg.Content)
+	if len(mentionedUserIDs) == 0 {
+		return
+	}
+
+	// 获取会话所有成员
+	members, err := s.repo.GetConversationMembers(msg.ConversationID)
+	if err != nil {
+		return
+	}
+
+	// 创建提及记录并发送通知
+	var mentions []*Mention
+	senderName := ""
+	senderAvatar := ""
+
+	if msg.Sender != nil {
+		senderName = formatDisplayName(msg.Sender.Nickname, msg.Sender.Username)
+		senderAvatar = msg.Sender.Avatar
+	}
+
+	// 构建成员ID到成员的映射
+	memberMap := make(map[uuid.UUID]*ConversationMember)
+	for _, member := range members {
+		memberMap[member.UserID] = member
+	}
+
+	for _, mentionedUserID := range mentionedUserIDs {
+		// 跳过发送者自己
+		if mentionedUserID == senderID {
+			continue
+		}
+
+		// 检查被提及的用户是否是会话成员
+		if _, exists := memberMap[mentionedUserID]; !exists {
+			continue
+		}
+
+		mention := &Mention{
+			ID:        uuid.New(),
+			MessageID: msg.ID,
+			UserID:    mentionedUserID,
+			HasRead:   false,
+			CreatedAt: time.Now(),
+		}
+		mentions = append(mentions, mention)
+	}
+
+	if len(mentions) > 0 {
+		// 批量创建提及
+		_ = s.repo.CreateMentions(mentions)
+
+		// 发送提及通知
+		if s.hub != nil {
+			for _, mention := range mentions {
+				s.hub.SendMention(
+					mention.UserID,
+					msg.ID,
+					msg.ConversationID,
+					senderID,
+					senderName,
+					senderAvatar,
+					msg.Content,
+				)
+			}
+		}
+	}
+}
+
+// parseMentions 解析消息中的 @提及，返回被提及的用户ID列表
+// 格式: @[username](user_id) 或 @username
+func (s *Service) parseMentions(content string) []uuid.UUID {
+	var userIDs []uuid.UUID
+
+	// 匹配格式: @[username](user_id)
+	re := regexp.MustCompile(`@\[[^\]]+\]\(([0-9a-fA-F-]{36})\)`)
+	matches := re.FindAllStringSubmatch(content, -1)
+	for _, match := range matches {
+		if len(match) >= 2 {
+			if userID, err := uuid.Parse(match[1]); err == nil {
+				userIDs = append(userIDs, userID)
+			}
+		}
+	}
+
+	// 简单格式: @username (需要结合上下文，这里暂只支持带ID的格式)
+	// TODO: 可以扩展支持根据用户名查找用户ID
+
+	return userIDs
+}
+
+// formatDisplayName 格式化显示名称
+func formatDisplayName(nickname, username string) string {
+	if nickname != "" {
+		return nickname
+	}
+	return username
 }
 
 // GetConversationMessages 获取会话消息
