@@ -7,13 +7,13 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Message, User, Conversation } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
 import { formatChatTime, formatDisplayName } from '../utils';
 import { Avatar } from './Avatar';
+import { CachedImage } from './CachedImage';
 
 interface MessageListProps {
   messages: Message[];
@@ -178,8 +178,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             activeOpacity={0.8}
           >
             {message.media_url ? (
-              <Image
-                source={{ uri: message.media_url }}
+              <CachedImage
+                uri={message.media_url}
                 style={styles.messageImage}
                 resizeMode="cover"
               />

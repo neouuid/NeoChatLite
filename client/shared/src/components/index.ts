@@ -1,5 +1,6 @@
 export * from './Avatar';
 export * from './Button';
+export * from './CachedImage';
 export * from './ChatBubble';
 export * from './ChatInput';
 export * from './Input';

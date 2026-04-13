@@ -1,9 +1,10 @@
 // Avatar 组件
 
-import React from 'react';
-import { View, Text, Image, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { COLORS, BORDER_RADIUS, TYPOGRAPHY } from '../constants';
 import { getAvatarText, formatDisplayName } from '../utils';
+import { CachedImage } from './CachedImage';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -36,8 +37,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   style,
   textStyle,
 }) => {
-  // 获取尺寸
-  const getSize = (): number => {
+  // Memoized 尺寸
+  const avatarSize = useMemo((): number => {
     switch (size) {
       case 'xs':
         return 32;
@@ -52,10 +53,10 @@ export const Avatar: React.FC<AvatarProps> = ({
       default:
         return 48;
     }
-  };
+  }, [size]);
 
-  // 获取字体大小
-  const getFontSize = (): number => {
+  // Memoized 字体大小
+  const fontSize = useMemo((): number => {
     switch (size) {
       case 'xs':
         return 14;
@@ -70,19 +71,18 @@ export const Avatar: React.FC<AvatarProps> = ({
       default:
         return 20;
     }
-  };
+  }, [size]);
 
-  // 根据名字哈希获取颜色
-  const getColor = (): string => {
+  // Memoized 颜色
+  const avatarColor = useMemo((): string => {
     if (color) return color;
     const name = formatDisplayName(nickname, username);
     if (!name) return AVATAR_COLORS[0];
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return AVATAR_COLORS[hash % AVATAR_COLORS.length];
-  };
+  }, [color, nickname, username]);
 
-  const avatarSize = getSize();
-  const avatarText = getAvatarText(nickname, username);
+  const avatarText = useMemo(() => getAvatarText(nickname, username), [nickname, username]);
 
   return (
     <View
@@ -92,14 +92,14 @@ export const Avatar: React.FC<AvatarProps> = ({
           width: avatarSize,
           height: avatarSize,
           borderRadius: BORDER_RADIUS.full,
-          backgroundColor: getColor(),
+          backgroundColor: avatarColor,
         },
         style,
       ]}
     >
       {uri ? (
-        <Image
-          source={{ uri }}
+        <CachedImage
+          uri={uri}
           style={[
             styles.image,
             {
@@ -114,7 +114,7 @@ export const Avatar: React.FC<AvatarProps> = ({
           style={[
             styles.text,
             {
-              fontSize: getFontSize(),
+              fontSize: fontSize,
               color: '#ffffff',
             },
             textStyle,
