@@ -18,6 +18,7 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  authService,
 } from '@neochat/shared';
 
 import { Button } from '@neochat/shared/src/components';
@@ -34,6 +35,7 @@ export const ForgotPasswordScreen: React.FC = () => {
 
   // 第二步：输入验证码
   const [verifyCode, setVerifyCode] = useState('');
+  const [resetToken, setResetToken] = useState<string>('');
   const [countdown, setCountdown] = useState(0);
 
   // 第三步：设置新密码
@@ -49,8 +51,7 @@ export const ForgotPasswordScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: 调用发送验证码 API
-      // await authService.sendVerificationCode(identifier);
+      await authService.requestPasswordReset(identifier);
       Alert.alert('成功', '验证码已发送');
       setStep('verify');
       startCountdown();

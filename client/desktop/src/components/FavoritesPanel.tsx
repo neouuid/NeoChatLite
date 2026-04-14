@@ -85,19 +85,13 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
 
     setIsLoading(true);
     try {
-      // TODO: 调用 API
-      // const response = await chatService.getUserFavorites();
-      // if (response.success && response.data) {
-      //   setFavorites(response.data);
-      // }
-
-      // 使用 mock 数据
-      setTimeout(() => {
-        setFavorites(mockFavorites);
-        setIsLoading(false);
-      }, 500);
+      const response = await chatService.getUserFavorites();
+      if (response.success && response.data) {
+        setFavorites(response.data as any);
+      }
     } catch (error) {
       console.error('Failed to load favorites:', error);
+    } finally {
       setIsLoading(false);
     }
   }, [currentUser]);
@@ -114,9 +108,12 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
           style: 'destructive',
           onPress: async () => {
             try {
-              // TODO: 调用 API
-              // await chatService.removeFavorite(favorite.id);
-              setFavorites((prev) => prev.filter((f) => f.id !== favorite.id));
+              const response = await chatService.removeFavorite(favorite.id);
+              if (response.success) {
+                setFavorites((prev) => prev.filter((f) => f.id !== favorite.id));
+              } else {
+                Alert.alert('错误', response.message || '操作失败');
+              }
             } catch (error) {
               Alert.alert('错误', error instanceof Error ? error.message : '操作失败');
             }

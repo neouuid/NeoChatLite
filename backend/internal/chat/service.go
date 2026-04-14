@@ -327,9 +327,6 @@ func (s *Service) parseMentions(content string) []uuid.UUID {
 		}
 	}
 
-	// 简单格式: @username (需要结合上下文，这里暂只支持带ID的格式)
-	// TODO: 可以扩展支持根据用户名查找用户ID
-
 	return userIDs
 }
 
