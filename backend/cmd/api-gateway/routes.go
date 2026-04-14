@@ -14,6 +14,7 @@ import (
 	"github.com/neochat/backend/pkg/config"
 	"github.com/neochat/backend/pkg/database"
 	"github.com/neochat/backend/pkg/logger"
+	"github.com/neochat/backend/pkg/middleware"
 	"github.com/neochat/backend/pkg/redis"
 )
 
@@ -33,10 +34,14 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 	// 添加 CORS 中间件
 	r.Use(auth.CORSMiddleware(deps.Cfg))
 
-	// 健康检查
+	// 添加性能监控中间件
+	r.Use(middleware.MetricsMiddleware())
+
+	// 健康检查和监控
 	r.GET("/health", healthHandler)
 	r.GET("/health/db", dbHealthHandler)
 	r.GET("/health/redis", redisHealthHandler)
+	r.GET("/metrics", middleware.MetricsHandler)
 
 	// Swagger API 文档
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

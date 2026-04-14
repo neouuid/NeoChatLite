@@ -25,13 +25,17 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Driver   string // "postgres" or "sqlite"
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
-	SSLMode  string
+	Driver         string // "postgres" or "sqlite"
+	Host           string
+	Port           int
+	User           string
+	Password       string
+	DBName         string
+	SSLMode        string
+	MaxIdleConns   int // 最大空闲连接数
+	MaxOpenConns   int // 最大打开连接数
+	ConnMaxLifetime int // 连接最大生存时间（秒）
+	ConnMaxIdleTime int // 连接最大空闲时间（秒）
 }
 
 type RedisConfig struct {
@@ -95,13 +99,17 @@ func Load() *Config {
 			},
 		},
 		Database: DatabaseConfig{
-			Driver:   viper.GetString("database.driver"),
-			Host:     viper.GetString("database.host"),
-			Port:     viper.GetInt("database.port"),
-			User:     viper.GetString("database.user"),
-			Password: viper.GetString("database.password"),
-			DBName:   viper.GetString("database.dbname"),
-			SSLMode:  viper.GetString("database.sslmode"),
+			Driver:         viper.GetString("database.driver"),
+			Host:           viper.GetString("database.host"),
+			Port:           viper.GetInt("database.port"),
+			User:           viper.GetString("database.user"),
+			Password:       viper.GetString("database.password"),
+			DBName:         viper.GetString("database.dbname"),
+			SSLMode:        viper.GetString("database.sslmode"),
+			MaxIdleConns:   viper.GetInt("database.max_idle_conns"),
+			MaxOpenConns:   viper.GetInt("database.max_open_conns"),
+			ConnMaxLifetime: viper.GetInt("database.conn_max_lifetime"),
+			ConnMaxIdleTime: viper.GetInt("database.conn_max_idle_time"),
 		},
 		Redis: RedisConfig{
 			Host:     viper.GetString("redis.host"),
@@ -147,6 +155,10 @@ func setDefaults() {
 	viper.SetDefault("database.password", "postgres")
 	viper.SetDefault("database.dbname", "neochat")
 	viper.SetDefault("database.sslmode", "disable")
+	viper.SetDefault("database.max_idle_conns", 10)
+	viper.SetDefault("database.max_open_conns", 100)
+	viper.SetDefault("database.conn_max_lifetime", 3600)
+	viper.SetDefault("database.conn_max_idle_time", 600)
 
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", 6379)
@@ -218,8 +230,12 @@ func TestConfig() *Config {
 			},
 		},
 		Database: DatabaseConfig{
-			Driver: "sqlite",
-			DBName: ":memory:",
+			Driver:         "sqlite",
+			DBName:         ":memory:",
+			MaxIdleConns:   2,
+			MaxOpenConns:   5,
+			ConnMaxLifetime: 300,
+			ConnMaxIdleTime: 60,
 		},
 		Redis: RedisConfig{
 			Host:     "localhost",
