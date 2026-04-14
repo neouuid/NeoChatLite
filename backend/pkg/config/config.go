@@ -14,6 +14,7 @@ type Config struct {
 	NATS     NATSConfig
 	JWT      JWTConfig
 	Storage  StorageConfig
+	Email    EmailConfig
 }
 
 type ServerConfig struct {
@@ -68,6 +69,15 @@ type StorageConfig struct {
 	MaxImageSize      int64
 	AllowedImageTypes []string
 	AllowedFileTypes  []string
+}
+
+type EmailConfig struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	From     string
+	FromName string
 }
 
 var AppConfig *Config
@@ -132,6 +142,14 @@ func Load() *Config {
 			MaxImageSize:      viper.GetInt64("storage.max_image_size"),
 			AllowedImageTypes: viper.GetStringSlice("storage.allowed_image_types"),
 			AllowedFileTypes:  viper.GetStringSlice("storage.allowed_file_types"),
+		},
+		Email: EmailConfig{
+			Host:     viper.GetString("email.host"),
+			Port:     viper.GetInt("email.port"),
+			User:     viper.GetString("email.user"),
+			Password: viper.GetString("email.password"),
+			From:     viper.GetString("email.from"),
+			FromName: viper.GetString("email.from_name"),
 		},
 	}
 
@@ -200,6 +218,13 @@ func setDefaults() {
 		"application/x-7z-compressed",
 		"text/plain",
 	})
+
+	viper.SetDefault("email.host", "localhost")
+	viper.SetDefault("email.port", 1025)
+	viper.SetDefault("email.user", "")
+	viper.SetDefault("email.password", "")
+	viper.SetDefault("email.from", "noreply@neochat.com")
+	viper.SetDefault("email.from_name", "NeoChat")
 }
 
 func (c *DatabaseConfig) DSN() string {
@@ -253,6 +278,14 @@ func TestConfig() *Config {
 			MaxImageSize:      10485760,
 			AllowedImageTypes: []string{"image/jpeg", "image/png"},
 			AllowedFileTypes:  []string{"image/jpeg", "image/png"},
+		},
+		Email: EmailConfig{
+			Host:     "localhost",
+			Port:     1025,
+			User:     "",
+			Password: "",
+			From:     "noreply@neochat.com",
+			FromName: "NeoChat",
 		},
 	}
 }

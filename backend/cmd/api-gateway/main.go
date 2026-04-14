@@ -16,6 +16,7 @@ import (
 	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/config"
 	"github.com/neochat/backend/pkg/database"
+	"github.com/neochat/backend/pkg/email"
 	"github.com/neochat/backend/pkg/logger"
 	"github.com/neochat/backend/pkg/redis"
 )
@@ -60,8 +61,9 @@ func main() {
 	r := gin.Default()
 
 	// 初始化各模块
+	emailService := email.NewService(cfg)
 	authRepo := auth.NewRepository(database.DB)
-	authService := auth.NewService(authRepo, cfg)
+	authService := auth.NewService(authRepo, cfg, emailService)
 	authHandler := auth.NewHandler(authService)
 	authMiddleware := auth.NewMiddleware(cfg)
 

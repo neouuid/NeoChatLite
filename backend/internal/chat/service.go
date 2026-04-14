@@ -388,9 +388,17 @@ func (s *Service) DeleteMessage(msgID, userID uuid.UUID) error {
 		return errors.New("message not found")
 	}
 
-	// 验证是否是发送者或会话管理员（TODO: 实现管理员权限检查）
+	// 验证是否是发送者或会话管理员
 	if msg.SenderID != userID {
-		return errors.New("not authorized to delete this message")
+		// 检查是否是会话管理员或群主
+		member, err := s.repo.GetConversationMember(msg.ConversationID, userID)
+		if err == nil {
+			if member.Role != MemberRoleAdmin && member.Role != MemberRoleOwner {
+				return errors.New("not authorized to delete this message")
+			}
+		} else {
+			return errors.New("not authorized to delete this message")
+		}
 	}
 
 	err = s.repo.DeleteMessage(msgID)

@@ -68,25 +68,73 @@ type WebSocketHub struct {
 	mu         sync.RWMutex
 	service    *Service
 	upgrader   websocket.Upgrader
+	cfg        *config.Config
 }
 
 func NewWebSocketHub(service *Service, cfg *config.Config) *WebSocketHub {
-	return &WebSocketHub{
+	hub := &WebSocketHub{
 		clients:    make(map[uuid.UUID]*Client),
 		userConns:  make(map[uuid.UUID]map[uuid.UUID]bool),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan WSMessage, 256),
 		service:    service,
-		upgrader: websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool {
-				// TODO: 生产环境需要严格检查Origin
-				return true
-			},
-		},
+		cfg:        cfg,
 	}
+
+	hub.upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin:     hub.checkOrigin,
+	}
+
+	return hub
+}
+
+// checkOrigin 检查 WebSocket Origin
+func (h *WebSocketHub) checkOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+
+	// 如果没有 Origin 头，允许（可能是非浏览器客户端）
+	if origin == "" {
+		return true
+	}
+
+	// 如果允许所有来源
+	allowOrigins := h.cfg.Server.CORS.AllowOrigins
+	for _, o := range allowOrigins {
+		if o == "*" {
+			return true
+		}
+		if o == origin {
+			return true
+		}
+	}
+
+	// 开发环境：允许 localhost 相关的 Origin
+	if isLocalhostOrigin(origin) {
+		return true
+	}
+
+	logger.Warnf("WebSocket Origin check failed: %s", origin)
+	return false
+}
+
+// isLocalhostOrigin 检查是否是 localhost Origin
+func isLocalhostOrigin(origin string) bool {
+	if len(origin) >= 16 && origin[:16] == "http://localhost:" {
+		return true
+	}
+	if len(origin) >= 17 && origin[:17] == "https://localhost:" {
+		return true
+	}
+	if len(origin) >= 14 && origin[:14] == "http://127.0.0.1" {
+		return true
+	}
+	if len(origin) >= 15 && origin[:15] == "https://127.0.0.1" {
+		return true
+	}
+	return false
 }
 
 func (h *WebSocketHub) Run() {

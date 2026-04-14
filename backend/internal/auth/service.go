@@ -9,17 +9,19 @@ import (
 	"github.com/google/uuid"
 	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/config"
+	"github.com/neochat/backend/pkg/email"
 	"github.com/neochat/backend/pkg/utils"
 	"gorm.io/gorm"
 )
 
 type Service struct {
-	repo   *Repository
-	config *config.Config
+	repo         *Repository
+	config       *config.Config
+	emailService *email.Service
 }
 
-func NewService(repo *Repository, cfg *config.Config) *Service {
-	return &Service{repo: repo, config: cfg}
+func NewService(repo *Repository, cfg *config.Config, emailService *email.Service) *Service {
+	return &Service{repo: repo, config: cfg, emailService: emailService}
 }
 
 // GenerateToken 生成访问令牌（用于测试）
@@ -225,8 +227,11 @@ func (s *Service) ForgotPassword(req *ForgotPasswordRequest) (string, error) {
 		return "", err
 	}
 
-	// TODO: 这里应该发送验证码到邮箱
-	// 暂时返回token用于测试
+	// 发送密码重置邮件
+	if s.emailService != nil {
+		s.emailService.SendPasswordResetEmail(req.Email, token)
+	}
+
 	return token, nil
 }
 
@@ -326,8 +331,11 @@ func (s *Service) SendEmailVerification(userID uuid.UUID) (string, error) {
 		return "", err
 	}
 
-	// TODO: 这里应该发送验证邮件到用户邮箱
-	// 暂时返回token用于测试
+	// 发送邮箱验证邮件
+	if s.emailService != nil {
+		s.emailService.SendEmailVerificationEmail(u.Email, token)
+	}
+
 	return token, nil
 }
 
