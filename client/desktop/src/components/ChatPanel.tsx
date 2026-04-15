@@ -20,6 +20,7 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   formatDisplayName,
+  copyToClipboard,
 } from '@neochat/shared';
 
 import { MessageList } from '@neochat/shared/src/components/MessageList';
@@ -27,18 +28,29 @@ import { ChatInput } from '@neochat/shared/src/components/ChatInput';
 
 interface ChatPanelProps {
   conversation?: Conversation;
+  onNavigateToProfile?: (userId: string) => void;
+  onNavigateToForward?: (messageId: string) => void;
 }
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ conversation }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({
+  conversation,
+  onNavigateToProfile,
+  onNavigateToForward,
+}) => {
   const { user } = useAuthStore();
   const {
     messages,
     isLoading,
     isSending,
+    isLoadingMore,
+    hasMoreMessages,
     setMessages,
     addMessage,
+    prependMessages,
     setLoading,
     setSending,
+    setLoadingMore,
+    setHasMoreMessages,
   } = useChatStore();
 
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
@@ -52,6 +64,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ conversation }) => {
       const response = await chatService.getConversationMessages(conversation.id);
       if (response.success && response.data) {
         setMessages(conversation.id, response.data);
+        // 初始加载时，如果返回的消息数量少于 limit，则认为没有更多消息
+        setHasMoreMessages(conversation.id, response.data.length >= 50);
       }
     } catch (error) {
       console.error('Failed to load messages:', error);
@@ -59,14 +73,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ conversation }) => {
     } finally {
       setLoading(false);
     }
-  }, [conversation, setMessages, setLoading]);
+  }, [conversation, setMessages, setLoading, setHasMoreMessages]);
 
   useEffect(() => {
     if (conversation) {
       loadMessages();
       markAsRead();
+      // 重置分页状态
+      setHasMoreMessages(conversation.id, true);
     }
-  }, [conversation?.id, loadMessages]);
+  }, [conversation?.id, loadMessages, setHasMoreMessages]);
 
   // 标记会话为已读
   const markAsRead = useCallback(async () => {
@@ -93,6 +109,25 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ conversation }) => {
       }
     }
     return '聊天';
+  };
+
+  // 获取在线状态/成员数量显示
+  const getConversationSubtitle = (): string => {
+    if (!conversation) return '';
+
+    if (conversation.type === 'group') {
+      const memberCount = conversation.members?.length || 0;
+      return `${memberCount} 名成员`;
+    } else {
+      // 单聊：显示对方在线状态
+      if (conversation.members && user) {
+        const otherMember = conversation.members.find((m) => m.user_id !== user.id);
+        if (otherMember?.user) {
+          return otherMember.user.status === 'online' ? '在线' : '离线';
+        }
+      }
+    }
+    return '';
   };
 
   // 发送消息
@@ -122,15 +157,76 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ conversation }) => {
     }
   }, [user, conversation, replyingTo, addMessage, setSending]);
 
-  // 加载更多消息
-  const handleLoadMore = useCallback(() => {
-    // TODO: 实现分页加载
-  }, []);
+  // 加载更多消息（分页）
+  const handleLoadMore = useCallback(async () => {
+    if (!conversation) return;
+
+    const currentMessages = messages[conversation.id] || [];
+    const loading = isLoadingMore[conversation.id] || false;
+    const hasMore = hasMoreMessages[conversation.id] ?? true;
+
+    if (loading || !hasMore || currentMessages.length === 0) {
+      return;
+    }
+
+    try {
+      setLoadingMore(conversation.id, true);
+      const oldestMessage = currentMessages[0];
+      const response = await chatService.getConversationMessages(
+        conversation.id,
+        oldestMessage.id,
+        50
+      );
+
+      if (response.success && response.data) {
+        if (response.data.length > 0) {
+          prependMessages(conversation.id, response.data);
+          // 如果返回的消息少于 limit，则没有更多了
+          setHasMoreMessages(conversation.id, response.data.length >= 50);
+        } else {
+          setHasMoreMessages(conversation.id, false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load more messages:', error);
+    } finally {
+      setLoadingMore(conversation.id, false);
+    }
+  }, [
+    conversation,
+    messages,
+    isLoadingMore,
+    hasMoreMessages,
+    prependMessages,
+    setLoadingMore,
+    setHasMoreMessages,
+  ]);
 
   // 消息点击
   const handleMessagePress = useCallback((message: Message) => {
-    // TODO: 实现消息点击操作（复制、转发等）
-  }, []);
+    // 显示消息操作菜单
+    const options = ['复制', '转发', '取消'];
+    const cancelIndex = options.length - 1;
+
+    Alert.alert('消息操作', '请选择操作', options.map((text, index) => ({
+      text,
+      onPress: async () => {
+        if (index === 0) {
+          // 复制消息
+          const success = await copyToClipboard(message.content);
+          Alert.alert(success ? '已复制' : '复制失败', success ? '消息已复制到剪贴板' : '复制消息失败，请重试');
+        } else if (index === 1) {
+          // 转发消息
+          if (onNavigateToForward) {
+            onNavigateToForward(message.id);
+          } else {
+            Alert.alert('提示', '转发功能需要父组件集成');
+          }
+        }
+      },
+      style: index === cancelIndex ? 'cancel' : 'default',
+    })));
+  }, [onNavigateToForward]);
 
   // 消息长按
   const handleMessageLongPress = useCallback((message: Message) => {
@@ -146,9 +242,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ conversation }) => {
 
   // 头像点击
   const handleAvatarPress = useCallback((clickedUser: any) => {
-    // TODO: 导航到用户资料页面
-    console.log('View user profile:', clickedUser.id);
-  }, []);
+    // 导航到用户资料页面
+    if (onNavigateToProfile) {
+      onNavigateToProfile(clickedUser.id);
+    } else {
+      console.log('View user profile:', clickedUser.id);
+    }
+  }, [onNavigateToProfile]);
 
   // 取消回复
   const handleCancelReply = useCallback(() => {
@@ -169,6 +269,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ conversation }) => {
   }
 
   const conversationMessages = messages[conversation.id] || [];
+  const conversationLoadingMore = isLoadingMore[conversation.id] || false;
+  const subtitle = getConversationSubtitle();
 
   return (
     <View style={styles.container}>
@@ -176,7 +278,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ conversation }) => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>{getConversationTitle()}</Text>
-          {/* TODO: 显示在线状态/成员数量 */}
+          {subtitle !== '' && (
+            <Text style={styles.headerSubtitle}>{subtitle}</Text>
+          )}
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton}>
@@ -199,11 +303,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ conversation }) => {
         <MessageList
           messages={conversationMessages}
           currentUserId={user?.id}
+          conversation={conversation}
           onLoadMore={handleLoadMore}
           onMessagePress={handleMessagePress}
           onMessageLongPress={handleMessageLongPress}
           onAvatarPress={handleAvatarPress}
-          isLoadingMore={isLoading}
+          isLoadingMore={conversationLoadingMore}
         />
       </View>
 
@@ -245,6 +350,11 @@ const styles = StyleSheet.create({
     color: COLORS.dark.text.primary,
     fontSize: TYPOGRAPHY.sizes.xl,
     fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  headerSubtitle: {
+    color: COLORS.dark.text.secondary,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    marginTop: 2,
   },
   headerActions: {
     flexDirection: 'row',

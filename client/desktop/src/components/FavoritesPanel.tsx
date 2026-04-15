@@ -70,10 +70,12 @@ const mockFavorites: (Favorite & { message?: Message; user?: User })[] = [
 
 interface FavoritesPanelProps {
   onSelectMessage?: (favorite: Favorite & { message?: Message }) => void;
+  onForwardMessage?: (favorite: Favorite) => void;
 }
 
 export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
   onSelectMessage,
+  onForwardMessage,
 }) => {
   const { user: currentUser } = useAuthStore();
   const [favorites, setFavorites] = useState<(Favorite & { message?: Message; user?: User })[]>([]);
@@ -125,8 +127,12 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
 
   // 转发消息
   const handleForward = (favorite: Favorite) => {
-    // TODO: 打开转发窗口
-    console.log('Forward message:', favorite.message_id);
+    if (onForwardMessage) {
+      onForwardMessage(favorite);
+    } else {
+      // 默认行为 - 提示开发中
+      Alert.alert('提示', '转发功能开发中');
+    }
   };
 
   // 跳转到消息位置

@@ -2,17 +2,26 @@ import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StatusBar, Alert } from 'react-native';
+import { StatusBar, Alert, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 
 import { AppNavigator } from './navigation/AppNavigator';
 import { CallInviteModal } from './components';
-import { useWebRTC, useWebSocket, useAuthStore, useUserStore } from '@neochat/shared';
+import { useWebRTC, useWebSocket, useAuth, useAuthStore, useUserStore, COLORS, SPACING, TYPOGRAPHY } from '@neochat/shared';
 
 const App: React.FC = () => {
   const { callState } = useWebRTC();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isLoading: isAuthLoading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
   const { addFriendRequest, addFriend } = useUserStore();
   const isCallModalVisible = callState.status === 'incoming' || callState.status === 'calling';
+
+  // Loading screen component
+  const LoadingScreen = () => (
+    <View style={loadingStyles.container}>
+      <ActivityIndicator size="large" color={COLORS.primary} />
+      <Text style={loadingStyles.text}>加载中...</Text>
+    </View>
+  );
 
   // WebSocket 好友请求监听
   useWebSocket({
@@ -62,6 +71,17 @@ const App: React.FC = () => {
     },
   });
 
+  // Show loading screen while auth is initializing
+  if (isLoading || isAuthLoading) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <LoadingScreen />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -74,5 +94,19 @@ const App: React.FC = () => {
     </GestureHandlerRootView>
   );
 };
+
+const loadingStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.dark.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.lg,
+  },
+  text: {
+    color: COLORS.dark.text.secondary,
+    fontSize: TYPOGRAPHY.sizes.md,
+  },
+});
 
 export default App;

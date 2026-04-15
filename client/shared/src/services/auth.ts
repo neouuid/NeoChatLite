@@ -60,11 +60,12 @@ export class AuthService {
     }
   }
 
-  static async requestPasswordReset(email: string): Promise<void> {
-    const response = await api.post('/auth/forgot-password', { email });
+  static async requestPasswordReset(email: string): Promise<string> {
+    const response = await api.post<{ token: string }>('/auth/forgot-password', { email });
     if (!response.success) {
       throw new Error(response.message || 'Failed to request password reset');
     }
+    return response.data?.token || '';
   }
 
   static async resetPassword(token: string, newPassword: string): Promise<void> {

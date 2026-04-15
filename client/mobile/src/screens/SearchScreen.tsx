@@ -18,11 +18,13 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  chatService,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { User, Message, Conversation } from '@neochat/shared/src/types';
+import type { User, Message, Conversation, RootStackParamList } from '@neochat/shared/src/types';
+import type { NavigationProp } from '@react-navigation/native';
 
 type SearchType = 'all' | 'contacts' | 'messages' | 'groups';
 
@@ -77,7 +79,7 @@ const mockGroups: any[] = [
 ];
 
 export const SearchScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<SearchType>('all');
   const [isSearching, setIsSearching] = useState(false);
@@ -106,11 +108,23 @@ export const SearchScreen: React.FC = () => {
 
     setIsSearching(true);
     try {
-      // TODO: 调用搜索 API
-      // const response = await chatService.search(query);
+      // 调用用户搜索 API
+      const response = await chatService.searchUsers(query);
 
-      // 使用 mock 数据
-      setTimeout(() => {
+      if (response.success && response.data) {
+        const lowerQuery = query.toLowerCase();
+        setSearchResults({
+          contacts: response.data.items,
+          // 消息和群组搜索暂时使用 mock 数据（后端暂未实现）
+          messages: mockMessages.filter((m) =>
+            m.content.toLowerCase().includes(lowerQuery)
+          ),
+          groups: mockGroups.filter((g) =>
+            g.name.toLowerCase().includes(lowerQuery)
+          ),
+        });
+      } else {
+        // API 失败时使用 mock 数据作为后备
         const lowerQuery = query.toLowerCase();
         setSearchResults({
           contacts: mockContacts.filter((c) =>
@@ -124,10 +138,24 @@ export const SearchScreen: React.FC = () => {
             g.name.toLowerCase().includes(lowerQuery)
           ),
         });
-        setIsSearching(false);
-      }, 300);
+      }
     } catch (error) {
       console.error('Search error:', error);
+      // 出错时使用 mock 数据作为后备
+      const lowerQuery = query.toLowerCase();
+      setSearchResults({
+        contacts: mockContacts.filter((c) =>
+          c.nickname.toLowerCase().includes(lowerQuery) ||
+          c.username.toLowerCase().includes(lowerQuery)
+        ),
+        messages: mockMessages.filter((m) =>
+          m.content.toLowerCase().includes(lowerQuery)
+        ),
+        groups: mockGroups.filter((g) =>
+          g.name.toLowerCase().includes(lowerQuery)
+        ),
+      });
+    } finally {
       setIsSearching(false);
     }
   }, []);
@@ -139,14 +167,14 @@ export const SearchScreen: React.FC = () => {
 
   // 点击消息
   const handleMessagePress = (message: Message) => {
-    // TODO: 跳转到聊天页面并定位到消息
-    console.log('Go to message:', message.id);
+    // 跳转到聊天页面
+    navigation.navigate('Chat', { conversationId: message.conversation_id });
   };
 
   // 点击群组
   const handleGroupPress = (group: any) => {
-    // TODO: 跳转到群聊页面
-    console.log('Go to group:', group.id);
+    // 跳转到群聊页面
+    navigation.navigate('GroupChat', { conversationId: group.id });
   };
 
   // 格式化日期

@@ -1,6 +1,6 @@
 // 聊天背景页面
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
 } from '@neochat/shared';
+import { useMediaPicker } from '@neochat/shared/src/hooks/useMediaPicker';
 
 // 预设背景
 const presetBackgrounds = [
@@ -41,23 +42,33 @@ const presetImages = [
 export const ChatBackgroundScreen: React.FC = () => {
   const navigation = useNavigation();
   const [selectedBackground, setSelectedBackground] = useState<string>('bg1');
+  const [customBackground, setCustomBackground] = useState<string | null>(null);
+
+  const { pickImageFromGallery, takePhoto } = useMediaPicker({
+    onImageSelected: (item) => {
+      setCustomBackground(item.uri);
+      Alert.alert('成功', '背景已设置');
+    },
+    onError: (error) => {
+      Alert.alert('错误', error.message || '选择图片失败');
+    },
+  });
 
   // 选择背景
   const handleSelectBackground = (bgId: string) => {
     setSelectedBackground(bgId);
+    setCustomBackground(null);
   };
 
   // 从相册选择
-  const handleChooseFromGallery = () => {
-    // TODO: 打开相册选择图片
-    Alert.alert('提示', '从相册选择功能待实现');
-  };
+  const handleChooseFromGallery = useCallback(async () => {
+    await pickImageFromGallery();
+  }, [pickImageFromGallery]);
 
   // 拍一张
-  const handleTakePhoto = () => {
-    // TODO: 打开相机拍照
-    Alert.alert('提示', '拍照功能待实现');
-  };
+  const handleTakePhoto = useCallback(async () => {
+    await takePhoto();
+  }, [takePhoto]);
 
   // 恢复默认
   const handleResetDefault = () => {
@@ -109,7 +120,7 @@ export const ChatBackgroundScreen: React.FC = () => {
       <TouchableOpacity
         key={img.id}
         style={styles.backgroundItem}
-        onPress={() => Alert.alert('提示', '图片背景功能待实现')}
+        onPress={() => Alert.alert('功能开发中', '预设图片背景功能正在开发中，敬请期待')}
       >
         <View
           style={[

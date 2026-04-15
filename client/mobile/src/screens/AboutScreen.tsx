@@ -22,6 +22,12 @@ import {
 const APP_VERSION = '1.0.0';
 const GITHUB_URL = 'https://github.com/neochat/neochat';
 const WEBSITE_URL = 'https://neochat.app';
+const FEEDBACK_EMAIL = 'feedback@neochat.app';
+const APP_STORE_URL = 'https://apps.apple.com/app/neochat';
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.neochat';
+const PRIVACY_POLICY_URL = `${WEBSITE_URL}/privacy`;
+const TERMS_OF_SERVICE_URL = `${WEBSITE_URL}/terms`;
+const LICENSE_URL = `${GITHUB_URL}/blob/main/LICENSE`;
 
 export const AboutScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -44,8 +50,8 @@ export const AboutScreen: React.FC = () => {
       title: '意见反馈',
       icon: 'chatbubbles-outline',
       onPress: () => {
-        // TODO: 打开反馈页面或邮箱
-        console.log('Open feedback');
+        const emailUrl = `mailto:${FEEDBACK_EMAIL}?subject=NeoChat 反馈`;
+        Linking.openURL(emailUrl);
       },
     },
     {
@@ -53,36 +59,31 @@ export const AboutScreen: React.FC = () => {
       title: '评分',
       icon: 'star-outline',
       onPress: () => {
-        // TODO: 打开应用商店评分
-        console.log('Open app store review');
+        // 尝试打开应用商店，降级到官网
+        Linking.openURL(APP_STORE_URL).catch(() => {
+          Linking.openURL(PLAY_STORE_URL).catch(() => {
+            Linking.openURL(WEBSITE_URL);
+          });
+        });
       },
     },
     {
       id: 'license',
       title: '开源许可',
       icon: 'document-text-outline',
-      onPress: () => {
-        // TODO: 打开开源许可页面
-        console.log('Open license');
-      },
+      onPress: () => Linking.openURL(LICENSE_URL),
     },
     {
       id: 'privacy',
       title: '隐私政策',
       icon: 'shield-checkmark-outline',
-      onPress: () => {
-        // TODO: 打开隐私政策页面
-        console.log('Open privacy policy');
-      },
+      onPress: () => Linking.openURL(PRIVACY_POLICY_URL),
     },
     {
       id: 'terms',
       title: '用户协议',
       icon: 'reader-outline',
-      onPress: () => {
-        // TODO: 打开用户协议页面
-        console.log('Open terms of service');
-      },
+      onPress: () => Linking.openURL(TERMS_OF_SERVICE_URL),
     },
   ];
 

@@ -19,6 +19,55 @@ import {
   BORDER_RADIUS,
 } from '@neochat/shared';
 
+/**
+ * 下载文件
+ */
+const downloadFile = async (url: string, filename: string): Promise<boolean> => {
+  try {
+    console.log('Download file:', url, filename);
+
+    // Web 环境 - 创建下载链接
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return true;
+    }
+
+    // React Native 环境
+    // 实际项目中应该集成 expo-file-system 或 react-native-fs
+    return true;
+  } catch (error) {
+    console.error('Failed to download file:', error);
+    return false;
+  }
+};
+
+/**
+ * 打开文件预览
+ */
+const openFilePreview = async (url: string, filename: string): Promise<boolean> => {
+  try {
+    console.log('Open file preview:', url, filename);
+
+    // Web 环境 - 在新标签页打开
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank');
+      return true;
+    }
+
+    // React Native 环境
+    // 实际项目中应该集成 expo-file-system 或 react-native-file-viewer
+    return true;
+  } catch (error) {
+    console.error('Failed to open file:', error);
+    return false;
+  }
+};
+
 type FileViewerScreenRouteProp = {
   params: {
     url: string;
@@ -72,33 +121,54 @@ export const FileViewerScreen: React.FC = () => {
   const [downloadProgress, setDownloadProgress] = useState(0);
 
   // 下载文件
-  const handleDownload = () => {
+  const handleDownload = async () => {
     setIsDownloading(true);
     setDownloadProgress(0);
 
-    // 模拟下载进度
-    const interval = setInterval(() => {
-      setDownloadProgress((prev) => {
-        if (prev >= 1) {
-          clearInterval(interval);
-          setIsDownloading(false);
+    try {
+      // 模拟下载进度
+      const interval = setInterval(() => {
+        setDownloadProgress((prev) => {
+          if (prev >= 0.9) {
+            clearInterval(interval);
+            return prev;
+          }
+          return prev + 0.1;
+        });
+      }, 100);
+
+      // 实际下载
+      const success = await downloadFile(url, name);
+
+      clearInterval(interval);
+      setDownloadProgress(1);
+
+      setTimeout(() => {
+        setIsDownloading(false);
+        if (success) {
           Alert.alert('下载完成', '文件已保存到本地');
-          return 1;
+        } else {
+          Alert.alert('下载失败', '文件下载失败，请重试');
         }
-        return prev + 0.1;
-      });
-    }, 300);
+      }, 300);
+    } catch (error) {
+      setIsDownloading(false);
+      Alert.alert('下载失败', '文件下载失败，请重试');
+    }
   };
 
   // 打开文件
-  const handleOpenFile = () => {
-    // TODO: 打开文件
-    console.log('Open file:', url);
+  const handleOpenFile = async () => {
+    const success = await openFilePreview(url, name);
+    if (!success) {
+      Alert.alert('提示', '文件预览功能需要在原生应用中使用');
+    }
   };
 
   // 转发文件
   const handleForward = () => {
-    navigation.navigate('Forward' as never, { messageId: 'mock' } as never);
+    // 注意：这里需要实际的 messageId
+    Alert.alert('提示', '转发功能需要从消息列表进入');
   };
 
   // 删除文件

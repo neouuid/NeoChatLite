@@ -18,7 +18,11 @@ import {
   COLORS,
   SPACING,
   TYPOGRAPHY,
+  saveImageToLibrary,
+  deleteFile,
 } from '@neochat/shared';
+import type { RootStackParamList } from '@neochat/shared/src/types';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -36,8 +40,8 @@ const mockImages = [
 ];
 
 export const ImageViewerScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const route = useRoute<ImageViewerScreenRouteProp>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'ImageViewer'>>();
   const { url } = route.params;
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -49,21 +53,43 @@ export const ImageViewerScreen: React.FC = () => {
   };
 
   // 保存图片
-  const handleSaveImage = () => {
-    // TODO: 保存图片到相册
-    console.log('Save image:', url);
+  const handleSaveImage = async () => {
+    const success = await saveImageToLibrary(url);
+    Alert.alert(
+      success ? '保存成功' : '保存失败',
+      success ? '图片已保存到相册' : '保存图片失败，请重试'
+    );
   };
 
   // 转发图片
   const handleForwardImage = () => {
-    // TODO: 转发图片
-    navigation.navigate('Forward' as never, { messageId: 'mock' } as never);
+    // 注意：这里需要实际的 messageId，当前通过路由参数只传递了 url
+    // 在实际项目中，应该传递 messageId
+    Alert.alert('提示', '转发功能需要从消息列表进入');
   };
 
   // 删除图片
   const handleDeleteImage = () => {
-    // TODO: 删除图片
-    console.log('Delete image:', url);
+    Alert.alert(
+      '删除图片',
+      '确定要删除这张图片吗？',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '确定',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await deleteFile(url);
+            if (success) {
+              Alert.alert('已删除', '图片已删除');
+              navigation.goBack();
+            } else {
+              Alert.alert('删除失败', '删除图片失败，请重试');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (

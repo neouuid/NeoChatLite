@@ -51,7 +51,8 @@ export const ForgotPasswordScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await authService.requestPasswordReset(identifier);
+      const token = await authService.requestPasswordReset(identifier);
+      setResetToken(token);
       Alert.alert('成功', '验证码已发送');
       setStep('verify');
       startCountdown();
@@ -85,8 +86,11 @@ export const ForgotPasswordScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: 调用验证验证码 API
-      // await authService.verifyCode(identifier, verifyCode);
+      // 在开发模式下，后端返回的 token 就是验证码，直接使用
+      // 如果用户输入的验证码与返回的 token 匹配，或者在测试环境下直接通过
+      if (resetToken && verifyCode !== resetToken) {
+        throw new Error('验证码不正确');
+      }
       Alert.alert('成功', '验证成功');
       setStep('reset');
     } catch (error) {
@@ -113,8 +117,9 @@ export const ForgotPasswordScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: 调用重置密码 API
-      // await authService.resetPassword(identifier, verifyCode, newPassword);
+      // 使用保存的重置 token 来重置密码
+      const tokenToUse = verifyCode || resetToken;
+      await authService.resetPassword(tokenToUse, newPassword);
       Alert.alert('成功', '密码重置成功，请使用新密码登录', [
         { text: '确定', onPress: () => navigation.navigate('Login' as never) },
       ]);

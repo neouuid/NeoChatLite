@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,20 +89,7 @@ const MainTabs = () => {
 };
 
 export const AppNavigator = () => {
-  const { isAuthenticated, isLoading, setLoading } = useAuthStore();
-
-  useEffect(() => {
-    // Check for stored tokens and validate
-    const checkAuth = async () => {
-      // TODO: Implement token validation
-      setLoading(false);
-    };
-    checkAuth();
-  }, []);
-
-  if (isLoading) {
-    return null; // TODO: Add loading screen
-  }
+  const { isAuthenticated } = useAuthStore();
 
   return (
     <Stack.Navigator

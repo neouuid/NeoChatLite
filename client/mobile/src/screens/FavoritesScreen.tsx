@@ -23,10 +23,11 @@ import {
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { Favorite, Message, User } from '@neochat/shared/src/types';
+import type { Favorite, Message, User, RootStackParamList } from '@neochat/shared/src/types';
+import type { NavigationProp } from '@react-navigation/native';
 
 export const FavoritesScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user: currentUser } = useAuthStore();
   const [favorites, setFavorites] = useState<(Favorite & { message?: Message; user?: User })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,14 +80,19 @@ export const FavoritesScreen: React.FC = () => {
 
   // 转发消息
   const handleForward = (favorite: Favorite) => {
-    // TODO: 导航到转发页面
-    console.log('Forward message:', favorite.message_id);
+    navigation.navigate('Forward', { messageId: favorite.message_id });
   };
 
   // 跳转到消息位置
   const handleGoToMessage = (favorite: Favorite) => {
-    // TODO: 跳转到聊天页面并定位到消息
-    console.log('Go to message:', favorite.message_id);
+    // 获取消息所属的会话 ID 并导航
+    const message = favorite.message;
+    if (message) {
+      // 根据会话类型导航到对应的聊天页面
+      navigation.navigate('Chat', { conversationId: message.conversation_id });
+    } else {
+      Alert.alert('提示', '无法定位到消息位置');
+    }
   };
 
   useEffect(() => {

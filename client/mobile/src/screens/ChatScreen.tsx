@@ -19,6 +19,7 @@ import {
   COLORS,
   SPACING,
   formatDisplayName,
+  copyToClipboard,
   useMediaPicker,
   useMediaUpload,
   type MediaItem,
@@ -42,11 +43,16 @@ export const ChatScreen: React.FC = () => {
     messages,
     isLoading,
     isSending,
+    isLoadingMore,
+    hasMoreMessages,
     setCurrentConversation,
     setMessages,
     addMessage,
+    prependMessages,
     setLoading,
     setSending,
+    setLoadingMore,
+    setHasMoreMessages,
   } = useChatStore();
 
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
@@ -163,6 +169,8 @@ export const ChatScreen: React.FC = () => {
       const response = await chatService.getConversationMessages(conversationId);
       if (response.success && response.data) {
         setMessages(conversationId, response.data);
+        // 初始加载时，如果返回的消息数量少于 limit，则认为没有更多消息
+        setHasMoreMessages(conversationId, response.data.length >= 50);
       }
     } catch (error) {
       console.error('Failed to load messages:', error);
@@ -170,12 +178,14 @@ export const ChatScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [conversationId, setMessages, setLoading]);
+  }, [conversationId, setMessages, setLoading, setHasMoreMessages]);
 
   useEffect(() => {
     loadConversation();
     loadMessages();
-  }, [loadConversation, loadMessages]);
+    // 重置分页状态
+    setHasMoreMessages(conversationId, true);
+  }, [loadConversation, loadMessages, conversationId, setHasMoreMessages]);
 
   // 获取会话标题
   const getConversationTitle = (conv: Conversation): string => {
@@ -232,15 +242,70 @@ export const ChatScreen: React.FC = () => {
     }
   }, [user, conversationId, replyingTo, addMessage, setSending]);
 
-  // 加载更多消息
-  const handleLoadMore = useCallback(() => {
-    // TODO: 实现分页加载
-  }, []);
+  // 加载更多消息（分页）
+  const handleLoadMore = useCallback(async () => {
+    const currentMessages = messages[conversationId] || [];
+    const loading = isLoadingMore[conversationId] || false;
+    const hasMore = hasMoreMessages[conversationId] ?? true;
+
+    if (loading || !hasMore || currentMessages.length === 0) {
+      return;
+    }
+
+    try {
+      setLoadingMore(conversationId, true);
+      const oldestMessage = currentMessages[0];
+      const response = await chatService.getConversationMessages(
+        conversationId,
+        oldestMessage.id,
+        50
+      );
+
+      if (response.success && response.data) {
+        if (response.data.length > 0) {
+          prependMessages(conversationId, response.data);
+          // 如果返回的消息少于 limit，则没有更多了
+          setHasMoreMessages(conversationId, response.data.length >= 50);
+        } else {
+          setHasMoreMessages(conversationId, false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load more messages:', error);
+    } finally {
+      setLoadingMore(conversationId, false);
+    }
+  }, [
+    conversationId,
+    messages,
+    isLoadingMore,
+    hasMoreMessages,
+    prependMessages,
+    setLoadingMore,
+    setHasMoreMessages,
+  ]);
 
   // 消息点击
   const handleMessagePress = useCallback((message: Message) => {
-    // TODO: 实现消息点击操作（复制、转发等）
-  }, []);
+    // 显示消息操作菜单
+    const options = ['复制', '转发', '取消'];
+    const cancelIndex = options.length - 1;
+
+    Alert.alert('消息操作', '请选择操作', options.map((text, index) => ({
+      text,
+      onPress: async () => {
+        if (index === 0) {
+          // 复制消息
+          const success = await copyToClipboard(message.content);
+          Alert.alert(success ? '已复制' : '复制失败', success ? '消息已复制到剪贴板' : '复制消息失败，请重试');
+        } else if (index === 1) {
+          // 转发消息
+          navigation.navigate('Forward', { messageId: message.id });
+        }
+      },
+      style: index === cancelIndex ? 'cancel' : 'default',
+    })));
+  }, [navigation]);
 
   // 消息长按
   const handleMessageLongPress = useCallback((message: Message) => {
@@ -256,9 +321,9 @@ export const ChatScreen: React.FC = () => {
 
   // 头像点击
   const handleAvatarPress = useCallback((clickedUser: any) => {
-    // TODO: 导航到用户资料页面
-    console.log('View user profile:', clickedUser.id);
-  }, []);
+    // 导航到用户资料页面
+    navigation.navigate('ViewProfile', { userId: clickedUser.id });
+  }, [navigation]);
 
   // 取消回复
   const handleCancelReply = useCallback(() => {
@@ -266,6 +331,7 @@ export const ChatScreen: React.FC = () => {
   }, []);
 
   const conversationMessages = messages[conversationId] || [];
+  const conversationLoadingMore = isLoadingMore[conversationId] || false;
 
   return (
     <View style={styles.container}>
@@ -281,7 +347,7 @@ export const ChatScreen: React.FC = () => {
           onAvatarPress={handleAvatarPress}
           onImagePress={handleImagePress}
           onFilePress={handleFilePress}
-          isLoadingMore={isLoading}
+          isLoadingMore={conversationLoadingMore}
         />
       </View>
 

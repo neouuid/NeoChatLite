@@ -173,8 +173,8 @@ export class ChatService {
   }
 
   // Users
-  static async searchUsers(query: string): Promise<{ success: boolean; data?: User[]; message?: string }> {
-    return await api.get<User[]>('/user/search', { params: { q: query } });
+  static async searchUsers(query: string): Promise<{ success: boolean; data?: { items: User[]; total: number; has_more: boolean }; message?: string }> {
+    return await api.get('/user/search', { params: { keyword: query } });
   }
 
   static async getUser(userId: string): Promise<{ success: boolean; data?: User; message?: string }> {

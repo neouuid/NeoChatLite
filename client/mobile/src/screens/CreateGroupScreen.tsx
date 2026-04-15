@@ -25,10 +25,11 @@ import {
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { User, Friend } from '@neochat/shared/src/types';
+import type { User, Friend, RootStackParamList, Conversation } from '@neochat/shared/src/types';
+import type { NavigationProp } from '@react-navigation/native';
 
 export const CreateGroupScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user: currentUser } = useAuthStore();
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
@@ -86,12 +87,13 @@ export const CreateGroupScreen: React.FC = () => {
       });
 
       if (response.success && response.data) {
+        const conversation = response.data as Conversation;
         Alert.alert('成功', '群组创建成功', [
           {
             text: '确定',
             onPress: () => {
-              // TODO: 导航到群聊页面
-              navigation.goBack();
+              // 导航到群聊页面
+              navigation.navigate('GroupChat', { conversationId: conversation.id });
             },
           },
         ]);

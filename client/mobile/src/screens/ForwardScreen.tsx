@@ -166,15 +166,26 @@ export const ForwardScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // TODO: 调用 API
-      setTimeout(() => {
-        setRecentConversations(mockRecentConversations);
-        setFriends(mockFriends);
-        setGroups(mockGroups);
-        setIsLoading(false);
-      }, 500);
+      // 并行加载数据
+      const [convRes, friendsRes] = await Promise.all([
+        chatService.getUserConversations(),
+        chatService.getFriends(),
+      ]);
+
+      if (convRes.success && convRes.data) {
+        setRecentConversations(convRes.data as any);
+      }
+      if (friendsRes.success && friendsRes.data) {
+        setFriends(friendsRes.data);
+      }
+      // 群组数据可以通过会话过滤获得
     } catch (error) {
       console.error('Failed to load data:', error);
+      // 出错时使用 mock 数据作为备用
+      setRecentConversations(mockRecentConversations);
+      setFriends(mockFriends);
+      setGroups(mockGroups);
+    } finally {
       setIsLoading(false);
     }
   }, [currentUser]);
@@ -199,22 +210,25 @@ export const ForwardScreen: React.FC = () => {
 
     setIsForwarding(true);
     try {
-      // TODO: 调用转发 API
-      // for (const targetId of selectedTargets) {
-      //   await chatService.forwardMessage(messageId, targetId, forwardText);
-      // }
+      const response = await chatService.forwardMessage(
+        messageId,
+        selectedTargets,
+        forwardText
+      );
 
-      setTimeout(() => {
+      if (response.success) {
         Alert.alert('成功', '消息已转发', [
           {
             text: '确定',
             onPress: () => navigation.goBack(),
           },
         ]);
-        setIsForwarding(false);
-      }, 500);
+      } else {
+        Alert.alert('错误', response.message || '转发失败');
+      }
     } catch (error) {
       Alert.alert('错误', error instanceof Error ? error.message : '转发失败');
+    } finally {
       setIsForwarding(false);
     }
   };

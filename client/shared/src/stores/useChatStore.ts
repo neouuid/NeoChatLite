@@ -11,6 +11,9 @@ interface ChatState {
   messages: Record<string, Message[]>;
   isLoading: boolean;
   isSending: boolean;
+  // 分页加载状态
+  isLoadingMore: Record<string, boolean>;
+  hasMoreMessages: Record<string, boolean>;
 
   // Actions
   setConversations: (conversations: Conversation[]) => void;
@@ -20,6 +23,7 @@ interface ChatState {
   setCurrentConversation: (conversation: Conversation | null) => void;
   setMessages: (conversationId: string, messages: Message[]) => void;
   addMessage: (conversationId: string, message: Message) => void;
+  prependMessages: (conversationId: string, messages: Message[]) => void;
   updateMessage: (conversationId: string, messageId: string, updates: Partial<Message>) => void;
   removeMessage: (conversationId: string, messageId: string) => void;
   setLoading: (loading: boolean) => void;
@@ -28,6 +32,9 @@ interface ChatState {
   // 内存优化 actions
   trimMessages: (conversationId: string, maxCount?: number) => void;
   clearOldConversations: () => void;
+  // 分页加载 actions
+  setLoadingMore: (conversationId: string, loading: boolean) => void;
+  setHasMoreMessages: (conversationId: string, hasMore: boolean) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -36,6 +43,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: {},
   isLoading: false,
   isSending: false,
+  isLoadingMore: {},
+  hasMoreMessages: {},
 
   setConversations: (conversations: Conversation[]) => {
     // 内存优化：限制会话数量
@@ -115,6 +124,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
   },
 
+  prependMessages: (conversationId: string, messages: Message[]) => {
+    set((state) => {
+      const currentMsgs = state.messages[conversationId] || [];
+      const newMsgs = [...messages, ...currentMsgs];
+      // 内存优化：限制总消息数量
+      const trimmedMsgs = newMsgs.slice(-MAX_MESSAGES_PER_CONVERSATION);
+
+      return {
+        messages: {
+          ...state.messages,
+          [conversationId]: trimmedMsgs,
+        },
+      };
+    });
+  },
+
   updateMessage: (conversationId: string, messageId: string, updates: Partial<Message>) => {
     set((state) => ({
       messages: {
@@ -183,5 +208,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       return { messages: newMessages };
     });
+  },
+
+  // 分页加载：设置加载更多状态
+  setLoadingMore: (conversationId: string, loading: boolean) => {
+    set((state) => ({
+      isLoadingMore: {
+        ...state.isLoadingMore,
+        [conversationId]: loading,
+      },
+    }));
+  },
+
+  // 分页加载：设置是否有更多消息
+  setHasMoreMessages: (conversationId: string, hasMore: boolean) => {
+    set((state) => ({
+      hasMoreMessages: {
+        ...state.hasMoreMessages,
+        [conversationId]: hasMore,
+      },
+    }));
   },
 }));

@@ -1,6 +1,6 @@
 // 添加群成员页面
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,9 +18,13 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  useAuthStore,
+  chatService,
   type User,
   type Friend,
+  type RootStackParamList,
 } from '@neochat/shared';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
@@ -119,15 +123,53 @@ const mockFriends: (Friend & { friend: User })[] = [
 const existingMemberIds = new Set(['friend_user2']);
 
 export const AddGroupMembersScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const route = useRoute<AddGroupMembersScreenRouteProp>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'AddGroupMembers'>>();
   const { conversationId } = route.params;
+  const { user: currentUser } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [friends, setFriends] = useState<(Friend & { friend: User })[]>([]);
+  const [existingMemberIds, setExistingMemberIds] = useState<Set<string>>(new Set());
 
   const [searchText, setSearchText] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // 加载数据
+  const loadData = useCallback(async () => {
+    if (!currentUser) return;
+
+    setIsLoading(true);
+    try {
+      // 并行加载好友列表和群组成员
+      const [friendsRes, membersRes] = await Promise.all([
+        chatService.getFriends(),
+        chatService.getGroupMembers(conversationId),
+      ]);
+
+      if (friendsRes.success && friendsRes.data) {
+        setFriends(friendsRes.data as any);
+      }
+      if (membersRes.success && membersRes.data) {
+        const memberIds = new Set(membersRes.data.map((m: any) => m.user_id || m.id));
+        setExistingMemberIds(memberIds);
+      }
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      // 出错时使用 mock 数据作为备用
+      setFriends(mockFriends);
+      setExistingMemberIds(new Set(['friend_user2']));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentUser, conversationId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   // 过滤好友列表
-  const filteredFriends = mockFriends.filter((f) => {
+  const filteredFriends = friends.filter((f) => {
     const matchesSearch = searchText.trim()
       ? f.friend.nickname.toLowerCase().includes(searchText.toLowerCase()) ||
         f.friend.username.toLowerCase().includes(searchText.toLowerCase())
@@ -164,7 +206,7 @@ export const AddGroupMembersScreen: React.FC = () => {
   }, [filteredFriends, selectedIds]);
 
   // 确认添加
-  const handleConfirmAdd = useCallback(() => {
+  const handleConfirmAdd = useCallback(async () => {
     if (selectedIds.size === 0) {
       return;
     }
@@ -176,16 +218,37 @@ export const AddGroupMembersScreen: React.FC = () => {
         { text: '取消', style: 'cancel' },
         {
           text: '确定',
-          onPress: () => {
-            // TODO: 调用 API 添加成员
-            Alert.alert('添加成功', `已添加 ${selectedIds.size} 位成员`, [
-              { text: '确定', onPress: () => navigation.goBack() },
-            ]);
+          onPress: async () => {
+            setIsAdding(true);
+            try {
+              // 逐个添加成员
+              const userIds = Array.from(selectedIds);
+              let successCount = 0;
+
+              for (const userId of userIds) {
+                const response = await chatService.addGroupMember(conversationId, userId);
+                if (response.success) {
+                  successCount++;
+                }
+              }
+
+              if (successCount > 0) {
+                Alert.alert('添加成功', `已添加 ${successCount} 位成员`, [
+                  { text: '确定', onPress: () => navigation.goBack() },
+                ]);
+              } else {
+                Alert.alert('添加失败', '添加成员时出错');
+              }
+            } catch (error) {
+              Alert.alert('错误', error instanceof Error ? error.message : '添加失败');
+            } finally {
+              setIsAdding(false);
+            }
           },
         },
       ]
     );
-  }, [selectedIds, navigation]);
+  }, [selectedIds, navigation, conversationId]);
 
   // 渲染好友项
   const renderFriendItem = useCallback(({ item }: { item: typeof mockFriends[0] }) => {
@@ -241,6 +304,24 @@ export const AddGroupMembersScreen: React.FC = () => {
   const canSelectAll = availableCount > 0;
   const isAllSelected = selectedIds.size === availableCount && availableCount > 0;
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        {/* 头部 */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.dark.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>添加成员</Text>
+          <View style={styles.confirmButton} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* 头部 */}
@@ -250,12 +331,12 @@ export const AddGroupMembersScreen: React.FC = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>添加成员</Text>
         <TouchableOpacity
-          style={[styles.confirmButton, selectedIds.size === 0 && styles.confirmButtonDisabled]}
+          style={[styles.confirmButton, (selectedIds.size === 0 || isAdding) && styles.confirmButtonDisabled]}
           onPress={handleConfirmAdd}
-          disabled={selectedIds.size === 0}
+          disabled={selectedIds.size === 0 || isAdding}
         >
-          <Text style={[styles.confirmButtonText, selectedIds.size === 0 && styles.confirmButtonTextDisabled]}>
-            {selectedIds.size > 0 ? `确定 (${selectedIds.size})` : '确定'}
+          <Text style={[styles.confirmButtonText, (selectedIds.size === 0 || isAdding) && styles.confirmButtonTextDisabled]}>
+            {isAdding ? '添加中...' : selectedIds.size > 0 ? `确定 (${selectedIds.size})` : '确定'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -441,5 +522,14 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: COLORS.dark.border,
     marginLeft: SPACING.lg + 22 + SPACING.md + 48 + SPACING.md,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: COLORS.dark.text.secondary,
+    fontSize: TYPOGRAPHY.sizes.md,
   },
 });

@@ -24,9 +24,11 @@ import {
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
+import type { RootStackParamList } from '@neochat/shared/src/types';
+import type { NavigationProp } from '@react-navigation/native';
 
 export const ProfileScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user, logout, isAuthenticated } = useAuthStore();
   const { clearUser } = useUserStore();
 
@@ -37,8 +39,8 @@ export const ProfileScreen: React.FC = () => {
       title: '我的资料',
       icon: 'person-outline',
       onPress: () => {
-        // TODO: 导航到资料编辑页面
-        console.log('Navigate to edit profile');
+        // 资料编辑页面 - 待实现
+        Alert.alert('功能开发中', '资料编辑功能正在开发中，敬请期待');
       },
     },
     {
@@ -46,8 +48,7 @@ export const ProfileScreen: React.FC = () => {
       title: '好友管理',
       icon: 'people-outline',
       onPress: () => {
-        // TODO: 导航到好友管理页面
-        console.log('Navigate to friends');
+        navigation.navigate('FriendManage');
       },
     },
     {
@@ -55,8 +56,7 @@ export const ProfileScreen: React.FC = () => {
       title: '收藏',
       icon: 'bookmark-outline',
       onPress: () => {
-        // TODO: 导航到收藏页面
-        console.log('Navigate to favorites');
+        navigation.navigate('Favorites');
       },
     },
     {
@@ -64,7 +64,7 @@ export const ProfileScreen: React.FC = () => {
       title: '设置',
       icon: 'settings-outline',
       onPress: () => {
-        navigation.navigate('Settings' as never);
+        navigation.navigate('Settings');
       },
     },
   ];
@@ -76,8 +76,7 @@ export const ProfileScreen: React.FC = () => {
       title: '关于 NeoChat',
       icon: 'information-circle-outline',
       onPress: () => {
-        // TODO: 导航到关于页面
-        console.log('Navigate to about');
+        navigation.navigate('About');
       },
     },
     {
@@ -85,8 +84,8 @@ export const ProfileScreen: React.FC = () => {
       title: '帮助与反馈',
       icon: 'help-circle-outline',
       onPress: () => {
-        // TODO: 导航到帮助页面
-        console.log('Navigate to help');
+        // 帮助页面 - 待实现
+        Alert.alert('功能开发中', '帮助与反馈功能正在开发中，敬请期待');
       },
     },
   ];
