@@ -134,6 +134,10 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			// 消息转发路由
 			chatGroup.POST("/messages/forward", deps.ChatHandler.ForwardMessage)
 
+			// 搜索路由
+			chatGroup.GET("/search/messages", deps.ChatHandler.SearchMessages)
+			chatGroup.GET("/search/groups", deps.ChatHandler.SearchGroups)
+
 			// WebSocket
 			chatGroup.GET("/ws", deps.WsHub.WebSocketHandler)
 		}

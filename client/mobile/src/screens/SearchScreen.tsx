@@ -29,56 +29,6 @@ import type { NavigationProp } from '@react-navigation/native';
 
 type SearchType = 'all' | 'contacts' | 'messages' | 'groups';
 
-// Mock data
-const mockContacts: User[] = [
-  {
-    id: '1',
-    username: 'testuser1',
-    nickname: '张三',
-    status: 'online',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    username: 'testuser2',
-    nickname: '李四',
-    status: 'offline',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
-const mockMessages: (Message & { conversation?: Conversation; sender?: User })[] = [
-  {
-    id: 'msg1',
-    conversation_id: 'conv1',
-    sender_id: 'user2',
-    type: 'text',
-    content: '这是包含搜索关键词的消息内容',
-    is_edited: false,
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    updated_at: new Date(Date.now() - 3600000).toISOString(),
-    sender: {
-      id: 'user2',
-      username: 'testuser',
-      nickname: '测试好友',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-];
-
-const mockGroups: any[] = [
-  {
-    id: 'group1',
-    name: '开发讨论组',
-    member_count: 12,
-    avatar: undefined,
-  },
-];
-
 export const SearchScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { setHighlightedMessageId, ensureMessageLoaded } = useChatStore();
@@ -110,53 +60,22 @@ export const SearchScreen: React.FC = () => {
 
     setIsSearching(true);
     try {
-      // 调用用户搜索 API
-      const response = await chatService.searchUsers(query);
+      // 并行调用所有搜索 API
+      const [usersResponse, messagesResponse, groupsResponse] = await Promise.all([
+        chatService.searchUsers(query),
+        chatService.searchMessages(query),
+        chatService.searchGroups(query),
+      ]);
 
-      if (response.success && response.data) {
-        const lowerQuery = query.toLowerCase();
-        setSearchResults({
-          contacts: response.data.items,
-          // 消息和群组搜索暂时使用 mock 数据（后端暂未实现）
-          messages: mockMessages.filter((m) =>
-            m.content.toLowerCase().includes(lowerQuery)
-          ),
-          groups: mockGroups.filter((g) =>
-            g.name.toLowerCase().includes(lowerQuery)
-          ),
-        });
-      } else {
-        // API 失败时使用 mock 数据作为后备
-        const lowerQuery = query.toLowerCase();
-        setSearchResults({
-          contacts: mockContacts.filter((c) =>
-            c.nickname.toLowerCase().includes(lowerQuery) ||
-            c.username.toLowerCase().includes(lowerQuery)
-          ),
-          messages: mockMessages.filter((m) =>
-            m.content.toLowerCase().includes(lowerQuery)
-          ),
-          groups: mockGroups.filter((g) =>
-            g.name.toLowerCase().includes(lowerQuery)
-          ),
-        });
-      }
+      setSearchResults({
+        contacts: usersResponse.success && usersResponse.data ? usersResponse.data.items : [],
+        messages: messagesResponse.success && messagesResponse.data ? messagesResponse.data : [],
+        groups: groupsResponse.success && groupsResponse.data ? groupsResponse.data : [],
+      });
     } catch (error) {
       console.error('Search error:', error);
-      // 出错时使用 mock 数据作为后备
-      const lowerQuery = query.toLowerCase();
-      setSearchResults({
-        contacts: mockContacts.filter((c) =>
-          c.nickname.toLowerCase().includes(lowerQuery) ||
-          c.username.toLowerCase().includes(lowerQuery)
-        ),
-        messages: mockMessages.filter((m) =>
-          m.content.toLowerCase().includes(lowerQuery)
-        ),
-        groups: mockGroups.filter((g) =>
-          g.name.toLowerCase().includes(lowerQuery)
-        ),
-      });
+      // 出错时返回空结果
+      setSearchResults({ contacts: [], messages: [], groups: [] });
     } finally {
       setIsSearching(false);
     }

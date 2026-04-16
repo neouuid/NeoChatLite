@@ -283,6 +283,21 @@ export class ChatService {
   ): Promise<{ success: boolean; data?: CallRecord[]; message?: string }> {
     return await api.get<CallRecord[]>('/call/s', { params: { limit } });
   }
+
+  // Search
+  static async searchMessages(
+    query: string,
+    limit: number = 50
+  ): Promise<{ success: boolean; data?: Message[]; message?: string }> {
+    return await api.get<Message[]>('/chat/search/messages', { params: { q: query, limit } });
+  }
+
+  static async searchGroups(
+    query: string,
+    limit: number = 50
+  ): Promise<{ success: boolean; data?: Group[]; message?: string }> {
+    return await api.get<Group[]>('/chat/search/groups', { params: { q: query, limit } });
+  }
 }
 
 export default ChatService;

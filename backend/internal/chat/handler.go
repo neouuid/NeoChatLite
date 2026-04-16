@@ -1133,3 +1133,87 @@ func (h *Handler) GetUserCallRecords(c *gin.Context) {
 
 	response.Success(c, records)
 }
+
+
+	// ==================== Search Handlers ====================
+
+	// SearchMessages 搜索消息
+	// @Summary 搜索消息
+	// @Description 在用户参与的会话中搜索消息内容
+	// @Tags chat
+	// @Accept json
+	// @Produce json
+	// @Security BearerAuth
+	// @Param q query string true "搜索关键词"
+	// @Param limit query int false "结果数量限制" default(50)
+	// @Success 200 {object} response.ApiResponse{data=[]Message}
+	// @Failure 400 {object} response.ApiResponse
+	// @Failure 401 {object} response.ApiResponse
+	// @Router /api/v1/chat/search/messages [get]
+	func (h *Handler) SearchMessages(c *gin.Context) {
+		userID, err := GetUserIDFromContext(c)
+		if err != nil || userID == uuid.Nil {
+			response.Unauthorized(c, "unauthorized")
+			return
+		}
+
+		query := c.Query("q")
+		if query == "" {
+			response.BadRequest(c, "search query is required")
+			return
+		}
+
+		limit := 50
+		if limitStr := c.Query("limit"); limitStr != "" {
+			_, _ = fmt.Sscanf(limitStr, "%d", &limit)
+		}
+
+		msgs, err := h.service.SearchMessages(userID, query, limit)
+		if err != nil {
+			response.InternalServerError(c, "failed to search messages")
+			return
+		}
+
+		response.Success(c, msgs)
+	}
+
+	// SearchGroups 搜索群组
+	// @Summary 搜索群组
+	// @Description 在用户加入的群组中搜索
+	// @Tags chat
+	// @Accept json
+	// @Produce json
+	// @Security BearerAuth
+	// @Param q query string true "搜索关键词"
+	// @Param limit query int false "结果数量限制" default(50)
+	// @Success 200 {object} response.ApiResponse{data=[]Group}
+	// @Failure 400 {object} response.ApiResponse
+	// @Failure 401 {object} response.ApiResponse
+	// @Router /api/v1/chat/search/groups [get]
+	func (h *Handler) SearchGroups(c *gin.Context) {
+		userID, err := GetUserIDFromContext(c)
+		if err != nil || userID == uuid.Nil {
+			response.Unauthorized(c, "unauthorized")
+			return
+		}
+
+		query := c.Query("q")
+		if query == "" {
+			response.BadRequest(c, "search query is required")
+			return
+		}
+
+		limit := 50
+		if limitStr := c.Query("limit"); limitStr != "" {
+			_, _ = fmt.Sscanf(limitStr, "%d", &limit)
+		}
+
+		groups, err := h.service.SearchGroups(userID, query, limit)
+		if err != nil {
+			response.InternalServerError(c, "failed to search groups")
+			return
+		}
+
+		response.Success(c, groups)
+	}
+
