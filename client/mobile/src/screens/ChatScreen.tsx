@@ -45,6 +45,7 @@ export const ChatScreen: React.FC = () => {
     isSending,
     isLoadingMore,
     hasMoreMessages,
+    highlightedMessageId,
     setCurrentConversation,
     setMessages,
     addMessage,
@@ -53,6 +54,7 @@ export const ChatScreen: React.FC = () => {
     setSending,
     setLoadingMore,
     setHasMoreMessages,
+    setHighlightedMessageId,
   } = useChatStore();
 
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
@@ -215,6 +217,16 @@ export const ChatScreen: React.FC = () => {
     markAsRead();
   }, [markAsRead]);
 
+  // 清除高亮消息 ID（3秒后）
+  useEffect(() => {
+    if (highlightedMessageId) {
+      const timer = setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedMessageId, setHighlightedMessageId]);
+
   // 发送消息
   const handleSendMessage = useCallback(async (content: string) => {
     if (!user) return;
@@ -348,6 +360,7 @@ export const ChatScreen: React.FC = () => {
           onImagePress={handleImagePress}
           onFilePress={handleFilePress}
           isLoadingMore={conversationLoadingMore}
+          highlightedMessageId={highlightedMessageId}
         />
       </View>
 

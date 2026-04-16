@@ -1,6 +1,6 @@
 // 消息列表组件
 
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ interface MessageListProps {
   onImagePress?: (message: Message) => void;
   onFilePress?: (message: Message) => void;
   isLoadingMore?: boolean;
+  highlightedMessageId?: string | null;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -39,9 +40,27 @@ export const MessageList: React.FC<MessageListProps> = ({
   onImagePress,
   onFilePress,
   isLoadingMore,
+  highlightedMessageId,
 }) => {
   const flatListRef = useRef<FlatList>(null);
   const isGroupChat = conversation?.type === 'group';
+
+  // 当高亮消息 ID 变化时，滚动到该消息
+  useEffect(() => {
+    if (highlightedMessageId && messages.length > 0) {
+      const index = messages.findIndex(m => m.id === highlightedMessageId);
+      if (index !== -1 && flatListRef.current) {
+        // 使用 setTimeout 确保 FlatList 已经渲染
+        setTimeout(() => {
+          flatListRef.current?.scrollToIndex({
+            index,
+            animated: true,
+            viewPosition: 0.5, // 使消息位于屏幕中间
+          });
+        }, 100);
+      }
+    }
+  }, [highlightedMessageId, messages]);
 
   // Memoized key extractor for stable keys
   const keyExtractor = useCallback((item: Message) => item.id, []);
@@ -52,6 +71,7 @@ export const MessageList: React.FC<MessageListProps> = ({
     const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_id !== item.sender_id);
     const showSenderName = isGroupChat && !isOwn && (index === 0 || messages[index - 1]?.sender_id !== item.sender_id);
     const isLastOwnMessage = isOwn && (index === 0 || messages[index - 1]?.sender_id !== currentUserId);
+    const isHighlighted = item.id === highlightedMessageId;
 
     return (
       <MemoizedMessageBubble
@@ -61,6 +81,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         showSenderName={showSenderName}
         showReadStatus={isOwn && isLastOwnMessage}
         isGroupChat={isGroupChat}
+        isHighlighted={isHighlighted}
         onPress={onMessagePress}
         onLongPress={onMessageLongPress}
         onAvatarPress={onAvatarPress}
@@ -68,7 +89,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         onFilePress={onFilePress}
       />
     );
-  }, [currentUserId, messages, isGroupChat, onMessagePress, onMessageLongPress, onAvatarPress, onImagePress, onFilePress]);
+  }, [currentUserId, messages, isGroupChat, highlightedMessageId, onMessagePress, onMessageLongPress, onAvatarPress, onImagePress, onFilePress]);
 
   // 渲染加载更多指示器
   const renderFooter = useCallback(() => {
@@ -110,6 +131,7 @@ interface MessageBubbleProps {
   showSenderName: boolean;
   showReadStatus?: boolean;
   isGroupChat?: boolean;
+  isHighlighted?: boolean;
   onPress?: (message: Message) => void;
   onLongPress?: (message: Message) => void;
   onAvatarPress?: (user: User) => void;
@@ -124,6 +146,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   showSenderName,
   showReadStatus = false,
   isGroupChat = false,
+  isHighlighted = false,
   onPress,
   onLongPress,
   onAvatarPress,
@@ -294,6 +317,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           style={[
             styles.bubble,
             isOwn ? styles.ownBubble : styles.otherBubble,
+            isHighlighted && styles.highlightedBubble,
             ]}
           onPress={handlePress}
           onLongPress={handleLongPress}
@@ -398,6 +422,15 @@ const styles = StyleSheet.create({
   otherBubble: {
     backgroundColor: COLORS.dark.surface,
     borderBottomLeftRadius: BORDER_RADIUS.xs,
+  },
+  highlightedBubble: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   messageText: {
     fontSize: TYPOGRAPHY.sizes.md,
@@ -525,6 +558,7 @@ const MemoizedMessageBubble = React.memo(MessageBubble, (prevProps, nextProps) =
     prevProps.isOwn === nextProps.isOwn &&
     prevProps.showAvatar === nextProps.showAvatar &&
     prevProps.showSenderName === nextProps.showSenderName &&
-    prevProps.showReadStatus === nextProps.showReadStatus
+    prevProps.showReadStatus === nextProps.showReadStatus &&
+    prevProps.isHighlighted === nextProps.isHighlighted
   );
 });

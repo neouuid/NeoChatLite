@@ -19,6 +19,7 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   chatService,
+  useChatStore,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
@@ -80,6 +81,7 @@ const mockGroups: any[] = [
 
 export const SearchScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { setHighlightedMessageId, ensureMessageLoaded } = useChatStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<SearchType>('all');
   const [isSearching, setIsSearching] = useState(false);
@@ -166,7 +168,11 @@ export const SearchScreen: React.FC = () => {
   };
 
   // 点击消息
-  const handleMessagePress = (message: Message) => {
+  const handleMessagePress = async (message: Message) => {
+    // 设置高亮消息 ID
+    setHighlightedMessageId(message.id);
+    // 确保消息已加载
+    await ensureMessageLoaded(message.conversation_id, message.id);
     // 跳转到聊天页面
     navigation.navigate('Chat', { conversationId: message.conversation_id });
   };

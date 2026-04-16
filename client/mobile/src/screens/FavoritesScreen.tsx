@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   useAuthStore,
+  useChatStore,
   chatService,
   COLORS,
   SPACING,
@@ -29,6 +30,7 @@ import type { NavigationProp } from '@react-navigation/native';
 export const FavoritesScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user: currentUser } = useAuthStore();
+  const { setHighlightedMessageId, ensureMessageLoaded } = useChatStore();
   const [favorites, setFavorites] = useState<(Favorite & { message?: Message; user?: User })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -84,10 +86,14 @@ export const FavoritesScreen: React.FC = () => {
   };
 
   // 跳转到消息位置
-  const handleGoToMessage = (favorite: Favorite) => {
+  const handleGoToMessage = async (favorite: Favorite) => {
     // 获取消息所属的会话 ID 并导航
     const message = favorite.message;
     if (message) {
+      // 设置高亮消息 ID
+      setHighlightedMessageId(favorite.message_id);
+      // 确保消息已加载
+      await ensureMessageLoaded(message.conversation_id, favorite.message_id);
       // 根据会话类型导航到对应的聊天页面
       navigation.navigate('Chat', { conversationId: message.conversation_id });
     } else {

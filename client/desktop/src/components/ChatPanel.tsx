@@ -44,6 +44,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     isSending,
     isLoadingMore,
     hasMoreMessages,
+    highlightedMessageId,
     setMessages,
     addMessage,
     prependMessages,
@@ -51,6 +52,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     setSending,
     setLoadingMore,
     setHasMoreMessages,
+    setHighlightedMessageId,
   } = useChatStore();
 
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
@@ -255,6 +257,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     setReplyingTo(null);
   }, []);
 
+  // 清除高亮消息 ID（3秒后）
+  React.useEffect(() => {
+    if (highlightedMessageId) {
+      const timer = setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedMessageId, setHighlightedMessageId]);
+
   // 如果没有选择会话，显示空状态
   if (!conversation) {
     return (
@@ -309,6 +321,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           onMessageLongPress={handleMessageLongPress}
           onAvatarPress={handleAvatarPress}
           isLoadingMore={conversationLoadingMore}
+          highlightedMessageId={highlightedMessageId}
         />
       </View>
 

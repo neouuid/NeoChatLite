@@ -14,6 +14,8 @@ interface ChatState {
   // 分页加载状态
   isLoadingMore: Record<string, boolean>;
   hasMoreMessages: Record<string, boolean>;
+  // 消息定位状态
+  highlightedMessageId: string | null;
 
   // Actions
   setConversations: (conversations: Conversation[]) => void;
@@ -35,6 +37,9 @@ interface ChatState {
   // 分页加载 actions
   setLoadingMore: (conversationId: string, loading: boolean) => void;
   setHasMoreMessages: (conversationId: string, hasMore: boolean) => void;
+  // 消息定位 actions
+  setHighlightedMessageId: (messageId: string | null) => void;
+  ensureMessageLoaded: (conversationId: string, messageId: string) => Promise<boolean>;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -45,6 +50,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isSending: false,
   isLoadingMore: {},
   hasMoreMessages: {},
+  highlightedMessageId: null,
 
   setConversations: (conversations: Conversation[]) => {
     // 内存优化：限制会话数量
@@ -228,5 +234,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
         [conversationId]: hasMore,
       },
     }));
+  },
+
+  // 消息定位：设置高亮消息 ID
+  setHighlightedMessageId: (messageId: string | null) => {
+    set({ highlightedMessageId: messageId });
+  },
+
+  // 消息定位：确保指定消息已加载
+  ensureMessageLoaded: async (conversationId: string, messageId: string): Promise<boolean> => {
+    const state = get();
+    const currentMessages = state.messages[conversationId] || [];
+
+    // 检查消息是否已在列表中
+    const messageExists = currentMessages.some(m => m.id === messageId);
+    if (messageExists) {
+      set({ highlightedMessageId: messageId });
+      return true;
+    }
+
+    // 消息不在列表中，需要加载（这里可以实现从后端加载特定消息的逻辑）
+    console.log('Message not loaded, would need to fetch from backend:', messageId);
+    return false;
   },
 }));
