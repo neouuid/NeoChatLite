@@ -524,3 +524,47 @@ func (r *Repository) GetUnreadMentionCount(userID uuid.UUID) (int64, error) {
 	return count, nil
 }
 
+// ==================== Search Repository Methods ====================
+
+// SearchMessages 搜索消息
+func (r *Repository) SearchMessages(userID uuid.UUID, query string, limit int) ([]*Message, error) {
+	var msgs []*Message
+	if limit <= 0 {
+		limit = 50
+	}
+
+	err := r.db.
+		Joins("JOIN conversation_members ON conversation_members.conversation_id = messages.conversation_id").
+		Where("conversation_members.user_id = ?", userID).
+		Where("messages.type = ? AND messages.content ILIKE ?", "text", "%"+query+"%").
+		Preload("Sender").Preload("Conversation").
+		Order("messages.created_at DESC").
+		Limit(limit).
+		Find(&msgs).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return msgs, nil
+}
+
+// SearchGroups 搜索群组
+func (r *Repository) SearchGroups(userID uuid.UUID, query string, limit int) ([]*Group, error) {
+	var groups []*Group
+	if limit <= 0 {
+		limit = 50
+	}
+
+	err := r.db.
+		Joins("JOIN conversation_members ON conversation_members.conversation_id = groups.id").
+		Where("conversation_members.user_id = ?", userID).
+		Where("groups.name ILIKE ?", "%"+query+"%").
+		Order("groups.updated_at DESC").
+		Limit(limit).
+		Find(&groups).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return groups, nil
+}
