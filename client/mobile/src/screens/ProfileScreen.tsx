@@ -43,6 +43,14 @@ export const ProfileScreen: React.FC = () => {
       },
     },
     {
+      id: 'mentions',
+      title: '我的提及',
+      icon: 'at-outline',
+      onPress: () => {
+        navigation.navigate('Mentions' as never);
+      },
+    },
+    {
       id: 'friends',
       title: '好友管理',
       icon: 'people-outline',
@@ -135,7 +143,12 @@ export const ProfileScreen: React.FC = () => {
               </Text>
             )}
           </View>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => {
+              navigation.navigate('EditProfile' as never);
+            }}
+          >
             <Ionicons name="pencil" size={20} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
