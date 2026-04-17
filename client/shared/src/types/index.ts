@@ -179,4 +179,7 @@ export type RootStackParamList = {
   VideoCall: { conversationId: string; userId?: string };
   VoiceCall: { conversationId: string; userId?: string };
   AccountSecurity: undefined;
+  EditProfile: undefined;
+  Help: undefined;
+  Mentions: undefined;
 };

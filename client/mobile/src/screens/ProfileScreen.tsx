@@ -39,8 +39,7 @@ export const ProfileScreen: React.FC = () => {
       title: '我的资料',
       icon: 'person-outline',
       onPress: () => {
-        // 资料编辑页面 - 待实现
-        Alert.alert('功能开发中', '资料编辑功能正在开发中，敬请期待');
+        navigation.navigate('EditProfile' as never);
       },
     },
     {
@@ -84,8 +83,7 @@ export const ProfileScreen: React.FC = () => {
       title: '帮助与反馈',
       icon: 'help-circle-outline',
       onPress: () => {
-        // 帮助页面 - 待实现
-        Alert.alert('功能开发中', '帮助与反馈功能正在开发中，敬请期待');
+        navigation.navigate('Help' as never);
       },
     },
   ];

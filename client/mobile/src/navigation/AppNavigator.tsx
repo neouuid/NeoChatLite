@@ -32,6 +32,8 @@ import { ImageViewerScreen } from '../screens/ImageViewerScreen';
 import { FileViewerScreen } from '../screens/FileViewerScreen';
 import { VideoCallScreen } from '../screens/VideoCallScreen';
 import { VoiceCallScreen } from '../screens/VoiceCallScreen';
+import { EditProfileScreen } from '../screens/EditProfileScreen';
+import { MentionsScreen } from '../screens/MentionsScreen';
 
 // Type imports
 import type { RootStackParamList } from '@neochat/shared';
@@ -225,6 +227,21 @@ export const AppNavigator = () => {
             name="VoiceCall"
             component={VoiceCallScreen}
             options={{ headerShown: false, gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Help"
+            component={AboutScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Mentions"
+            component={MentionsScreen}
+            options={{ headerShown: false }}
           />
         </>
       )}
