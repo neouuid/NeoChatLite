@@ -284,6 +284,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   const conversationLoadingMore = isLoadingMore[conversation.id] || false;
   const subtitle = getConversationSubtitle();
 
+  // 提取会话成员（排除自己）
+  const chatMembers = conversation.members
+    ?.filter((m) => m.user && m.user_id !== user?.id)
+    .map((m) => m.user!) || [];
+
   return (
     <View style={styles.container}>
       {/* 头部 */}
@@ -334,6 +339,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           isSending={isSending}
           replyingTo={replyingTo}
           onCancelReply={handleCancelReply}
+          members={chatMembers}
         />
       </View>
     </View>

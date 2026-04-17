@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
+import { User } from '../types';
+import { detectMentionTrigger, insertMention } from '../utils';
+import { MentionPicker } from './MentionPicker';
 
 interface ChatInputProps {
   onSendMessage: (content: string) => void;
@@ -22,6 +25,7 @@ interface ChatInputProps {
   isSending?: boolean;
   replyingTo?: { id: string; content: string; sender: string } | null;
   onCancelReply?: () => void;
+  members?: User[];
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -33,9 +37,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   isSending = false,
   replyingTo,
   onCancelReply,
+  members = [],
 }) => {
   const [text, setText] = useState('');
   const [inputHeight, setInputHeight] = useState(40);
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [showMentionPicker, setShowMentionPicker] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
 
   const maxInputHeight = 120;
@@ -48,6 +56,51 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     setInputHeight(newHeight);
   }, []);
 
+  // 处理输入框变化
+  const handleChangeText = useCallback((newText: string) => {
+    setText(newText);
+
+    // 检测是否触发提及
+    const trigger = detectMentionTrigger(newText, selection.end);
+    if (trigger.trigger) {
+      setShowMentionPicker(true);
+      setMentionQuery(trigger.query);
+    } else {
+      setShowMentionPicker(false);
+      setMentionQuery('');
+    }
+  }, [selection.end]);
+
+  // 处理选择变化
+  const handleSelectionChange = useCallback((event: any) => {
+    const { start, end } = event.nativeEvent.selection;
+    setSelection({ start, end });
+
+    // 检测是否触发提及
+    const trigger = detectMentionTrigger(text, end);
+    if (trigger.trigger) {
+      setShowMentionPicker(true);
+      setMentionQuery(trigger.query);
+    } else {
+      setShowMentionPicker(false);
+      setMentionQuery('');
+    }
+  }, [text]);
+
+  // 处理选择提及用户
+  const handleSelectMention = useCallback((user: User) => {
+    const result = insertMention(text, selection.end, user);
+    setText(result.newText);
+    setShowMentionPicker(false);
+    setMentionQuery('');
+
+    // 设置光标位置
+    setTimeout(() => {
+      inputRef.current?.focus();
+      setSelection({ start: result.newCursorPosition, end: result.newCursorPosition });
+    }, 50);
+  }, [text, selection.end]);
+
   // 处理发送消息
   const handleSend = useCallback(() => {
     const trimmedText = text.trim();
@@ -56,21 +109,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onSendMessage(trimmedText);
     setText('');
     setInputHeight(minInputHeight);
+    setShowMentionPicker(false);
+    setMentionQuery('');
     inputRef.current?.clear();
   }, [text, isSending, onSendMessage]);
 
-  // 处理输入框变化
-  const handleChangeText = useCallback((newText: string) => {
-    setText(newText);
-  }, []);
-
   const hasText = text.trim().length > 0;
+
+  // 过滤出当前会话的成员（排除自己）
+  const availableMembers = members;
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
+      {/* 提及选择器 */}
+      <MentionPicker
+        members={availableMembers}
+        query={mentionQuery}
+        onSelect={handleSelectMention}
+        onClose={() => setShowMentionPicker(false)}
+        visible={showMentionPicker && availableMembers.length > 0}
+      />
+
       <View style={styles.container}>
         {/* 回复提示 */}
         {replyingTo && (
@@ -115,11 +177,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               value={text}
               onChangeText={handleChangeText}
               onContentSizeChange={handleContentSizeChange}
+              onSelectionChange={handleSelectionChange}
               placeholder={placeholder}
               placeholderTextColor={COLORS.dark.text.tertiary}
               multiline
               editable={!disabled && !isSending}
               textAlignVertical="center"
+              selection={selection}
             />
           </View>
 

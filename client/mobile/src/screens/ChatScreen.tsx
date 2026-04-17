@@ -345,6 +345,11 @@ export const ChatScreen: React.FC = () => {
   const conversationMessages = messages[conversationId] || [];
   const conversationLoadingMore = isLoadingMore[conversationId] || false;
 
+  // 提取会话成员（排除自己）
+  const chatMembers = currentConversation?.members
+    ?.filter((m) => m.user && m.user_id !== user?.id)
+    .map((m) => m.user!) || [];
+
   return (
     <View style={styles.container}>
       {/* 消息列表 */}
@@ -372,6 +377,7 @@ export const ChatScreen: React.FC = () => {
         isSending={isSending || isUploading}
         replyingTo={replyingTo}
         onCancelReply={handleCancelReply}
+        members={chatMembers}
       />
     </View>
   );
