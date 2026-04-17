@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Conversation, useChatStore } from '@neochat/shared';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, Alert } from 'react-native';
+import { Conversation, useChatStore, useAuthStore } from '@neochat/shared';
+import type { Favorite, Message } from '@neochat/shared/src/types';
 
 import { Sidebar } from '../components/Sidebar';
 import { ChatListPanel } from '../components/ChatListPanel';
@@ -12,7 +13,8 @@ import { FavoritesPanel } from '../components/FavoritesPanel';
 type ActivePanel = 'chat' | 'contacts' | 'favorites' | 'profile';
 
 export const MainWindow: React.FC = () => {
-  const { currentConversation } = useChatStore();
+  const { currentConversation, setHighlightedMessageId, ensureMessageLoaded, setCurrentConversation } = useChatStore();
+  const { user: currentUser } = useAuthStore();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | undefined>();
   const [activePanel, setActivePanel] = useState<ActivePanel>('chat');
   const [showProfile, setShowProfile] = useState(false);
@@ -28,6 +30,24 @@ export const MainWindow: React.FC = () => {
   const handleAvatarPress = () => {
     setShowProfile(!showProfile);
   };
+
+  // 跳转到消息位置
+  const handleSelectFavoriteMessage = useCallback(async (favorite: Favorite & { message?: Message }) => {
+    const message = favorite.message;
+    if (message) {
+      // 设置高亮消息 ID
+      setHighlightedMessageId(favorite.message_id);
+      // 确保消息已加载
+      await ensureMessageLoaded(message.conversation_id, favorite.message_id);
+      // 切换到聊天面板
+      setActivePanel('chat');
+      // 设置当前会话
+      setCurrentConversation(message.conversation_id);
+      setSelectedConversation(undefined);
+    } else {
+      Alert.alert('提示', '无法定位到消息位置');
+    }
+  }, [setHighlightedMessageId, ensureMessageLoaded, setCurrentConversation]);
 
   return (
     <View style={styles.container}>
@@ -53,7 +73,11 @@ export const MainWindow: React.FC = () => {
         />
       )}
       {!showProfile && activePanel === 'contacts' && <ContactsPanel />}
-      {!showProfile && activePanel === 'favorites' && <FavoritesPanel />}
+      {!showProfile && activePanel === 'favorites' && (
+        <FavoritesPanel
+          onSelectMessage={handleSelectFavoriteMessage}
+        />
+      )}
 
       {/* 右侧聊天区域 - 仅在聊天面板时显示且不显示个人资料 */}
       {!showProfile && activePanel === 'chat' && (

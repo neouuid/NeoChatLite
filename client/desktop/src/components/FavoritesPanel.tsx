@@ -129,9 +129,6 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
   const handleForward = (favorite: Favorite) => {
     if (onForwardMessage) {
       onForwardMessage(favorite);
-    } else {
-      // 默认行为 - 提示开发中
-      Alert.alert('提示', '转发功能开发中');
     }
   };
 
