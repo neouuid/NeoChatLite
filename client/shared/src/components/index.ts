@@ -8,3 +8,4 @@ export * from './Loading';
 export * from './ConversationItem';
 export * from './MessageItem';
 export * from './MessageList';
+export * from './MentionPicker';
