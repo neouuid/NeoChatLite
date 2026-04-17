@@ -21,37 +21,31 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   formatDisplayName,
+  ChatService,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
-import type { User, Message, RootStackParamList } from '@neochat/shared/src/types';
+import type { User, Message, RootStackParamList, Mention } from '@neochat/shared/src/types';
 import type { NavigationProp } from '@react-navigation/native';
-
-// 临时 mock 数据 - 待后端 API 完善后替换
-const mockMentions: Array<{
-  id: string;
-  message_id: string;
-  user_id: string;
-  has_read: boolean;
-  created_at: string;
-  message?: Message & { sender?: User; conversation?: any };
-}> = [];
 
 export const MentionsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user } = useAuthStore();
   const { setHighlightedMessageId, ensureMessageLoaded } = useChatStore();
 
-  const [mentions, setMentions] = useState(mockMentions);
+  const [mentions, setMentions] = useState<Mention[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // 加载提及列表
   const loadMentions = useCallback(async () => {
     setIsLoading(true);
     try {
-      // TODO: 调用后端 API 获取提及列表
-      // 临时使用空数据
-      setMentions([]);
+      const result = await ChatService.getUserMentions(50);
+      if (result.success && result.data) {
+        setMentions(result.data);
+      } else {
+        setMentions([]);
+      }
     } catch (error) {
       console.error('Failed to load mentions:', error);
       Alert.alert('错误', '加载提及列表失败');
@@ -65,8 +59,15 @@ export const MentionsScreen: React.FC = () => {
   }, [loadMentions]);
 
   // 点击提及
-  const handleMentionPress = useCallback(async (mention: any) => {
+  const handleMentionPress = useCallback(async (mention: Mention) => {
     if (mention.message) {
+      // 标记为已读
+      try {
+        await ChatService.markMentionAsRead(mention.id);
+      } catch (error) {
+        console.error('Failed to mark mention as read:', error);
+      }
+
       // 设置高亮消息 ID
       setHighlightedMessageId(mention.message.id);
       // 确保消息已加载
@@ -79,8 +80,14 @@ export const MentionsScreen: React.FC = () => {
   // 标记所有为已读
   const handleMarkAllRead = useCallback(async () => {
     try {
-      // TODO: 调用后端 API 标记所有为已读
-      Alert.alert('成功', '已标记所有提及为已读');
+      const result = await ChatService.markAllMentionsAsRead();
+      if (result.success) {
+        // 更新本地状态
+        setMentions(prev => prev.map(m => ({ ...m, has_read: true })));
+        Alert.alert('成功', '已标记所有提及为已读');
+      } else {
+        Alert.alert('错误', result.message || '操作失败');
+      }
     } catch (error) {
       console.error('Failed to mark all read:', error);
       Alert.alert('错误', '操作失败');

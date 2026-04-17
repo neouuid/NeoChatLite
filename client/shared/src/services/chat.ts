@@ -8,6 +8,7 @@ import {
   Favorite,
   CallRecord,
   PaginatedResponse,
+  Mention,
 } from '../types';
 
 export class ChatService {
@@ -297,6 +298,25 @@ export class ChatService {
     limit: number = 50
   ): Promise<{ success: boolean; data?: Group[]; message?: string }> {
     return await api.get<Group[]>('/chat/search/groups', { params: { q: query, limit } });
+  }
+
+  // Mentions
+  static async getUserMentions(
+    limit: number = 50
+  ): Promise<{ success: boolean; data?: Mention[]; message?: string }> {
+    return await api.get<Mention[]>('/chat/mentions', { params: { limit } });
+  }
+
+  static async getUnreadMentionCount(): Promise<{ success: boolean; data?: { count: number }; message?: string }> {
+    return await api.get<{ count: number }>('/chat/mentions/unread-count');
+  }
+
+  static async markMentionAsRead(mentionId: string): Promise<{ success: boolean; message?: string }> {
+    return await api.post(`/chat/mention/${mentionId}/read`);
+  }
+
+  static async markAllMentionsAsRead(): Promise<{ success: boolean; message?: string }> {
+    return await api.post('/chat/mentions/read-all');
   }
 }
 

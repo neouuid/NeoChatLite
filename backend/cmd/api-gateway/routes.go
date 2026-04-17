@@ -138,6 +138,12 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			chatGroup.GET("/search/messages", deps.ChatHandler.SearchMessages)
 			chatGroup.GET("/search/groups", deps.ChatHandler.SearchGroups)
 
+			// 提及路由
+			chatGroup.GET("/mentions", deps.ChatHandler.GetUserMentions)
+			chatGroup.GET("/mentions/unread-count", deps.ChatHandler.GetUnreadMentionCount)
+			chatGroup.POST("/mention/:id/read", deps.ChatHandler.MarkMentionAsRead)
+			chatGroup.POST("/mentions/read-all", deps.ChatHandler.MarkAllMentionsAsRead)
+
 			// WebSocket
 			chatGroup.GET("/ws", deps.WsHub.WebSocketHandler)
 		}

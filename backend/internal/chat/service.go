@@ -989,3 +989,43 @@ func (s *Service) GetCallRecord(callID, userID uuid.UUID) (*CallRecord, error) {
 func (s *Service) GetUserCallRecords(userID uuid.UUID, limit int) ([]*CallRecord, error) {
 	return s.repo.GetUserCallRecords(userID, limit)
 }
+
+// ==================== Mention Service Methods ====================
+
+// GetUserMentions 获取用户的提及列表
+func (s *Service) GetUserMentions(userID uuid.UUID, limit int) ([]*Mention, error) {
+	return s.repo.GetUserMentions(userID, limit)
+}
+
+// MarkMentionAsRead 标记提及为已读
+func (s *Service) MarkMentionAsRead(mentionID, userID uuid.UUID) error {
+	// 验证提及是否属于该用户
+	mentions, err := s.repo.GetUserMentions(userID, 100)
+	if err != nil {
+		return errors.New("mention not found")
+	}
+
+	var targetMention *Mention
+	for _, m := range mentions {
+		if m.ID == mentionID {
+			targetMention = m
+			break
+		}
+	}
+
+	if targetMention == nil {
+		return errors.New("mention not found")
+	}
+
+	return s.repo.MarkMentionAsRead(mentionID)
+}
+
+// MarkUserMentionsAsRead 标记用户的所有提及为已读
+func (s *Service) MarkUserMentionsAsRead(userID uuid.UUID) error {
+	return s.repo.MarkUserMentionsAsRead(userID)
+}
+
+// GetUnreadMentionCount 获取用户未读提及数量
+func (s *Service) GetUnreadMentionCount(userID uuid.UUID) (int64, error) {
+	return s.repo.GetUnreadMentionCount(userID)
+}

@@ -92,6 +92,15 @@ export interface Favorite {
   message?: Message;
 }
 
+export interface Mention {
+  id: string;
+  message_id: string;
+  user_id: string;
+  has_read: boolean;
+  created_at: string;
+  message?: Message & { sender?: User; conversation?: any };
+}
+
 export interface CallRecord {
   id: string;
   caller_id: string;
