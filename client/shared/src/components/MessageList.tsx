@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Message, User, Conversation } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
-import { formatChatTime, formatDisplayName } from '../utils';
+import { formatChatTime, formatDisplayName, parseMessageText, ParsedMention } from '../utils';
 import { Avatar } from './Avatar';
 import { CachedImage } from './CachedImage';
 
@@ -159,6 +159,40 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const handleImagePress = () => onImagePress?.(message);
   const handleFilePress = () => onFilePress?.(message);
 
+  // 渲染带提及的文本
+  const renderMentionText = (text: string) => {
+    const members = isGroupChat ? message.conversation?.members : undefined;
+    const parts = parseMessageText(text, members);
+
+    return parts.map((part: ParsedMention, index: number) => {
+      if (part.type === 'mention') {
+        return (
+          <Text
+            key={index}
+            style={[
+              styles.messageText,
+              isOwn ? styles.ownMessageText : styles.otherMessageText,
+              styles.mentionText,
+            ]}
+          >
+            @{part.username || 'user'}
+          </Text>
+        );
+      }
+      return (
+        <Text
+          key={index}
+          style={[
+            styles.messageText,
+            isOwn ? styles.ownMessageText : styles.otherMessageText,
+          ]}
+        >
+          {part.content}
+        </Text>
+      );
+    });
+  };
+
   // 获取文件图标
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase() || '';
@@ -186,11 +220,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     switch (message.type) {
       case 'text':
         return (
-          <Text style={[
-            styles.messageText,
-            isOwn ? styles.ownMessageText : styles.otherMessageText,
-            ]}>
-            {message.content}
+          <Text style={styles.messageTextContainer}>
+            {renderMentionText(message.content)}
           </Text>
         );
       case 'image':
@@ -432,9 +463,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
+  messageTextContainer: {
+    fontSize: TYPOGRAPHY.sizes.md,
+    lineHeight: 20,
+  },
   messageText: {
     fontSize: TYPOGRAPHY.sizes.md,
     lineHeight: 20,
+  },
+  mentionText: {
+    color: COLORS.primary,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   ownMessageText: {
     color: '#ffffff',
