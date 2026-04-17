@@ -8,7 +8,6 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -31,13 +30,6 @@ const presetBackgrounds = [
   { id: 'bg6', type: 'color' as const, value: '#1a2d3d' },
 ];
 
-// 预设图片背景（占位）
-const presetImages = [
-  { id: 'img1', type: 'image' as const, value: null },
-  { id: 'img2', type: 'image' as const, value: null },
-  { id: 'img3', type: 'image' as const, value: null },
-  { id: 'img4', type: 'image' as const, value: null },
-];
 
 export const ChatBackgroundScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -114,25 +106,6 @@ export const ChatBackgroundScreen: React.FC = () => {
     );
   };
 
-  // 渲染图片背景项
-  const renderImageItem = (img: typeof presetImages[0]) => {
-    return (
-      <TouchableOpacity
-        key={img.id}
-        style={styles.backgroundItem}
-        onPress={() => Alert.alert('功能开发中', '预设图片背景功能正在开发中，敬请期待')}
-      >
-        <View
-          style={[
-            styles.backgroundPreview,
-            styles.imagePlaceholder,
-          ]}
-        >
-          <Ionicons name="image-outline" size={32} color={COLORS.dark.text.tertiary} />
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -171,13 +144,6 @@ export const ChatBackgroundScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 预设图片 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>预设图片</Text>
-          <View style={styles.backgroundsGrid}>
-            {presetImages.map(renderImageItem)}
-          </View>
-        </View>
 
         {/* 恢复默认 */}
         <View style={styles.section}>
