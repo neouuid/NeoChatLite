@@ -1,6 +1,6 @@
 // 群组信息页面
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  useChatStore,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
@@ -31,75 +32,47 @@ type GroupInfoScreenRouteProp = {
   };
 };
 
-// Mock data
-const mockGroup = {
-  id: 'group1',
-  name: '开发讨论组',
-  description: '这是一个用于讨论开发的群组',
-  owner_id: 'user1',
-  member_count: 12,
-  max_members: 200,
-  created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-};
-
-const mockMembers: (User & { role: 'owner' | 'admin' | 'member' })[] = [
-  {
-    id: 'user1',
-    username: 'owner',
-    nickname: '群主',
-    status: 'online',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    role: 'owner',
-  },
-  {
-    id: 'user2',
-    username: 'admin1',
-    nickname: '管理员1',
-    status: 'online',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    role: 'admin',
-  },
-  {
-    id: 'user3',
-    username: 'admin2',
-    nickname: '管理员2',
-    status: 'offline',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    role: 'admin',
-  },
-  {
-    id: 'user4',
-    username: 'member1',
-    nickname: '成员1',
-    status: 'online',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    role: 'member',
-  },
-  {
-    id: 'user5',
-    username: 'member2',
-    nickname: '成员2',
-    status: 'away',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    role: 'member',
-  },
-];
-
 export const GroupInfoScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<GroupInfoScreenRouteProp>();
   const { groupId, conversationId } = route.params;
+  const { conversations } = useChatStore();
 
   const [muted, setMuted] = useState(false);
   const [stickToTop, setStickToTop] = useState(false);
 
-  const group = mockGroup;
-  const members = mockMembers;
+  // 从 store 中获取会话数据
+  const conversation = useMemo(() =>
+    conversations.find(c => c.id === (conversationId || groupId)),
+    [conversations, conversationId, groupId]
+  );
+
+  // 从会话成员中提取用户信息，并添加角色
+  const members = useMemo((): (User & { role: 'owner' | 'admin' | 'member' })[] => {
+    if (!conversation?.members) return [];
+    return conversation.members.map((m, index) => ({
+      ...(m.user || {
+        id: m.user_id,
+        username: 'unknown',
+        nickname: '未知用户',
+        status: 'offline',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
+      role: index === 0 ? 'owner' : index < 3 ? 'admin' : 'member',
+    }));
+  }, [conversation]);
+
+  // 群组信息
+  const groupInfo = useMemo(() => ({
+    id: conversation?.id || groupId,
+    name: conversation?.name || '群聊',
+    description: '',
+    owner_id: '',
+    member_count: conversation?.members?.length || 0,
+    max_members: 200,
+    created_at: conversation?.created_at || new Date().toISOString(),
+  }), [conversation, groupId]);
 
   // 查看群组成员
   const handleViewAllMembers = () => {
@@ -149,7 +122,7 @@ export const GroupInfoScreen: React.FC = () => {
   };
 
   // 渲染成员项
-  const renderMemberItem = ({ item }: { item: typeof mockMembers[0] }) => {
+  const renderMemberItem = ({ item }: { item: typeof members[0] }) => {
     const roleLabel = getRoleLabel(item.role);
 
     return (
@@ -228,10 +201,10 @@ export const GroupInfoScreen: React.FC = () => {
             <Ionicons name="people" size={48} color={COLORS.dark.text.secondary} />
           </View>
           <View style={styles.groupInfo}>
-            <Text style={styles.groupName}>{group.name}</Text>
+            <Text style={styles.groupName}>{groupInfo.name}</Text>
             {group.description && (
               <Text style={styles.groupDescription} numberOfLines={2}>
-                {group.description}
+                {groupInfo.description}
               </Text>
             )}
           </View>
@@ -240,7 +213,7 @@ export const GroupInfoScreen: React.FC = () => {
         {/* 群成员 */}
         <View style={styles.membersSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>群成员 ({group.member_count})</Text>
+            <Text style={styles.sectionTitle}>群成员 ({groupInfo.member_count})</Text>
             <TouchableOpacity style={styles.moreButton} onPress={handleViewAllMembers}>
               <Text style={styles.moreButtonText}>全部</Text>
               <Ionicons name="chevron-forward" size={16} color={COLORS.dark.text.tertiary} />
