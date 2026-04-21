@@ -1,6 +1,6 @@
 // 聊天设置页面
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  useChatStore,
+  useAuthStore,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
@@ -30,36 +32,43 @@ type ChatSettingsScreenRouteProp = {
   };
 };
 
-// Mock data - 实际应该从 store 或 API 获取
-const mockConversation: Conversation = {
-  id: '1',
-  type: 'single',
-  name: '测试好友',
-  created_by: 'user1',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
-
-const mockFriend: User = {
-  id: '2',
-  username: 'testuser',
-  nickname: '测试好友',
-  status: 'online',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
-
 export const ChatSettingsScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<ChatSettingsScreenRouteProp>();
   const { conversationId } = route.params;
+  const { conversations } = useChatStore();
+  const { user: currentUser } = useAuthStore();
 
   const [muted, setMuted] = useState(false);
   const [stickToTop, setStickToTop] = useState(false);
 
-  const displayName = mockConversation.name
-    ? mockConversation.name
-    : formatDisplayName(mockFriend.nickname, mockFriend.username);
+  // 从 store 中获取会话数据
+  const conversation = useMemo(() =>
+    conversations.find(c => c.id === conversationId),
+    [conversations, conversationId]
+  );
+
+  // 获取对方用户信息（单聊）
+  const friendUser = useMemo((): User | null => {
+    if (!conversation || conversation.type !== 'single' || !currentUser) {
+      return null;
+    }
+    const otherMember = conversation.members?.find(
+      m => m.user_id !== currentUser.id
+    );
+    return otherMember?.user || null;
+  }, [conversation, currentUser]);
+
+  const displayName = useMemo(() => {
+    if (!conversation) return '聊天';
+    if (conversation.type === 'group') {
+      return conversation.name || '群聊';
+    }
+    if (friendUser) {
+      return formatDisplayName(friendUser.nickname, friendUser.username);
+    }
+    return conversation.name || '聊天';
+  }, [conversation, friendUser]);
 
   // 清空聊天记录
   const handleClearChat = () => {
@@ -181,7 +190,7 @@ export const ChatSettingsScreen: React.FC = () => {
   const renderProfileItem = () => (
     <View key="profile" style={styles.profileItem}>
       <Avatar
-        uri={mockFriend.avatar}
+        uri={friendUser?.avatar}
         nickname={displayName}
         size="xl"
         style={styles.profileAvatar}
@@ -190,12 +199,12 @@ export const ChatSettingsScreen: React.FC = () => {
         <Text style={styles.profileName} numberOfLines={1}>
           {displayName}
         </Text>
-        {mockFriend.username && (
-          <Text style={styles.profileUsername}>@{mockFriend.username}</Text>
+        {friendUser?.username && (
+          <Text style={styles.profileUsername}>@{friendUser.username}</Text>
         )}
-        {mockFriend.status && (
+        {friendUser?.status && (
           <Text style={styles.profileStatus}>
-            {mockFriend.status === 'online' ? '在线' : '离线'}
+            {friendUser.status === 'online' ? '在线' : friendUser.status === 'away' ? '离开' : '离线'}
           </Text>
         )}
       </View>
