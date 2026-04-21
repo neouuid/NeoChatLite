@@ -10,6 +10,7 @@ import {
   Image,
   Dimensions,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -32,19 +33,11 @@ type ImageViewerScreenRouteProp = {
   };
 };
 
-// Mock images
-const mockImages = [
-  'https://example.com/image1.jpg',
-  'https://example.com/image2.jpg',
-  'https://example.com/image3.jpg',
-];
-
 export const ImageViewerScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'ImageViewer'>>();
   const { url } = route.params;
 
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [showControls, setShowControls] = useState(true);
 
   // 切换控制栏显示
@@ -102,12 +95,7 @@ export const ImageViewerScreen: React.FC = () => {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={28} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {currentIndex + 1} / {mockImages.length}
-          </Text>
-          <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-vertical" size={28} color="#fff" />
-          </TouchableOpacity>
+          <View style={styles.headerSpacer} />
         </View>
       )}
 
@@ -174,13 +162,8 @@ const styles = StyleSheet.create({
   backButton: {
     padding: SPACING.sm,
   },
-  headerTitle: {
-    color: '#fff',
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.medium,
-  },
-  moreButton: {
-    padding: SPACING.sm,
+  headerSpacer: {
+    width: 40,
   },
   imageContainer: {
     flex: 1,
