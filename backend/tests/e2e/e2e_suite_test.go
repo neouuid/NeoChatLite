@@ -116,7 +116,7 @@ func setupTestContext() {
 		{
 			chatGroup.GET("/conversations", chatHandler.GetUserConversations)
 			chatGroup.POST("/conversation/single", chatHandler.CreateSingleConversation)
-			chatGroup.POST("/conversation/group", chatHandler.CreateGroupConversation)
+			chatGroup.POST("/conversation/group", chatHandler.CreateGroup)
 			chatGroup.POST("/message", chatHandler.SendMessage)
 			chatGroup.GET("/conversation/:id/messages", chatHandler.GetConversationMessages)
 			chatGroup.GET("/favorites", chatHandler.GetUserFavorites)
