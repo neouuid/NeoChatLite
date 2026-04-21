@@ -22,9 +22,8 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "baseUrl": "./src",
-    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["*"]
     },
