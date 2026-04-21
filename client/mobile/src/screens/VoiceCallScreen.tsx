@@ -50,6 +50,7 @@ export const VoiceCallScreen: React.FC = () => {
 
   const {
     callState,
+    initiateCall,
     endCall,
     toggleMute,
     toggleSpeaker,
@@ -102,6 +103,25 @@ export const VoiceCallScreen: React.FC = () => {
       if (timer) clearInterval(timer);
     };
   }, [callState.status, navigation]);
+
+  // 发起/接受通话
+  useEffect(() => {
+    if (incoming && callState.status === 'incoming') {
+      // 已经有来电，等待用户接受
+    } else if (!incoming && remoteUser && callState.status === 'idle') {
+      // 发起通话
+      initiateCall(
+        remoteUser.id,
+        'voice',
+        remoteUser.nickname || remoteUser.username,
+        remoteUser.avatar
+      ).catch(error => {
+        console.error('Failed to initiate call:', error);
+        Alert.alert('错误', '发起通话失败');
+        navigation.goBack();
+      });
+    }
+  }, [incoming, remoteUser, callState.status, initiateCall, navigation]);
 
   // 格式化通话时长
   const formatDuration = (seconds: number) => {
