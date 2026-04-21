@@ -9,7 +9,6 @@ import (
 
 	"github.com/neochat/backend/internal/auth"
 	"github.com/neochat/backend/internal/user"
-	"github.com/neochat/backend/pkg/config"
 	"github.com/neochat/backend/pkg/email"
 	"github.com/neochat/backend/pkg/test"
 )

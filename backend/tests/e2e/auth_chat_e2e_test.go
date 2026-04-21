@@ -6,9 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/test"
-	"github.com/neochat/backend/pkg/utils"
 )
 
 // TestUser 测试用户
@@ -229,7 +227,7 @@ func TestGroupChatE2E(t *testing.T) {
 
 		// 管理员创建群聊
 		groupReq := map[string]interface{}{
-			"name":     "Test Group",
+			"name":       "Test Group",
 			"member_ids": []string{member1.ID.String(), member2.ID.String()},
 		}
 		w := test.MakeRequest(t, globalTestContext.Router, "POST", "/api/v1/chat/conversation/group", groupReq, admin.Token)
