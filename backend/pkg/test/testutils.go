@@ -17,7 +17,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/config"
+	"github.com/neochat/backend/pkg/utils"
 )
 
 // TestDB 保存测试数据库实例
@@ -184,4 +186,23 @@ type RegisterRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+// CreateTestUser 创建测试用户（辅助函数）
+func CreateTestUser(t *testing.T, db *gorm.DB, username, email, password string) *user.User {
+	t.Helper()
+	hashedPassword, err := utils.HashPassword(password)
+	if err != nil {
+		t.Fatalf("Failed to hash password: %v", err)
+	}
+	testUser := &user.User{
+		Username: username,
+		Email:    email,
+		Password: hashedPassword,
+		Nickname: username,
+	}
+	if err := db.Create(testUser).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+	return testUser
 }

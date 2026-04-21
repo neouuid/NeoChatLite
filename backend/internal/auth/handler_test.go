@@ -8,10 +8,8 @@ import (
 
 	"github.com/neochat/backend/internal/chat"
 	"github.com/neochat/backend/internal/user"
-	"github.com/neochat/backend/pkg/config"
 	"github.com/neochat/backend/pkg/email"
 	"github.com/neochat/backend/pkg/test"
-	"github.com/neochat/backend/pkg/utils"
 )
 
 func TestAuthIntegration(t *testing.T) {
@@ -89,25 +87,6 @@ func TestAuthIntegration(t *testing.T) {
 		}
 	}
 
-	// CreateTestUser 辅助函数 - 复制到这里避免循环导入
-	createTestUser := func(username, email, password string) *user.User {
-		t.Helper()
-		hashedPassword, err := utils.HashPassword(password)
-		if err != nil {
-			t.Fatalf("Failed to hash password: %v", err)
-		}
-		testUser := &user.User{
-			Username: username,
-			Email:    email,
-			Password: hashedPassword,
-			Nickname: username,
-		}
-		if err := db.Create(testUser).Error; err != nil {
-			t.Fatalf("Failed to create test user: %v", err)
-		}
-		return testUser
-	}
-
 	t.Run("用户注册流程", func(t *testing.T) {
 		// 测试注册
 		reqBody := test.RegisterRequest{
@@ -127,7 +106,7 @@ func TestAuthIntegration(t *testing.T) {
 
 	t.Run("用户登录流程", func(t *testing.T) {
 		// 先创建测试用户
-		createTestUser("loginuser", "login@example.com", "password123")
+		test.CreateTestUser(t, db, "loginuser", "login@example.com", "password123")
 
 		// 测试登录
 		reqBody := map[string]interface{}{
@@ -149,7 +128,7 @@ func TestAuthIntegration(t *testing.T) {
 
 	t.Run("获取用户资料（需要认证）", func(t *testing.T) {
 		// 创建测试用户
-		user := createTestUser("profileuser", "profile@example.com", "password123")
+		user := test.CreateTestUser(t, db, "profileuser", "profile@example.com", "password123")
 
 		// 获取 token
 		token, err := authService.GenerateToken(user.ID)
@@ -199,7 +178,7 @@ func TestAuthIntegration(t *testing.T) {
 
 	t.Run("错误密码登录", func(t *testing.T) {
 		// 创建测试用户
-		createTestUser("wrongpassuser", "wrongpass@example.com", "password123")
+		test.CreateTestUser(t, db, "wrongpassuser", "wrongpass@example.com", "password123")
 
 		// 尝试用错误密码登录
 		reqBody := map[string]interface{}{
