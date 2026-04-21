@@ -23,6 +23,7 @@ import {
   type User,
   useChatStore,
   useAuthStore,
+  ChatService,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
@@ -38,7 +39,7 @@ export const GroupMembersScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<GroupMembersScreenRouteProp>();
   const { conversationId } = route.params;
-  const { conversations } = useChatStore();
+  const { conversations, removeMemberFromConversation, updateMemberRoleInConversation } = useChatStore();
   const { user: currentUser } = useAuthStore();
 
   const [searchText, setSearchText] = useState('');
@@ -217,13 +218,19 @@ export const GroupMembersScreen: React.FC = () => {
         { text: '取消', style: 'cancel' },
         {
           text: '确定',
-          onPress: () => {
-            Alert.alert('提示', '设为管理员功能待后端集成');
+          onPress: async () => {
+            const result = await ChatService.updateMemberRole(conversationId, member.user_id, 'admin');
+            if (result.success) {
+              updateMemberRoleInConversation(conversationId, member.user_id, 'admin');
+              Alert.alert('成功', '已设为管理员');
+            } else {
+              Alert.alert('失败', result.message || '操作失败');
+            }
           },
         },
       ]
     );
-  }, []);
+  }, [conversationId, updateMemberRoleInConversation]);
 
   // 取消管理员
   const handleRemoveAdmin = useCallback((member: typeof members[0]) => {
@@ -234,13 +241,19 @@ export const GroupMembersScreen: React.FC = () => {
         { text: '取消', style: 'cancel' },
         {
           text: '确定',
-          onPress: () => {
-            Alert.alert('提示', '取消管理员功能待后端集成');
+          onPress: async () => {
+            const result = await ChatService.updateMemberRole(conversationId, member.user_id, 'member');
+            if (result.success) {
+              updateMemberRoleInConversation(conversationId, member.user_id, 'member');
+              Alert.alert('成功', '已取消管理员');
+            } else {
+              Alert.alert('失败', result.message || '操作失败');
+            }
           },
         },
       ]
     );
-  }, []);
+  }, [conversationId, updateMemberRoleInConversation]);
 
   // 移除成员
   const handleRemoveMember = useCallback((member: typeof members[0]) => {
@@ -252,13 +265,19 @@ export const GroupMembersScreen: React.FC = () => {
         {
           text: '移除',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('提示', '移除成员功能待后端集成');
+          onPress: async () => {
+            const result = await ChatService.removeGroupMember(conversationId, member.user_id);
+            if (result.success) {
+              removeMemberFromConversation(conversationId, member.user_id);
+              Alert.alert('成功', '已移除成员');
+            } else {
+              Alert.alert('失败', result.message || '操作失败');
+            }
           },
         },
       ]
     );
-  }, []);
+  }, [conversationId, removeMemberFromConversation]);
 
   // 添加成员
   const handleAddMembers = useCallback(() => {

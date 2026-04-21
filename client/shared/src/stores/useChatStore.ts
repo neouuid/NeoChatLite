@@ -40,6 +40,9 @@ interface ChatState {
   // 消息定位 actions
   setHighlightedMessageId: (messageId: string | null) => void;
   ensureMessageLoaded: (conversationId: string, messageId: string) => Promise<boolean>;
+  // 群组成员管理 actions
+  removeMemberFromConversation: (conversationId: string, userId: string) => void;
+  updateMemberRoleInConversation: (conversationId: string, userId: string, role: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -256,5 +259,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // 消息不在列表中，需要加载（这里可以实现从后端加载特定消息的逻辑）
     console.log('Message not loaded, would need to fetch from backend:', messageId);
     return false;
+  },
+
+  // 群组成员管理：从会话中移除成员
+  removeMemberFromConversation: (conversationId: string, userId: string) => {
+    set((state) => ({
+      conversations: state.conversations.map((conv) =>
+        conv.id === conversationId
+          ? {
+              ...conv,
+              members: conv.members?.filter((m) => m.user_id !== userId) || [],
+            }
+          : conv
+      ),
+      currentConversation:
+        state.currentConversation?.id === conversationId
+          ? {
+              ...state.currentConversation,
+              members: state.currentConversation.members?.filter((m) => m.user_id !== userId) || [],
+            }
+          : state.currentConversation,
+    }));
+  },
+
+  // 群组成员管理：更新成员角色
+  updateMemberRoleInConversation: (conversationId: string, userId: string, role: string) => {
+    set((state) => ({
+      conversations: state.conversations.map((conv) =>
+        conv.id === conversationId
+          ? {
+              ...conv,
+              members: conv.members?.map((m) =>
+                m.user_id === userId ? { ...m, role } : m
+              ) || [],
+            }
+          : conv
+      ),
+      currentConversation:
+        state.currentConversation?.id === conversationId
+          ? {
+              ...state.currentConversation,
+              members: state.currentConversation.members?.map((m) =>
+                m.user_id === userId ? { ...m, role } : m
+              ) || [],
+            }
+          : state.currentConversation,
+    }));
   },
 }));

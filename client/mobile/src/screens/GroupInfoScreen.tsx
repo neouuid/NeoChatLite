@@ -19,6 +19,7 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   useChatStore,
+  ChatService,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
@@ -36,7 +37,7 @@ export const GroupInfoScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<GroupInfoScreenRouteProp>();
   const { groupId, conversationId } = route.params;
-  const { conversations } = useChatStore();
+  const { conversations, removeConversation } = useChatStore();
 
   const [muted, setMuted] = useState(false);
   const [stickToTop, setStickToTop] = useState(false);
@@ -94,10 +95,16 @@ export const GroupInfoScreen: React.FC = () => {
         {
           text: '确定',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('已退出', '您已退出该群组', [
-              { text: '确定', onPress: () => navigation.popToTop() },
-            ]);
+          onPress: async () => {
+            const result = await ChatService.leaveGroup(conversationId || groupId);
+            if (result.success) {
+              removeConversation(conversationId || groupId);
+              Alert.alert('已退出', '您已退出该群组', [
+                { text: '确定', onPress: () => navigation.popToTop() },
+              ]);
+            } else {
+              Alert.alert('失败', result.message || '退出群组失败');
+            }
           },
         },
       ]
