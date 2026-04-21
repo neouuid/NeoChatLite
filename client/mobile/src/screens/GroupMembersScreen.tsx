@@ -1,6 +1,6 @@
 // 群成员列表页面
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,8 @@ import {
   BORDER_RADIUS,
   type ConversationMember,
   type User,
+  useChatStore,
+  useAuthStore,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
@@ -32,122 +34,53 @@ type GroupMembersScreenRouteProp = {
   };
 };
 
-// Mock data - 实际应从 API 获取
-const mockMembers: (ConversationMember & { user: User })[] = [
-  {
-    id: 'member1',
-    conversation_id: 'conv1',
-    user_id: 'user1',
-    role: 'owner',
-    joined_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    unread_count: 0,
-    muted: false,
-    user: {
-      id: 'user1',
-      username: 'owner',
-      nickname: '群主',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'member2',
-    conversation_id: 'conv1',
-    user_id: 'user2',
-    role: 'admin',
-    joined_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    unread_count: 0,
-    muted: false,
-    user: {
-      id: 'user2',
-      username: 'admin1',
-      nickname: '管理员1',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'member3',
-    conversation_id: 'conv1',
-    user_id: 'user3',
-    role: 'admin',
-    joined_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    unread_count: 0,
-    muted: false,
-    user: {
-      id: 'user3',
-      username: 'admin2',
-      nickname: '管理员2',
-      status: 'offline',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'member4',
-    conversation_id: 'conv1',
-    user_id: 'user4',
-    role: 'member',
-    joined_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    unread_count: 0,
-    muted: false,
-    user: {
-      id: 'user4',
-      username: 'member1',
-      nickname: '成员1',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'member5',
-    conversation_id: 'conv1',
-    user_id: 'user5',
-    role: 'member',
-    joined_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    unread_count: 0,
-    muted: false,
-    user: {
-      id: 'user5',
-      username: 'member2',
-      nickname: '成员2',
-      status: 'away',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'member6',
-    conversation_id: 'conv1',
-    user_id: 'user6',
-    role: 'member',
-    joined_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    unread_count: 0,
-    muted: false,
-    user: {
-      id: 'user6',
-      username: 'member3',
-      nickname: '成员3',
-      status: 'offline',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-];
-
-// 当前用户角色 - 实际应从 store 获取
-const currentUserRole = 'owner';
-
 export const GroupMembersScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<GroupMembersScreenRouteProp>();
   const { conversationId } = route.params;
+  const { conversations } = useChatStore();
+  const { user: currentUser } = useAuthStore();
 
-  const [members, setMembers] = useState(mockMembers);
   const [searchText, setSearchText] = useState('');
+
+  // 从 store 中获取会话数据
+  const conversation = useMemo(() =>
+    conversations.find(c => c.id === conversationId),
+    [conversations, conversationId]
+  );
+
+  // 从会话成员中提取用户信息，并添加角色
+  const members = useMemo((): (ConversationMember & { user: User; role: 'owner' | 'admin' | 'member' })[] => {
+    if (!conversation?.members) return [];
+    return conversation.members.map((m, index) => ({
+      id: m.id || `${conversationId}-${m.user_id}`,
+      conversation_id: conversationId,
+      user_id: m.user_id,
+      role: index === 0 ? 'owner' : index < 3 ? 'admin' : 'member',
+      joined_at: m.joined_at || new Date().toISOString(),
+      unread_count: m.unread_count || 0,
+      muted: m.muted || false,
+      user: m.user || {
+        id: m.user_id,
+        username: 'unknown',
+        nickname: '未知用户',
+        status: 'offline',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    }));
+  }, [conversation, conversationId]);
+
+  // 当前用户角色 - 根据在成员列表中的位置推断
+  const currentUserRole = useMemo((): 'owner' | 'admin' | 'member' => {
+    if (!currentUser || !conversation?.members) return 'member';
+    const currentMemberIndex = conversation.members.findIndex(
+      m => m.user_id === currentUser.id
+    );
+    if (currentMemberIndex === 0) return 'owner';
+    if (currentMemberIndex < 3) return 'admin';
+    return 'member';
+  }, [currentUser, conversation]);
 
   // 过滤成员
   const filteredMembers = searchText.trim()
@@ -185,7 +118,7 @@ export const GroupMembersScreen: React.FC = () => {
   const canManage = currentUserRole === 'owner' || currentUserRole === 'admin';
 
   // 检查是否可以移除成员
-  const canRemoveMember = (member: typeof mockMembers[0]) => {
+  const canRemoveMember = (member: typeof members[0]) => {
     if (currentUserRole === 'owner') {
       return member.role !== 'owner';
     }
@@ -196,7 +129,7 @@ export const GroupMembersScreen: React.FC = () => {
   };
 
   // 检查是否可以修改角色
-  const canChangeRole = (member: typeof mockMembers[0]) => {
+  const canChangeRole = (member: typeof members[0]) => {
     if (currentUserRole === 'owner') {
       return member.role !== 'owner';
     }
@@ -204,7 +137,7 @@ export const GroupMembersScreen: React.FC = () => {
   };
 
   // 显示成员操作菜单
-  const showMemberActions = useCallback((member: typeof mockMembers[0]) => {
+  const showMemberActions = useCallback((member: typeof members[0]) => {
     const actions = [];
 
     // 查看资料
@@ -276,7 +209,7 @@ export const GroupMembersScreen: React.FC = () => {
   }, [navigation]);
 
   // 设为管理员
-  const handleSetAdmin = useCallback((member: typeof mockMembers[0]) => {
+  const handleSetAdmin = useCallback((member: typeof members[0]) => {
     Alert.alert(
       '设为管理员',
       `确定要将 ${formatDisplayName(member.user.nickname, member.user.username)} 设为管理员吗？`,
@@ -285,11 +218,7 @@ export const GroupMembersScreen: React.FC = () => {
         {
           text: '确定',
           onPress: () => {
-            setMembers((prev) =>
-              prev.map((m) =>
-                m.id === member.id ? { ...m, role: 'admin' } : m
-              )
-            );
+            Alert.alert('提示', '设为管理员功能待后端集成');
           },
         },
       ]
@@ -297,7 +226,7 @@ export const GroupMembersScreen: React.FC = () => {
   }, []);
 
   // 取消管理员
-  const handleRemoveAdmin = useCallback((member: typeof mockMembers[0]) => {
+  const handleRemoveAdmin = useCallback((member: typeof members[0]) => {
     Alert.alert(
       '取消管理员',
       `确定要取消 ${formatDisplayName(member.user.nickname, member.user.username)} 的管理员资格吗？`,
@@ -306,11 +235,7 @@ export const GroupMembersScreen: React.FC = () => {
         {
           text: '确定',
           onPress: () => {
-            setMembers((prev) =>
-              prev.map((m) =>
-                m.id === member.id ? { ...m, role: 'member' } : m
-              )
-            );
+            Alert.alert('提示', '取消管理员功能待后端集成');
           },
         },
       ]
@@ -318,7 +243,7 @@ export const GroupMembersScreen: React.FC = () => {
   }, []);
 
   // 移除成员
-  const handleRemoveMember = useCallback((member: typeof mockMembers[0]) => {
+  const handleRemoveMember = useCallback((member: typeof members[0]) => {
     Alert.alert(
       '移除成员',
       `确定要将 ${formatDisplayName(member.user.nickname, member.user.username)} 移出群组吗？`,
@@ -328,7 +253,7 @@ export const GroupMembersScreen: React.FC = () => {
           text: '移除',
           style: 'destructive',
           onPress: () => {
-            setMembers((prev) => prev.filter((m) => m.id !== member.id));
+            Alert.alert('提示', '移除成员功能待后端集成');
           },
         },
       ]
@@ -341,7 +266,7 @@ export const GroupMembersScreen: React.FC = () => {
   }, [navigation, conversationId]);
 
   // 渲染成员项
-  const renderMemberItem = useCallback(({ item }: { item: typeof mockMembers[0] }) => {
+  const renderMemberItem = useCallback(({ item }: { item: typeof members[0] }) => {
     const roleLabel = getRoleLabel(item.role);
     const roleColor = getRoleColor(item.role);
 
