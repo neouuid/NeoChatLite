@@ -334,7 +334,66 @@ export class WebRTCService {
 
   switchCamera(): void {
     // Switch camera (platform specific)
-    console.log('Switch camera not implemented');
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
+      console.log('Switch camera not available in this environment');
+      return;
+    }
+
+    if (!this.localStream) {
+      console.log('No local stream available');
+      return;
+    }
+
+    // Web implementation - switch camera by getting new media with facingMode
+    const videoTracks = this.localStream.getVideoTracks();
+    if (videoTracks.length === 0) {
+      console.log('No video track to switch');
+      return;
+    }
+
+    // Get current facing mode if available
+    const currentSettings = videoTracks[0].getSettings();
+    const currentFacing = currentSettings.facingMode;
+
+    // Toggle between user and environment
+    const newFacing = currentFacing === 'user' ? 'environment' : 'user';
+
+    // Recreate stream with new facing mode
+    this.recreateLocalStreamWithFacing(newFacing);
+  }
+
+  private async recreateLocalStreamWithFacing(facingMode: 'user' | 'environment'): Promise<void> {
+    if (!this.localStream) return;
+
+    try {
+      // Stop current tracks
+      this.localStream.getTracks().forEach((track) => track.stop());
+
+      // Get new stream with requested facing mode
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: { facingMode },
+      });
+
+      // Update local stream
+      this.localStream = newStream;
+      this.notifyLocalStream();
+
+      // Replace tracks in peer connection if active
+      if (this.peerConnection) {
+        const senders = this.peerConnection.getSenders();
+        newStream.getTracks().forEach((track) => {
+          const sender = senders.find((s) => s.track?.kind === track.kind);
+          if (sender) {
+            sender.replaceTrack(track);
+          } else {
+            this.peerConnection?.addTrack(track, newStream);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to switch camera:', error);
+    }
   }
 
   // State subscription
