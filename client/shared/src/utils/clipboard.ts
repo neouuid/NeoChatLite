@@ -1,6 +1,22 @@
 // 剪贴板工具
-// 注意：在 React Native 环境需要使用 expo-clipboard 或 react-native-clipboard
-// 这里提供统一的接口，不同平台可以有不同实现
+// 提供 Web 和 React Native 双平台的剪贴板功能
+
+// 环境检测
+const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+const isReactNative = !isWeb && typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+
+// 动态导入 React Native 剪贴板模块
+let Clipboard: any = null;
+
+const loadClipboardModule = async () => {
+  if (isReactNative && !Clipboard) {
+    try {
+      Clipboard = require('@react-native-clipboard/clipboard');
+    } catch (e) {
+      console.warn('React Native Clipboard module not available:', e);
+    }
+  }
+};
 
 /**
  * 复制文本到剪贴板
@@ -8,15 +24,19 @@
 export const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
     // Web 环境
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    if (isWeb && typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(text);
       return true;
     }
 
-    // React Native 环境 - 使用提示
-    // 实际项目中应该集成 expo-clipboard
-    console.log('Copy to clipboard:', text);
-    return true;
+    // React Native 环境
+    await loadClipboardModule();
+    if (Clipboard) {
+      Clipboard.setString(text);
+      return true;
+    }
+
+    return false;
   } catch (error) {
     console.error('Failed to copy to clipboard:', error);
     return false;
@@ -29,12 +49,17 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
 export const readFromClipboard = async (): Promise<string | null> => {
   try {
     // Web 环境
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    if (isWeb && typeof navigator !== 'undefined' && navigator.clipboard) {
       return await navigator.clipboard.readText();
     }
 
     // React Native 环境
-    console.log('Read from clipboard - not implemented');
+    await loadClipboardModule();
+    if (Clipboard) {
+      const text = await Clipboard.getString();
+      return text;
+    }
+
     return null;
   } catch (error) {
     console.error('Failed to read from clipboard:', error);

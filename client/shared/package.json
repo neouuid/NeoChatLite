@@ -35,6 +35,9 @@
     },
     "react-native-permissions": {
       "optional": true
+    },
+    "@react-native-clipboard/clipboard": {
+      "optional": true
     }
   }
 }
