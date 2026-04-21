@@ -17,71 +17,21 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  downloadFile,
+  openFilePreview,
+  deleteFile,
+  formatFileSize,
 } from '@neochat/shared';
-
-/**
- * 下载文件
- */
-const downloadFile = async (url: string, filename: string): Promise<boolean> => {
-  try {
-    console.log('Download file:', url, filename);
-
-    // Web 环境 - 创建下载链接
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      return true;
-    }
-
-    // React Native 环境
-    // 实际项目中应该集成 expo-file-system 或 react-native-fs
-    return true;
-  } catch (error) {
-    console.error('Failed to download file:', error);
-    return false;
-  }
-};
-
-/**
- * 打开文件预览
- */
-const openFilePreview = async (url: string, filename: string): Promise<boolean> => {
-  try {
-    console.log('Open file preview:', url, filename);
-
-    // Web 环境 - 在新标签页打开
-    if (typeof window !== 'undefined') {
-      window.open(url, '_blank');
-      return true;
-    }
-
-    // React Native 环境
-    // 实际项目中应该集成 expo-file-system 或 react-native-file-viewer
-    return true;
-  } catch (error) {
-    console.error('Failed to open file:', error);
-    return false;
-  }
-};
 
 type FileViewerScreenRouteProp = {
   params: {
     url: string;
     name: string;
+    size?: number;
+    type?: string;
+    sendTime?: string;
+    sender?: string;
   };
-};
-
-// Mock file info
-const mockFileInfo = {
-  name: '项目文档.pdf',
-  size: '2.5 MB',
-  type: 'application/pdf',
-  sendTime: '2026-04-10 15:30',
-  sender: '测试好友',
 };
 
 const getFileIcon = (fileName: string) => {
@@ -115,10 +65,19 @@ const getFileColor = (fileName: string) => {
 export const FileViewerScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<FileViewerScreenRouteProp>();
-  const { url, name } = route.params;
+  const {
+    url,
+    name,
+    size,
+    type,
+    sendTime,
+    sender
+  } = route.params;
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+
+  const displaySize = size ? formatFileSize(size) : '未知大小';
 
   // 下载文件
   const handleDownload = async () => {
@@ -181,9 +140,15 @@ export const FileViewerScreen: React.FC = () => {
         {
           text: '确定',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('已删除', '文件已删除');
-            navigation.goBack();
+          onPress: async () => {
+            const success = await deleteFile(url);
+            if (success) {
+              Alert.alert('已删除', '文件已删除', [
+                { text: '确定', onPress: () => navigation.goBack() }
+              ]);
+            } else {
+              Alert.alert('删除失败', '文件删除失败，请重试');
+            }
           },
         },
       ]
@@ -218,7 +183,7 @@ export const FileViewerScreen: React.FC = () => {
             <Text style={styles.fileName} numberOfLines={2}>
               {name}
             </Text>
-            <Text style={styles.fileSize}>{mockFileInfo.size}</Text>
+            <Text style={styles.fileSize}>{displaySize}</Text>
           </View>
 
           {/* 下载/打开按钮 */}
@@ -269,22 +234,28 @@ export const FileViewerScreen: React.FC = () => {
 
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>文件大小</Text>
-              <Text style={styles.infoValue}>{mockFileInfo.size}</Text>
+              <Text style={styles.infoValue}>{displaySize}</Text>
             </View>
 
-            <View style={styles.infoDivider} />
+            {sender && (
+              <>
+                <View style={styles.infoDivider} />
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>发送者</Text>
+                  <Text style={styles.infoValue}>{sender}</Text>
+                </View>
+              </>
+            )}
 
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>发送者</Text>
-              <Text style={styles.infoValue}>{mockFileInfo.sender}</Text>
-            </View>
-
-            <View style={styles.infoDivider} />
-
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>发送时间</Text>
-              <Text style={styles.infoValue}>{mockFileInfo.sendTime}</Text>
-            </View>
+            {sendTime && (
+              <>
+                <View style={styles.infoDivider} />
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>发送时间</Text>
+                  <Text style={styles.infoValue}>{sendTime}</Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
