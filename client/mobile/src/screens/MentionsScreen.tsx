@@ -111,7 +111,7 @@ export const MentionsScreen: React.FC = () => {
   };
 
   // 渲染提及项
-  const renderMentionItem = ({ item }: { item: typeof mockMentions[0] }) => {
+  const renderMentionItem = ({ item }: { item: Mention }) => {
     const message = item.message;
     const sender = message?.sender;
     const displayName = sender

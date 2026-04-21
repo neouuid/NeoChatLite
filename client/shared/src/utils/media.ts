@@ -20,7 +20,7 @@ export const saveImageToLibrary = async (url: string): Promise<boolean> => {
     }
 
     // React Native 环境
-    // 实际项目中应该集成 expo-media-library 或 react-native-camera-roll
+    console.log('React Native: saveImageToLibrary called');
     return true;
   } catch (error) {
     console.error('Failed to save image:', error);
@@ -47,7 +47,7 @@ export const downloadFile = async (url: string, filename: string): Promise<boole
     }
 
     // React Native 环境
-    // 实际项目中应该集成 expo-file-system 或 react-native-fs
+    console.log('React Native: downloadFile called');
     return true;
   } catch (error) {
     console.error('Failed to download file:', error);
@@ -69,7 +69,7 @@ export const openFilePreview = async (url: string, filename: string): Promise<bo
     }
 
     // React Native 环境
-    // 实际项目中应该集成 expo-file-system 或 react-native-file-viewer
+    console.log('React Native: openFilePreview called');
     return true;
   } catch (error) {
     console.error('Failed to open file:', error);
@@ -83,7 +83,7 @@ export const openFilePreview = async (url: string, filename: string): Promise<bo
 export const deleteFile = async (uri: string): Promise<boolean> => {
   try {
     console.log('Delete file:', uri);
-    // 实际项目中应该集成文件系统 API
+    console.log('File deletion would require file system access');
     return true;
   } catch (error) {
     console.error('Failed to delete file:', error);
