@@ -1,6 +1,6 @@
 // 视频通话页面
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,9 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   useAuthStore,
+  useChatStore,
+  useWebRTC,
+  type User,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
@@ -24,54 +27,102 @@ import { formatDisplayName } from '@neochat/shared/src/utils';
 
 type VideoCallScreenRouteProp = {
   params: {
-    conversationId: string;
+    conversationId?: string;
     userId?: string;
+    userName?: string;
+    userAvatar?: string;
+    incoming?: boolean;
   };
-};
-
-// Mock 通话对象
-const mockRemoteUser = {
-  id: 'user2',
-  username: 'testuser',
-  nickname: '张三',
-  avatar: '',
-  status: 'online',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
 };
 
 export const VideoCallScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<VideoCallScreenRouteProp>();
   const { user: currentUser } = useAuthStore();
-  const { conversationId, userId } = route.params;
+  const { conversations } = useChatStore();
+  const {
+    conversationId,
+    userId,
+    userName,
+    userAvatar,
+    incoming = false,
+  } = route.params;
 
-  const [callState, setCallState] = useState<'calling' | 'connecting' | 'connected' | 'ended'>('connecting');
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  const [isSwitchCamera, setIsSwitchCamera] = useState(false);
+  const {
+    callState,
+    initiateCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+    toggleVideo,
+    switchCamera,
+  } = useWebRTC();
+
   const [callDuration, setCallDuration] = useState(0);
+
+  // 获取通话对方用户信息
+  const remoteUser = useMemo((): User | null => {
+    // 如果路由参数直接提供了用户信息
+    if (userId && userName) {
+      return {
+        id: userId,
+        username: userName,
+        nickname: userName,
+        avatar: userAvatar,
+        status: 'online',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+
+    // 从会话中查找对方用户
+    if (conversationId && currentUser) {
+      const conversation = conversations.find(c => c.id === conversationId);
+      const otherMember = conversation?.members?.find(m => m.user_id !== currentUser.id);
+      if (otherMember?.user) {
+        return otherMember.user;
+      }
+    }
+
+    return null;
+  }, [conversationId, conversations, currentUser, userId, userName, userAvatar]);
 
   // 计时器
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (callState === 'connected') {
+    let timer: any;
+    if (callState.status === 'connected') {
       timer = setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
+    } else if (callState.status === 'ended') {
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
     }
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [callState]);
+  }, [callState.status, navigation]);
 
-  // 模拟连接
+  // 发起/接受通话
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setCallState('connected');
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (incoming && callState.status === 'incoming') {
+      // 已经有来电，等待用户接受
+    } else if (!incoming && remoteUser && callState.status === 'idle') {
+      // 发起通话
+      initiateCall(
+        remoteUser.id,
+        'video',
+        remoteUser.nickname || remoteUser.username,
+        remoteUser.avatar
+      ).catch(error => {
+        console.error('Failed to initiate call:', error);
+        Alert.alert('错误', '发起通话失败');
+        navigation.goBack();
+      });
+    }
+  }, [incoming, remoteUser, callState.status, initiateCall, navigation]);
 
   // 格式化通话时长
   const formatDuration = (seconds: number) => {
@@ -80,81 +131,104 @@ export const VideoCallScreen: React.FC = () => {
     return `${mins}:${secs}`;
   };
 
-  // 静音/取消静音
-  const toggleMute = useCallback(() => {
-    setIsMuted((prev) => !prev);
-  }, []);
+  // 接受来电
+  const handleAcceptCall = useCallback(() => {
+    acceptCall().catch(error => {
+      console.error('Failed to accept call:', error);
+      Alert.alert('错误', '接受通话失败');
+    });
+  }, [acceptCall]);
 
-  // 开启/关闭视频
-  const toggleVideo = useCallback(() => {
-    setIsVideoEnabled((prev) => !prev);
-  }, []);
-
-  // 切换摄像头
-  const switchCamera = useCallback(() => {
-    setIsSwitchCamera((prev) => !prev);
-  }, []);
+  // 拒绝来电
+  const handleRejectCall = useCallback(() => {
+    rejectCall();
+    navigation.goBack();
+  }, [rejectCall, navigation]);
 
   // 挂断通话
-  const endCall = useCallback(() => {
-    setCallState('ended');
-    Alert.alert('通话已结束', '', [
-      { text: '确定', onPress: () => navigation.goBack() },
-    ]);
-  }, [navigation]);
+  const handleEndCall = useCallback(() => {
+    endCall();
+  }, [endCall]);
 
-  const displayName = formatDisplayName(mockRemoteUser.nickname, mockRemoteUser.username);
+  const displayName = remoteUser
+    ? formatDisplayName(remoteUser.nickname, remoteUser.username)
+    : '用户';
   const currentUserDisplayName = currentUser
     ? formatDisplayName(currentUser.nickname, currentUser.username)
     : '我';
 
   // 获取通话状态文本
   const getStatusText = () => {
-    switch (callState) {
-      case 'connecting':
-        return '连接中...';
+    switch (callState.status) {
       case 'calling':
         return '呼叫中...';
+      case 'incoming':
+        return '来电中...';
       case 'connected':
         return '通话中';
       case 'ended':
         return '通话已结束';
       default:
-        return '';
+        return '连接中...';
     }
   };
+
+  // 渲染来电界面
+  if (callState.status === 'incoming') {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <View style={styles.incomingContainer}>
+          <View style={styles.incomingAvatarContainer}>
+            <Avatar
+              uri={remoteUser?.avatar}
+              nickname={displayName}
+              size="2xl"
+            />
+          </View>
+
+          <Text style={styles.remoteName}>{displayName}</Text>
+          <Text style={styles.callStatus}>来电中...</Text>
+
+          {/* 来电控制栏 */}
+          <View style={styles.incomingControlsContainer}>
+            <TouchableOpacity
+              style={[styles.controlButton, styles.rejectButton]}
+              onPress={handleRejectCall}
+            >
+              <Ionicons name="close" size={32} color="#ffffff" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.controlButton, styles.acceptButton]}
+              onPress={handleAcceptCall}
+            >
+              <Ionicons name="call" size={32} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* 远程视频区域 */}
       <View style={styles.remoteVideoContainer}>
-        {isVideoEnabled ? (
-          <View style={styles.remoteVideoPlaceholder}>
-            <View style={styles.remoteAvatarContainer}>
-              <Avatar
-                uri={mockRemoteUser.avatar}
-                nickname={displayName}
-                size="xl"
-              />
-            </View>
+        <View style={styles.remoteVideoPlaceholder}>
+          <View style={styles.remoteAvatarContainer}>
+            <Avatar
+              uri={remoteUser?.avatar}
+              nickname={displayName}
+              size="xl"
+            />
           </View>
-        ) : (
-          <View style={styles.remoteVideoPlaceholder}>
-            <View style={styles.remoteAvatarContainer}>
-              <Avatar
-                uri={mockRemoteUser.avatar}
-                nickname={displayName}
-                size="xl"
-              />
-            </View>
-          </View>
-        )}
+        </View>
 
         {/* 通话信息叠加层 */}
         <View style={styles.infoOverlay}>
           <Text style={styles.remoteName}>{displayName}</Text>
           <Text style={styles.callStatus}>{getStatusText()}</Text>
-          {callState === 'connected' && (
+          {callState.status === 'connected' && (
             <Text style={styles.callTimer}>{formatDuration(callDuration)}</Text>
           )}
         </View>
@@ -176,22 +250,22 @@ export const VideoCallScreen: React.FC = () => {
       {/* 控制栏 */}
       <View style={styles.controlsContainer}>
         <TouchableOpacity
-          style={[styles.controlButton, isMuted && styles.controlButtonActive]}
+          style={[styles.controlButton, callState.isMuted && styles.controlButtonActive]}
           onPress={toggleMute}
         >
           <Ionicons
-            name={isMuted ? 'mic-off' : 'mic'}
+            name={callState.isMuted ? 'mic-off' : 'mic'}
             size={24}
             color="#ffffff"
           />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.controlButton, !isVideoEnabled && styles.controlButtonActive]}
+          style={[styles.controlButton, !callState.isVideoEnabled && styles.controlButtonActive]}
           onPress={toggleVideo}
         >
           <Ionicons
-            name={isVideoEnabled ? 'videocam' : 'videocam-off'}
+            name={callState.isVideoEnabled !== false ? 'videocam' : 'videocam-off'}
             size={24}
             color="#ffffff"
           />
@@ -199,7 +273,7 @@ export const VideoCallScreen: React.FC = () => {
 
         <TouchableOpacity
           style={[styles.controlButton, styles.hangupButton]}
-          onPress={endCall}
+          onPress={handleEndCall}
         >
           <Ionicons name="call" size={28} color="#ffffff" style={{ transform: [{ rotate: '135deg' }] }} />
         </TouchableOpacity>
@@ -219,6 +293,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.dark.surface,
+  },
+  incomingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.lg,
+  },
+  incomingAvatarContainer: {
+    marginBottom: SPACING.lg,
   },
   remoteVideoContainer: {
     flex: 1,
@@ -294,6 +377,16 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xl + SPACING.md,
     backgroundColor: COLORS.dark.surface,
   },
+  incomingControlsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.xxl,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.xl,
+    paddingBottom: SPACING.xl + SPACING.md,
+    backgroundColor: COLORS.dark.surface,
+  },
   controlButton: {
     width: 56,
     height: 56,
@@ -308,6 +401,18 @@ const styles = StyleSheet.create({
   hangupButton: {
     width: 64,
     height: 64,
+    borderRadius: BORDER_RADIUS['2xl'],
+    backgroundColor: COLORS.error,
+  },
+  acceptButton: {
+    width: 72,
+    height: 72,
+    borderRadius: BORDER_RADIUS['2xl'],
+    backgroundColor: COLORS.success || '#22c55e',
+  },
+  rejectButton: {
+    width: 72,
+    height: 72,
     borderRadius: BORDER_RADIUS['2xl'],
     backgroundColor: COLORS.error,
   },

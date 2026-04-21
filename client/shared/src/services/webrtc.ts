@@ -1,5 +1,85 @@
 import { websocket } from './websocket';
 
+// 环境检测
+const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+const isReactNative = !isWeb && typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+
+// 动态加载 react-native-webrtc（仅在 React Native 环境）
+let RNMediaDevices: any = null;
+let RNRTCPeerConnection: any = null;
+let RNRTCSessionDescription: any = null;
+let RNRTCIceCandidate: any = null;
+let RNMediaStream: any = null;
+
+const loadReactNativeWebRTC = async () => {
+  if (isReactNative && !RNMediaDevices) {
+    try {
+      const webrtcModule = require('react-native-webrtc');
+      RNMediaDevices = webrtcModule.mediaDevices;
+      RNRTCPeerConnection = webrtcModule.RTCPeerConnection;
+      RNRTCSessionDescription = webrtcModule.RTCSessionDescription;
+      RNRTCIceCandidate = webrtcModule.RTCIceCandidate;
+      RNMediaStream = webrtcModule.MediaStream;
+
+      // 注册到全局（如果需要）
+      if (typeof global !== 'undefined') {
+        (global as any).RTCPeerConnection = RNRTCPeerConnection;
+        (global as any).RTCSessionDescription = RNRTCSessionDescription;
+        (global as any).RTCIceCandidate = RNRTCIceCandidate;
+        (global as any).MediaStream = RNMediaStream;
+        (global as any).navigator = (global as any).navigator || {};
+        (global as any).navigator.mediaDevices = RNMediaDevices;
+      }
+    } catch (e) {
+      console.warn('react-native-webrtc not available:', e);
+    }
+  }
+};
+
+// 获取媒体设备对象
+const getMediaDevices = () => {
+  if (isReactNative && RNMediaDevices) {
+    return RNMediaDevices;
+  }
+  if (isWeb && typeof navigator !== 'undefined' && navigator.mediaDevices) {
+    return navigator.mediaDevices;
+  }
+  return null;
+};
+
+// 获取 RTCPeerConnection 构造函数
+const getRTCPeerConnection = () => {
+  if (isReactNative && RNRTCPeerConnection) {
+    return RNRTCPeerConnection;
+  }
+  if (isWeb && typeof RTCPeerConnection !== 'undefined') {
+    return RTCPeerConnection;
+  }
+  return null;
+};
+
+// 获取 RTCSessionDescription 构造函数
+const getRTCSessionDescription = () => {
+  if (isReactNative && RNRTCSessionDescription) {
+    return RNRTCSessionDescription;
+  }
+  if (isWeb && typeof RTCSessionDescription !== 'undefined') {
+    return RTCSessionDescription;
+  }
+  return null;
+};
+
+// 获取 RTCIceCandidate 构造函数
+const getRTCIceCandidate = () => {
+  if (isReactNative && RNRTCIceCandidate) {
+    return RNRTCIceCandidate;
+  }
+  if (isWeb && typeof RTCIceCandidate !== 'undefined') {
+    return RTCIceCandidate;
+  }
+  return null;
+};
+
 // WebRTC configuration
 const ICE_CONFIG: RTCConfiguration = {
   iceServers: [
@@ -49,6 +129,10 @@ export class WebRTCService {
 
   constructor() {
     this.setupWebSocketListeners();
+    // 预加载 React Native WebRTC 模块
+    if (isReactNative) {
+      loadReactNativeWebRTC();
+    }
   }
 
   private setupWebSocketListeners() {
@@ -124,6 +208,11 @@ export class WebRTCService {
       throw new Error('Already in a call');
     }
 
+    // 确保 React Native 模块已加载
+    if (isReactNative) {
+      await loadReactNativeWebRTC();
+    }
+
     this.updateState({
       status: 'calling',
       callType,
@@ -134,7 +223,12 @@ export class WebRTCService {
 
     try {
       // Get user media
-      this.localStream = await navigator.mediaDevices.getUserMedia({
+      const mediaDevices = getMediaDevices();
+      if (!mediaDevices) {
+        throw new Error('Media devices not available');
+      }
+
+      this.localStream = await mediaDevices.getUserMedia({
         audio: true,
         video: callType === 'video',
       });
@@ -144,20 +238,29 @@ export class WebRTCService {
       this.createPeerConnection();
 
       // Add tracks to peer connection
-      this.localStream.getTracks().forEach((track) => {
-        this.peerConnection?.addTrack(track, this.localStream!);
-      });
+      if (this.localStream && this.peerConnection) {
+        this.localStream.getTracks().forEach((track) => {
+          this.peerConnection!.addTrack(track, this.localStream!);
+        });
+      }
 
       // Create offer
-      const offer = await this.peerConnection!.createOffer();
-      await this.peerConnection!.setLocalDescription(offer);
+      const PeerConnection = getRTCPeerConnection();
+      if (!this.peerConnection || !PeerConnection) {
+        throw new Error('PeerConnection not available');
+      }
+
+      const offer = await this.peerConnection.createOffer();
+      await this.peerConnection.setLocalDescription(offer);
 
       // Send invite first
       websocket.sendCallInvite(peerId, callType);
 
       // Wait for ICE candidates to be gathered, then send offer
       // For now, send offer immediately
-      websocket.sendSignalOffer(peerId, offer.sdp!);
+      if (offer.sdp) {
+        websocket.sendSignalOffer(peerId, offer.sdp);
+      }
     } catch (error) {
       console.error('Failed to initiate call:', error);
       this.endCall();
@@ -170,12 +273,22 @@ export class WebRTCService {
       throw new Error('No incoming call');
     }
 
+    // 确保 React Native 模块已加载
+    if (isReactNative) {
+      await loadReactNativeWebRTC();
+    }
+
     this.updateState({ status: 'connected' });
     websocket.sendCallAccept(this.state.peerId!);
 
     try {
       // Get user media
-      this.localStream = await navigator.mediaDevices.getUserMedia({
+      const mediaDevices = getMediaDevices();
+      if (!mediaDevices) {
+        throw new Error('Media devices not available');
+      }
+
+      this.localStream = await mediaDevices.getUserMedia({
         audio: true,
         video: this.state.callType === 'video',
       });
@@ -185,9 +298,11 @@ export class WebRTCService {
       this.createPeerConnection();
 
       // Add tracks to peer connection
-      this.localStream.getTracks().forEach((track) => {
-        this.peerConnection?.addTrack(track, this.localStream!);
-      });
+      if (this.localStream && this.peerConnection) {
+        this.localStream.getTracks().forEach((track) => {
+          this.peerConnection!.addTrack(track, this.localStream!);
+        });
+      }
     } catch (error) {
       console.error('Failed to accept call:', error);
       this.endCall();
@@ -231,7 +346,12 @@ export class WebRTCService {
   }
 
   private createPeerConnection(): void {
-    this.peerConnection = new RTCPeerConnection(ICE_CONFIG);
+    const PeerConnection = getRTCPeerConnection();
+    if (!PeerConnection) {
+      throw new Error('RTCPeerConnection not available');
+    }
+
+    this.peerConnection = new PeerConnection(ICE_CONFIG);
 
     // Handle ICE candidates
     this.peerConnection.onicecandidate = (event) => {
@@ -268,21 +388,40 @@ export class WebRTCService {
       this.createPeerConnection();
     }
 
-    await this.peerConnection!.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
-    const answer = await this.peerConnection!.createAnswer();
-    await this.peerConnection!.setLocalDescription(answer);
+    const SessionDescription = getRTCSessionDescription();
+    if (!SessionDescription || !this.peerConnection) {
+      throw new Error('WebRTC classes not available');
+    }
 
-    websocket.sendSignalAnswer(this.state.peerId!, answer.sdp!);
+    await this.peerConnection.setRemoteDescription(new SessionDescription({ type: 'offer', sdp }));
+    const answer = await this.peerConnection.createAnswer();
+    await this.peerConnection.setLocalDescription(answer);
+
+    if (answer.sdp && this.state.peerId) {
+      websocket.sendSignalAnswer(this.state.peerId, answer.sdp);
+    }
   }
 
   private async handleAnswer(sdp: string): Promise<void> {
     if (!this.peerConnection) return;
-    await this.peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
+
+    const SessionDescription = getRTCSessionDescription();
+    if (!SessionDescription) {
+      throw new Error('RTCSessionDescription not available');
+    }
+
+    await this.peerConnection.setRemoteDescription(new SessionDescription({ type: 'answer', sdp }));
   }
 
   private async handleIceCandidate(data: any): Promise<void> {
     if (!this.peerConnection) return;
-    const candidate = new RTCIceCandidate({
+
+    const IceCandidate = getRTCIceCandidate();
+    if (!IceCandidate) {
+      throw new Error('RTCIceCandidate not available');
+    }
+
+    const candidate = new IceCandidate({
       candidate: data.candidate,
       sdpMid: data.sdp_mid,
       sdpMlineIndex: data.sdp_mline_index,
@@ -334,7 +473,8 @@ export class WebRTCService {
 
   switchCamera(): void {
     // Switch camera (platform specific)
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
+    const mediaDevices = getMediaDevices();
+    if (!mediaDevices) {
       console.log('Switch camera not available in this environment');
       return;
     }
@@ -365,15 +505,24 @@ export class WebRTCService {
   private async recreateLocalStreamWithFacing(facingMode: 'user' | 'environment'): Promise<void> {
     if (!this.localStream) return;
 
+    const mediaDevices = getMediaDevices();
+    if (!mediaDevices) {
+      throw new Error('Media devices not available');
+    }
+
     try {
       // Stop current tracks
       this.localStream.getTracks().forEach((track) => track.stop());
 
       // Get new stream with requested facing mode
-      const newStream = await navigator.mediaDevices.getUserMedia({
+      const constraints: MediaStreamConstraints = {
         audio: true,
-        video: { facingMode },
-      });
+        video: isReactNative
+          ? { facingMode }
+          : { facingMode }
+      };
+
+      const newStream = await mediaDevices.getUserMedia(constraints);
 
       // Update local stream
       this.localStream = newStream;
