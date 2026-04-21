@@ -23,51 +23,6 @@ import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
 import type { Favorite, Message, User } from '@neochat/shared/src/types';
 
-// Mock data
-const mockFavorites: (Favorite & { message?: Message; user?: User })[] = [
-  {
-    id: '1',
-    user_id: 'user1',
-    message_id: 'msg1',
-    note: '重要消息',
-    created_at: new Date().toISOString(),
-    message: {
-      id: 'msg1',
-      conversation_id: 'conv1',
-      sender_id: 'user2',
-      type: 'text',
-      content: '这是一条重要的消息内容',
-      is_edited: false,
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 86400000).toISOString(),
-      sender: {
-        id: 'user2',
-        username: 'testuser',
-        nickname: '测试好友',
-        status: 'online',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    },
-  },
-  {
-    id: '2',
-    user_id: 'user1',
-    message_id: 'msg2',
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-    message: {
-      id: 'msg2',
-      conversation_id: 'conv1',
-      sender_id: 'user1',
-      type: 'text',
-      content: '自己收藏的消息',
-      is_edited: false,
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-      updated_at: new Date(Date.now() - 172800000).toISOString(),
-    },
-  },
-];
-
 interface FavoritesPanelProps {
   onSelectMessage?: (favorite: Favorite & { message?: Message }) => void;
   onForwardMessage?: (favorite: Favorite) => void;

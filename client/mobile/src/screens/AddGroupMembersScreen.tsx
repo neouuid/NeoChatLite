@@ -35,93 +35,6 @@ type AddGroupMembersScreenRouteProp = {
   };
 };
 
-// Mock data - 实际应从 API 获取
-const mockFriends: (Friend & { friend: User })[] = [
-  {
-    id: 'friend1',
-    user_id: 'me',
-    friend_id: 'friend_user1',
-    status: 'accepted',
-    created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    friend: {
-      id: 'friend_user1',
-      username: 'alice',
-      nickname: '爱丽丝',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'friend2',
-    user_id: 'me',
-    friend_id: 'friend_user2',
-    status: 'accepted',
-    created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    friend: {
-      id: 'friend_user2',
-      username: 'bob',
-      nickname: '鲍勃',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'friend3',
-    user_id: 'me',
-    friend_id: 'friend_user3',
-    status: 'accepted',
-    created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    friend: {
-      id: 'friend_user3',
-      username: 'charlie',
-      nickname: '查理',
-      status: 'offline',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'friend4',
-    user_id: 'me',
-    friend_id: 'friend_user4',
-    status: 'accepted',
-    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    friend: {
-      id: 'friend_user4',
-      username: 'david',
-      nickname: '大卫',
-      status: 'away',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'friend5',
-    user_id: 'me',
-    friend_id: 'friend_user5',
-    status: 'accepted',
-    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    friend: {
-      id: 'friend_user5',
-      username: 'eve',
-      nickname: '伊芙',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-];
-
-// 已在群中的成员 ID - 实际应从 API 获取
-const existingMemberIds = new Set(['friend_user2']);
-
 export const AddGroupMembersScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'AddGroupMembers'>>();
@@ -131,6 +44,7 @@ export const AddGroupMembersScreen: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [friends, setFriends] = useState<(Friend & { friend: User })[]>([]);
   const [existingMemberIds, setExistingMemberIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   const [searchText, setSearchText] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -140,6 +54,7 @@ export const AddGroupMembersScreen: React.FC = () => {
     if (!currentUser) return;
 
     setIsLoading(true);
+    setError(null);
     try {
       // 并行加载好友列表和群组成员
       const [friendsRes, membersRes] = await Promise.all([
@@ -151,18 +66,21 @@ export const AddGroupMembersScreen: React.FC = () => {
         setFriends(friendsRes.data as any);
       }
       if (membersRes.success && membersRes.data) {
-        const memberIds = new Set(membersRes.data.map((m: any) => m.user_id || m.id));
+        const memberIds = new Set<string>(membersRes.data.map((m: any) => (m.user_id || m.id) as string));
         setExistingMemberIds(memberIds);
       }
-    } catch (error) {
-      console.error('Failed to load data:', error);
-      // 出错时使用 mock 数据作为备用
-      setFriends(mockFriends);
-      setExistingMemberIds(new Set(['friend_user2']));
+    } catch (err) {
+      console.error('Failed to load data:', err);
+      setError(err instanceof Error ? err.message : '加载数据失败');
     } finally {
       setIsLoading(false);
     }
   }, [currentUser, conversationId]);
+
+  // 重试加载
+  const handleRetry = () => {
+    loadData();
+  };
 
   useEffect(() => {
     loadData();
@@ -251,7 +169,7 @@ export const AddGroupMembersScreen: React.FC = () => {
   }, [selectedIds, navigation, conversationId]);
 
   // 渲染好友项
-  const renderFriendItem = useCallback(({ item }: { item: typeof mockFriends[0] }) => {
+  const renderFriendItem = useCallback(({ item }: { item: Friend & { friend: User } }) => {
     const user = item.friend;
     const isSelected = selectedIds.has(user.id);
     const isInGroup = existingMemberIds.has(user.id);
@@ -317,6 +235,28 @@ export const AddGroupMembersScreen: React.FC = () => {
         </View>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        {/* 头部 */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.dark.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>添加成员</Text>
+          <View style={styles.confirmButton} />
+        </View>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color={COLORS.error} />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryButtonText}>重试</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -531,5 +471,26 @@ const styles = StyleSheet.create({
   loadingText: {
     color: COLORS.dark.text.secondary,
     fontSize: TYPOGRAPHY.sizes.md,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.md,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: TYPOGRAPHY.sizes.md,
+  },
+  retryButton: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: TYPOGRAPHY.sizes.md,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
 });

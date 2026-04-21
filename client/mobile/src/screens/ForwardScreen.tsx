@@ -5,7 +5,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Alert,
   TouchableOpacity,
   TextInput,
@@ -34,110 +33,6 @@ type ForwardScreenRouteProp = {
   };
 };
 
-// Mock data
-const mockRecentConversations: (Conversation & { friend?: User })[] = [
-  {
-    id: 'conv1',
-    type: 'single',
-    name: '张三',
-    last_message: '你好！',
-    created_by: 'user1',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    friend: {
-      id: 'user2',
-      username: 'zhangsan',
-      nickname: '张三',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'conv2',
-    type: 'single',
-    name: '李四',
-    last_message: '收到了',
-    created_by: 'user1',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    friend: {
-      id: 'user3',
-      username: 'lisi',
-      nickname: '李四',
-      status: 'offline',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-];
-
-const mockFriends: Friend[] = [
-  {
-    id: 'f1',
-    user_id: 'user1',
-    friend_id: 'user2',
-    status: 'accepted',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    friend: {
-      id: 'user2',
-      username: 'zhangsan',
-      nickname: '张三',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'f2',
-    user_id: 'user1',
-    friend_id: 'user3',
-    status: 'accepted',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    friend: {
-      id: 'user3',
-      username: 'lisi',
-      nickname: '李四',
-      status: 'offline',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-  {
-    id: 'f3',
-    user_id: 'user1',
-    friend_id: 'user4',
-    status: 'accepted',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    friend: {
-      id: 'user4',
-      username: 'wangwu',
-      nickname: '王五',
-      status: 'online',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  },
-];
-
-const mockGroups: any[] = [
-  {
-    id: 'group1',
-    name: '开发讨论组',
-    member_count: 12,
-    avatar: undefined,
-  },
-  {
-    id: 'group2',
-    name: '产品群',
-    member_count: 8,
-    avatar: undefined,
-  },
-];
-
 export const ForwardScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<ForwardScreenRouteProp>();
@@ -149,6 +44,7 @@ export const ForwardScreen: React.FC = () => {
   const [forwardText, setForwardText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isForwarding, setIsForwarding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [recentConversations, setRecentConversations] = useState<(Conversation & { friend?: User })[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -165,6 +61,7 @@ export const ForwardScreen: React.FC = () => {
     if (!currentUser) return;
 
     setIsLoading(true);
+    setError(null);
     try {
       // 并行加载数据
       const [convRes, friendsRes] = await Promise.all([
@@ -179,12 +76,9 @@ export const ForwardScreen: React.FC = () => {
         setFriends(friendsRes.data);
       }
       // 群组数据可以通过会话过滤获得
-    } catch (error) {
-      console.error('Failed to load data:', error);
-      // 出错时使用 mock 数据作为备用
-      setRecentConversations(mockRecentConversations);
-      setFriends(mockFriends);
-      setGroups(mockGroups);
+    } catch (err) {
+      console.error('Failed to load data:', err);
+      setError(err instanceof Error ? err.message : '加载数据失败');
     } finally {
       setIsLoading(false);
     }
@@ -231,6 +125,11 @@ export const ForwardScreen: React.FC = () => {
     } finally {
       setIsForwarding(false);
     }
+  };
+
+  // 重试加载
+  const handleRetry = () => {
+    loadData();
   };
 
   useEffect(() => {
@@ -425,6 +324,14 @@ export const ForwardScreen: React.FC = () => {
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>加载中...</Text>
         </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color={COLORS.error} />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryButtonText}>重试</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           style={styles.list}
@@ -600,6 +507,27 @@ const styles = StyleSheet.create({
   loadingText: {
     color: COLORS.dark.text.secondary,
     fontSize: TYPOGRAPHY.sizes.md,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.xxl * 2,
+    gap: SPACING.md,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: TYPOGRAPHY.sizes.md,
+  },
+  retryButton: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: TYPOGRAPHY.sizes.md,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
   bottomSpacer: {
     height: SPACING.xl,
