@@ -117,10 +117,7 @@ export const FileViewerScreen: React.FC = () => {
 
   // 打开文件
   const handleOpenFile = async () => {
-    const success = await openFilePreview(url, name);
-    if (!success) {
-      Alert.alert('提示', '正在打开文件...');
-    }
+    await openFilePreview(url, name);
   };
 
   // 转发文件

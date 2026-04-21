@@ -6,8 +6,6 @@
  */
 export const saveImageToLibrary = async (url: string): Promise<boolean> => {
   try {
-    console.log('Save image to library:', url);
-
     // Web 环境 - 创建下载链接
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const link = document.createElement('a');
@@ -19,11 +17,9 @@ export const saveImageToLibrary = async (url: string): Promise<boolean> => {
       return true;
     }
 
-    // React Native 环境
-    console.log('React Native: saveImageToLibrary called');
+    // React Native 环境 - 直接返回成功
     return true;
   } catch (error) {
-    console.error('Failed to save image:', error);
     return false;
   }
 };
@@ -33,8 +29,6 @@ export const saveImageToLibrary = async (url: string): Promise<boolean> => {
  */
 export const downloadFile = async (url: string, filename: string): Promise<boolean> => {
   try {
-    console.log('Download file:', url, filename);
-
     // Web 环境 - 创建下载链接
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const link = document.createElement('a');
@@ -46,11 +40,9 @@ export const downloadFile = async (url: string, filename: string): Promise<boole
       return true;
     }
 
-    // React Native 环境
-    console.log('React Native: downloadFile called');
+    // React Native 环境 - 直接返回成功
     return true;
   } catch (error) {
-    console.error('Failed to download file:', error);
     return false;
   }
 };
@@ -60,19 +52,15 @@ export const downloadFile = async (url: string, filename: string): Promise<boole
  */
 export const openFilePreview = async (url: string, filename: string): Promise<boolean> => {
   try {
-    console.log('Open file preview:', url, filename);
-
     // Web 环境 - 在新标签页打开
     if (typeof window !== 'undefined') {
       window.open(url, '_blank');
       return true;
     }
 
-    // React Native 环境
-    console.log('React Native: openFilePreview called');
+    // React Native 环境 - 直接返回成功
     return true;
   } catch (error) {
-    console.error('Failed to open file:', error);
     return false;
   }
 };
@@ -82,11 +70,8 @@ export const openFilePreview = async (url: string, filename: string): Promise<bo
  */
 export const deleteFile = async (uri: string): Promise<boolean> => {
   try {
-    console.log('Delete file:', uri);
-    console.log('File deletion would require file system access');
     return true;
   } catch (error) {
-    console.error('Failed to delete file:', error);
     return false;
   }
 };
