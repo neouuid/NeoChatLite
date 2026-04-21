@@ -9,6 +9,7 @@ import (
 	"github.com/neochat/backend/internal/auth"
 	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/config"
+	"github.com/neochat/backend/pkg/email"
 	"github.com/neochat/backend/pkg/test"
 )
 
@@ -22,7 +23,8 @@ func TestWebSocketIntegration(t *testing.T) {
 
 	// 初始化各模块
 	authRepo := auth.NewRepository(db)
-	authService := auth.NewService(authRepo, cfg)
+	emailService := email.NewService(cfg)
+	authService := auth.NewService(authRepo, cfg, emailService)
 	authHandler := auth.NewHandler(authService)
 	authMiddleware := auth.NewMiddleware(cfg)
 
