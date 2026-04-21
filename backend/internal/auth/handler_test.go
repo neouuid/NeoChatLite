@@ -9,6 +9,7 @@ import (
 	"github.com/neochat/backend/internal/chat"
 	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/config"
+	"github.com/neochat/backend/pkg/email"
 	"github.com/neochat/backend/pkg/test"
 	"github.com/neochat/backend/pkg/utils"
 )
@@ -38,7 +39,8 @@ func TestAuthIntegration(t *testing.T) {
 
 	// 初始化各模块
 	authRepo := NewRepository(db)
-	authService := NewService(authRepo, cfg)
+	emailService := email.NewService(cfg)
+	authService := NewService(authRepo, cfg, emailService)
 	authHandler := NewHandler(authService)
 	authMiddleware := NewMiddleware(cfg)
 
