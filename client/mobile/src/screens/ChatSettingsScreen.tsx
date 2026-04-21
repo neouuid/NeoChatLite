@@ -20,6 +20,7 @@ import {
   BORDER_RADIUS,
   useChatStore,
   useAuthStore,
+  ChatService,
 } from '@neochat/shared';
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
@@ -36,7 +37,7 @@ export const ChatSettingsScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<ChatSettingsScreenRouteProp>();
   const { conversationId } = route.params;
-  const { conversations } = useChatStore();
+  const { conversations, removeConversation, setMessages } = useChatStore();
   const { user: currentUser } = useAuthStore();
 
   const [muted, setMuted] = useState(false);
@@ -81,6 +82,8 @@ export const ChatSettingsScreen: React.FC = () => {
           text: '确定',
           style: 'destructive',
           onPress: () => {
+            // 清空本地消息
+            setMessages(conversationId, []);
             Alert.alert('成功', '聊天记录已清空');
           },
         },
@@ -98,9 +101,18 @@ export const ChatSettingsScreen: React.FC = () => {
         {
           text: '确定',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('成功', '已删除好友');
-            navigation.popToTop();
+          onPress: async () => {
+            if (friendUser) {
+              const result = await ChatService.deleteFriend(friendUser.id);
+              if (result.success) {
+                removeConversation(conversationId);
+                Alert.alert('成功', '已删除好友', [
+                  { text: '确定', onPress: () => navigation.popToTop() },
+                ]);
+              } else {
+                Alert.alert('失败', result.message || '删除好友失败');
+              }
+            }
           },
         },
       ]
