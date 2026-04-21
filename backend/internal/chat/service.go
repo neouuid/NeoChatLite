@@ -1029,3 +1029,15 @@ func (s *Service) MarkUserMentionsAsRead(userID uuid.UUID) error {
 func (s *Service) GetUnreadMentionCount(userID uuid.UUID) (int64, error) {
 	return s.repo.GetUnreadMentionCount(userID)
 }
+
+// ==================== Search Service Methods ====================
+
+// SearchMessages 搜索消息
+func (s *Service) SearchMessages(userID uuid.UUID, query string, limit int) ([]*Message, error) {
+	return s.repo.SearchMessages(userID, query, limit)
+}
+
+// SearchGroups 搜索群组
+func (s *Service) SearchGroups(userID uuid.UUID, query string, limit int) ([]*Group, error) {
+	return s.repo.SearchGroups(userID, query, limit)
+}
