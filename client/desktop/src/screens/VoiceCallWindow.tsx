@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,38 +6,120 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  COLORS,
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
   formatDisplayName,
+  useAuthStore,
+  useChatStore,
+  useWebRTC,
+  Avatar,
 } from '@neochat/shared';
+import type { User } from '@neochat/shared/src/types';
 
 interface VoiceCallWindowProps {
-  onBack?: () => void;
-  participantName?: string;
-  participantAvatar?: string;
+  remoteUser?: User;
 }
 
 export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
-  onBack,
-  participantName = '张三',
-  participantAvatar,
+  remoteUser: propRemoteUser,
 }) => {
+  const navigation = useNavigation();
+  const route = useRoute<any>();
+  const { user: currentUser } = useAuthStore();
+  const { conversations } = useChatStore();
+
+  const {
+    callState,
+    localStream,
+    remoteStream,
+    initiateCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+    toggleSpeaker,
+  } = useWebRTC();
+
   const [callDuration, setCallDuration] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isOnSpeaker, setIsOnSpeaker] = useState(false);
-  const [isKeypadOpen, setIsKeypadOpen] = useState(false);
+
+  // 从路由参数获取数据
+  const {
+    conversationId,
+    userId,
+    userName,
+    userAvatar,
+    incoming = false,
+  } = route.params || {};
+
+  // 获取通话对方用户信息
+  const remoteUser = useMemo((): User | null => {
+    // 优先使用props
+    if (propRemoteUser) {
+      return propRemoteUser;
+    }
+    // 如果路由参数直接提供了用户信息
+    if (userId && userName) {
+      return {
+        id: userId,
+        username: userName,
+        nickname: userName,
+        avatar: userAvatar,
+        status: 'online',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+    // 从会话中查找对方用户
+    if (conversationId && currentUser) {
+      const conversation = conversations.find(c => c.id === conversationId);
+      const otherMember = conversation?.members?.find(m => m.user_id !== currentUser.id);
+      if (otherMember?.user) {
+        return otherMember.user;
+      }
+    }
+    return null;
+  }, [propRemoteUser, conversationId, conversations, currentUser, userId, userName, userAvatar]);
 
   // 计时器
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
+    let timer: any;
+    if (callState.status === 'connected') {
+      timer = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+    } else if (callState.status === 'ended') {
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [callState.status, navigation]);
 
-    return () => clearInterval(timer);
-  }, []);
+  // 发起/接受通话
+  useEffect(() => {
+    if (incoming && callState.status === 'idle') {
+      // 如果是来电但状态是idle，说明是从通知进入的，等待用户操作
+    } else if (!incoming && remoteUser && callState.status === 'idle') {
+      // 发起通话
+      initiateCall(
+        remoteUser.id,
+        'voice',
+        formatDisplayName(remoteUser.nickname, remoteUser.username),
+        remoteUser.avatar
+      ).catch(error => {
+        console.error('Failed to initiate call:', error);
+        Alert.alert('错误', '发起通话失败');
+        navigation.goBack();
+      });
+    }
+  }, [incoming, remoteUser, callState.status, initiateCall, navigation]);
 
   // 格式化通话时长
   const formatDuration = (seconds: number): string => {
@@ -46,40 +128,26 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // 接受来电
+  const handleAcceptCall = useCallback(() => {
+    acceptCall().catch(error => {
+      console.error('Failed to accept call:', error);
+      Alert.alert('错误', '接受通话失败');
+    });
+  }, [acceptCall]);
+
+  // 拒绝来电
+  const handleRejectCall = useCallback(() => {
+    rejectCall();
+    navigation.goBack();
+  }, [rejectCall, navigation]);
+
   // 挂断电话
-  const handleHangup = () => {
-    Alert.alert(
-      '挂断通话',
-      '确定要结束通话吗？',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '挂断',
-          style: 'destructive',
-          onPress: () => {
-            onBack?.();
-          },
-        },
-      ]
-    );
-  };
+  const handleHangup = useCallback(() => {
+    endCall();
+  }, [endCall]);
 
-  // 切换静音
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
-
-  // 切换扬声器
-  const toggleSpeaker = () => {
-    setIsOnSpeaker(!isOnSpeaker);
-  };
-
-  // 打开/关闭键盘
-  const toggleKeypad = () => {
-    setIsKeypadOpen(!isKeypadOpen);
-  };
-
-  const initials = formatDisplayName(participantName).substring(0, 1);
+  const displayName = remoteUser ? formatDisplayName(remoteUser.nickname, remoteUser.username) : '用户';
 
   return (
     <View style={styles.container}>
@@ -87,57 +155,91 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
       <View style={styles.content}>
         {/* 头像 */}
         <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
+          {remoteUser ? (
+            <Avatar
+              uri={remoteUser.avatar}
+              nickname={displayName}
+              size="3xl"
+              style={styles.avatar}
+            />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{displayName.substring(0, 1)}</Text>
+            </View>
+          )}
         </View>
 
         {/* 姓名和状态 */}
-        <Text style={styles.name}>{participantName}</Text>
-        <Text style={styles.status}>通话中...</Text>
+        <Text style={styles.name}>{displayName}</Text>
+        <Text style={styles.status}>
+          {callState.status === 'calling'
+            ? '正在呼叫...'
+            : callState.status === 'incoming'
+            ? '邀请你通话...'
+            : callState.status === 'connected'
+            ? '通话中...'
+            : '通话结束'}
+        </Text>
 
         {/* 通话时长 */}
-        <Text style={styles.timer}>{formatDuration(callDuration)}</Text>
+        {callState.status === 'connected' && (
+          <Text style={styles.timer}>{formatDuration(callDuration)}</Text>
+        )}
 
         {/* 控制按钮 */}
-        <View style={styles.controls}>
-          {/* 静音按钮 */}
-          <TouchableOpacity
-            style={[styles.controlButton, isMuted && styles.controlButtonActive]}
-            onPress={toggleMute}
-          >
-            <Ionicons
-              name={isMuted ? 'mic-off' : 'mic'}
-              size={28}
-              color="#ffffff"
-            />
-          </TouchableOpacity>
+        {callState.status === 'incoming' ? (
+          /* 来电时的控制 */
+          <View style={styles.incomingControls}>
+            <TouchableOpacity
+              style={[styles.controlButton, styles.declineButton]}
+              onPress={handleRejectCall}
+            >
+              <Ionicons name="call-outline" size={28} color="#ffffff" style={{ transform: [{ rotate: '135deg' }] }} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.controlButton, styles.acceptButton]}
+              onPress={handleAcceptCall}
+            >
+              <Ionicons name="call-outline" size={28} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.controls}>
+            {/* 静音按钮 */}
+            <TouchableOpacity
+              style={[styles.controlButton, callState.isMuted && styles.controlButtonActive]}
+              onPress={toggleMute}
+            >
+              <Ionicons
+                name={callState.isMuted ? 'mic-off' : 'mic'}
+                size={28}
+                color="#ffffff"
+              />
+            </TouchableOpacity>
 
-          {/* 键盘按钮 */}
-          <TouchableOpacity
-            style={[styles.controlButton, isKeypadOpen && styles.controlButtonActive]}
-            onPress={toggleKeypad}
-          >
-            <Ionicons name="keypad" size={28} color="#ffffff" />
-          </TouchableOpacity>
+            {/* 键盘按钮 - 保留UI但暂不实现键盘 */}
+            <TouchableOpacity style={styles.controlButton}>
+              <Ionicons name="keypad" size={28} color="#ffffff" />
+            </TouchableOpacity>
 
-          {/* 挂断按钮 */}
-          <TouchableOpacity style={styles.hangupButton} onPress={handleHangup}>
-            <Ionicons name="call" size={32} color="#ffffff" style={{ transform: [{ rotate: '135deg' }] }} />
-          </TouchableOpacity>
+            {/* 挂断按钮 */}
+            <TouchableOpacity style={styles.hangupButton} onPress={handleHangup}>
+              <Ionicons name="call" size={32} color="#ffffff" style={{ transform: [{ rotate: '135deg' }] }} />
+            </TouchableOpacity>
 
-          {/* 扬声器按钮 */}
-          <TouchableOpacity
-            style={[styles.controlButton, isOnSpeaker && styles.controlButtonActive]}
-            onPress={toggleSpeaker}
-          >
-            <Ionicons
-              name={isOnSpeaker ? 'volume-high' : 'volume-medium'}
-              size={28}
-              color="#ffffff"
-            />
-          </TouchableOpacity>
-        </View>
+            {/* 扬声器按钮 */}
+            <TouchableOpacity
+              style={[styles.controlButton, callState.isSpeakerOn && styles.controlButtonActive]}
+              onPress={toggleSpeaker}
+            >
+              <Ionicons
+                name={callState.isSpeakerOn ? 'volume-high' : 'volume-medium'}
+                size={28}
+                color="#ffffff"
+              />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -199,6 +301,14 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 40,
   },
+  incomingControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 48,
+    width: '100%',
+    paddingHorizontal: 40,
+  },
   controlButton: {
     width: 64,
     height: 64,
@@ -211,6 +321,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#5b7cff',
   },
   hangupButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  acceptButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#22c55e',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  declineButton: {
     width: 72,
     height: 72,
     borderRadius: 36,

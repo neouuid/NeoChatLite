@@ -1,71 +1,175 @@
 // 桌面端音视频通话页面
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   COLORS,
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  useAuthStore,
+  useChatStore,
+  useWebRTC,
+  VideoView,
+  Avatar,
 } from '@neochat/shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
 import type { User } from '@neochat/shared/src/types';
 
-type CallState = 'calling' | 'incoming' | 'connected' | 'ended';
 type CallType = 'video' | 'voice';
 
 interface VideoCallWindowProps {
   callId?: string;
-  callType: CallType;
-  callState: CallState;
+  callType?: CallType;
   remoteUser?: User;
-  onEnd?: () => void;
-  onAccept?: () => void;
-  onToggleMute?: () => void;
-  onToggleVideo?: () => void;
-  onToggleSpeaker?: () => void;
-  onSwitchCamera?: () => void;
-  isMuted?: boolean;
-  isVideoEnabled?: boolean;
-  isSpeakerEnabled?: boolean;
-  callDuration?: string;
 }
 
 export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
-  callId,
-  callType = 'video',
-  callState = 'calling',
-  remoteUser,
-  onEnd,
-  onAccept,
-  onToggleMute,
-  onToggleVideo,
-  onToggleSpeaker,
-  onSwitchCamera,
-  isMuted = false,
-  isVideoEnabled = true,
-  isSpeakerEnabled = false,
-  callDuration = '00:00',
+  callId: propCallId,
+  callType: propCallType = 'video',
+  remoteUser: propRemoteUser,
 }) => {
-  const displayName = remoteUser ? formatDisplayName(remoteUser.nickname, remoteUser.username) : '用户';
+  const navigation = useNavigation();
+  const route = useRoute<any>();
+  const { user: currentUser } = useAuthStore();
+  const { conversations } = useChatStore();
 
-  // 结束通话
-  const handleEndCall = useCallback(() => {
-    onEnd?.();
-  }, [onEnd]);
+  // 从路由参数获取数据或使用props
+  const {
+    conversationId,
+    userId,
+    userName,
+    userAvatar,
+    incoming = false,
+    callType: routeCallType,
+  } = route.params || {};
 
-  // 接受通话
+  const {
+    callState,
+    localStream,
+    remoteStream,
+    initiateCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+    toggleVideo,
+    toggleSpeaker,
+    switchCamera,
+  } = useWebRTC();
+
+  const [callDuration, setCallDuration] = useState(0);
+
+  // 确定使用的通话类型
+  const callType = routeCallType || propCallType;
+
+  // 获取通话对方用户信息
+  const remoteUser = useMemo((): User | null => {
+    // 优先使用props
+    if (propRemoteUser) {
+      return propRemoteUser;
+    }
+    // 如果路由参数直接提供了用户信息
+    if (userId && userName) {
+      return {
+        id: userId,
+        username: userName,
+        nickname: userName,
+        avatar: userAvatar,
+        status: 'online',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+    // 从会话中查找对方用户
+    if (conversationId && currentUser) {
+      const conversation = conversations.find(c => c.id === conversationId);
+      const otherMember = conversation?.members?.find(m => m.user_id !== currentUser.id);
+      if (otherMember?.user) {
+        return otherMember.user;
+      }
+    }
+    return null;
+  }, [propRemoteUser, conversationId, conversations, currentUser, userId, userName, userAvatar]);
+
+  // 计时器
+  useEffect(() => {
+    let timer: any;
+    if (callState.status === 'connected') {
+      timer = setInterval(() => {
+        setCallDuration((prev) => prev + 1);
+      }, 1000);
+    } else if (callState.status === 'ended') {
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [callState.status, navigation]);
+
+  // 发起/接受通话
+  useEffect(() => {
+    if (incoming && callState.status === 'idle') {
+      // 如果是来电但状态是idle，说明是从通知进入的，等待用户操作
+    } else if (!incoming && remoteUser && callState.status === 'idle') {
+      // 发起通话
+      initiateCall(
+        remoteUser.id,
+        callType,
+        formatDisplayName(remoteUser.nickname, remoteUser.username),
+        remoteUser.avatar
+      ).catch(error => {
+        console.error('Failed to initiate call:', error);
+        Alert.alert('错误', '发起通话失败');
+        navigation.goBack();
+      });
+    }
+  }, [incoming, remoteUser, callState.status, callType, initiateCall, navigation]);
+
+  // 格式化通话时长
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
+
+  // 接受来电
   const handleAcceptCall = useCallback(() => {
-    onAccept?.();
-  }, [onAccept]);
+    acceptCall().catch(error => {
+      console.error('Failed to accept call:', error);
+      Alert.alert('错误', '接受通话失败');
+    });
+  }, [acceptCall]);
+
+  // 拒绝来电
+  const handleRejectCall = useCallback(() => {
+    rejectCall();
+    navigation.goBack();
+  }, [rejectCall, navigation]);
+
+  // 挂断通话
+  const handleEndCall = useCallback(() => {
+    endCall();
+  }, [endCall]);
+
+  const displayName = remoteUser
+    ? formatDisplayName(remoteUser.nickname, remoteUser.username)
+    : '用户';
+
+  const currentUserDisplayName = currentUser
+    ? formatDisplayName(currentUser.nickname, currentUser.username)
+    : '我';
 
   return (
     <View style={styles.container}>
@@ -74,7 +178,13 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
         <View style={styles.videoContainer}>
           {/* 远程视频视图 */}
           <View style={styles.remoteVideo}>
-            {!isVideoEnabled ? (
+            {remoteStream && callState.isVideoEnabled !== false ? (
+              <VideoView
+                stream={remoteStream}
+                style={styles.video}
+                objectFit="cover"
+              />
+            ) : (
               <View style={styles.videoPlaceholder}>
                 {remoteUser && (
                   <Avatar
@@ -85,18 +195,23 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
                   />
                 )}
               </View>
-            ) : (
-              <View style={styles.videoPlaceholder}>
-                <Text style={styles.videoPlaceholderText}>视频预览</Text>
-              </View>
             )}
           </View>
 
           {/* 本地视频预览 */}
           <View style={styles.localVideo}>
-            <View style={styles.localVideoPlaceholder}>
-              <Ionicons name="person-outline" size={40} color="#8080a0" />
-            </View>
+            {localStream && callState.isVideoEnabled !== false ? (
+              <VideoView
+                stream={localStream}
+                style={styles.video}
+                mirror={true}
+                objectFit="cover"
+              />
+            ) : (
+              <View style={styles.localVideoPlaceholder}>
+                <Ionicons name="person-outline" size={40} color="#8080a0" />
+              </View>
+            )}
           </View>
         </View>
       )}
@@ -120,7 +235,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
           </View>
 
           {/* 音频波动动画 */}
-          {callState === 'connected' && (
+          {callState.status === 'connected' && (
             <View style={styles.audioWaveContainer}>
               {[...Array(5)].map((_, i) => (
                 <View
@@ -138,12 +253,12 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
         <View style={styles.userInfo}>
           <Text style={styles.userName}>{displayName}</Text>
           <Text style={styles.callStatus}>
-            {callState === 'calling'
+            {callState.status === 'calling'
               ? '正在呼叫...'
-              : callState === 'incoming'
+              : callState.status === 'incoming'
               ? '邀请你通话...'
-              : callState === 'connected'
-              ? callDuration
+              : callState.status === 'connected'
+              ? formatDuration(callDuration)
               : '通话结束'}
           </Text>
         </View>
@@ -151,14 +266,14 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
 
       {/* 底部控制区域 */}
       <View style={styles.controls}>
-        {callState === 'incoming' ? (
+        {callState.status === 'incoming' ? (
           /* 来电时的控制 */
           <View style={styles.incomingControls}>
             <TouchableOpacity
               style={[styles.controlButton, styles.declineButton]}
-              onPress={handleEndCall}
+              onPress={handleRejectCall}
             >
-              <Ionicons name="call-outline" size={28} color="#ffffff" />
+              <Ionicons name="call-outline" size={28} color="#ffffff" style={{ transform: [{ rotate: '135deg' }] }} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.controlButton, styles.acceptButton]}
@@ -167,44 +282,44 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
               <Ionicons name="call-outline" size={28} color="#ffffff" />
             </TouchableOpacity>
           </View>
-        ) : callState === 'connected' ? (
+        ) : callState.status === 'connected' ? (
           /* 通话中的控制 */
           <View style={styles.callControls}>
             {/* 静音按钮 */}
             <TouchableOpacity
-              style={[styles.controlButton, isMuted && styles.controlButtonActive]}
-              onPress={onToggleMute}
+              style={[styles.controlButton, callState.isMuted && styles.controlButtonActive]}
+              onPress={toggleMute}
             >
               <Ionicons
-                name={isMuted ? 'mic-off-outline' : 'mic-outline'}
+                name={callState.isMuted ? 'mic-off-outline' : 'mic-outline'}
                 size={24}
-                color={isMuted ? '#6366f1' : '#ffffff'}
+                color={callState.isMuted ? '#6366f1' : '#ffffff'}
               />
             </TouchableOpacity>
 
             {/* 视频通话时的视频开关 */}
             {callType === 'video' && (
               <TouchableOpacity
-                style={[styles.controlButton, !isVideoEnabled && styles.controlButtonActive]}
-                onPress={onToggleVideo}
+                style={[styles.controlButton, callState.isVideoEnabled === false && styles.controlButtonActive]}
+                onPress={toggleVideo}
               >
                 <Ionicons
-                  name={isVideoEnabled ? 'videocam-outline' : 'videocam-off-outline'}
+                  name={callState.isVideoEnabled !== false ? 'videocam-outline' : 'videocam-off-outline'}
                   size={24}
-                  color={isVideoEnabled ? '#ffffff' : '#6366f1'}
+                  color={callState.isVideoEnabled !== false ? '#ffffff' : '#6366f1'}
                 />
               </TouchableOpacity>
             )}
 
             {/* 扬声器切换 */}
             <TouchableOpacity
-              style={[styles.controlButton, isSpeakerEnabled && styles.controlButtonActive]}
-              onPress={onToggleSpeaker}
+              style={[styles.controlButton, callState.isSpeakerOn && styles.controlButtonActive]}
+              onPress={toggleSpeaker}
             >
               <Ionicons
-                name={isSpeakerEnabled ? 'volume-high-outline' : 'volume-medium-outline'}
+                name={callState.isSpeakerOn ? 'volume-high-outline' : 'volume-medium-outline'}
                 size={24}
-                color={isSpeakerEnabled ? '#6366f1' : '#ffffff'}
+                color={callState.isSpeakerOn ? '#6366f1' : '#ffffff'}
               />
             </TouchableOpacity>
 
@@ -212,7 +327,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
             {callType === 'video' && (
               <TouchableOpacity
                 style={styles.controlButton}
-                onPress={onSwitchCamera}
+                onPress={switchCamera}
               >
                 <Ionicons name="camera-reverse-outline" size={24} color="#ffffff" />
               </TouchableOpacity>
@@ -223,7 +338,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
               style={[styles.controlButton, styles.endButton]}
               onPress={handleEndCall}
             >
-              <Ionicons name="call-outline" size={28} color="#ffffff" />
+              <Ionicons name="call-outline" size={28} color="#ffffff" style={{ transform: [{ rotate: '135deg' }] }} />
             </TouchableOpacity>
           </View>
         ) : (
@@ -233,7 +348,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
               style={[styles.controlButton, styles.endButton]}
               onPress={handleEndCall}
             >
-              <Ionicons name="call-outline" size={28} color="#ffffff" />
+              <Ionicons name="call-outline" size={28} color="#ffffff" style={{ transform: [{ rotate: '135deg' }] }} />
             </TouchableOpacity>
           </View>
         )}

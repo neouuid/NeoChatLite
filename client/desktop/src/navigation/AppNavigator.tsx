@@ -1,94 +1,42 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore, COLORS } from '@neochat/shared';
 
-import { LoginScreen } from '../screens/LoginScreen';
-import { RegisterScreen } from '../screens/RegisterScreen';
-import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
-import { MainChatScreen } from '../screens/MainChatScreen';
-import { ChatScreen } from '../screens/ChatScreen';
-import { ContactsScreen } from '../screens/ContactsScreen';
-import { ProfileScreen } from '../screens/ProfileScreen';
-import { ViewProfileScreen } from '../screens/ViewProfileScreen';
-import { SettingsScreen } from '../screens/SettingsScreen';
-import { ThemeScreen } from '../screens/ThemeScreen';
-import { AboutScreen } from '../screens/AboutScreen';
-import { NotificationSettingsScreen } from '../screens/NotificationSettingsScreen';
-import { ChatSettingsScreen } from '../screens/ChatSettingsScreen';
-import { CreateGroupScreen } from '../screens/CreateGroupScreen';
-import { FavoritesScreen } from '../screens/FavoritesScreen';
-import { SearchScreen } from '../screens/SearchScreen';
-import { ForwardScreen } from '../screens/ForwardScreen';
-import { AccountSecurityScreen } from '../screens/AccountSecurityScreen';
-import { GroupInfoScreen } from '../screens/GroupInfoScreen';
-import { GroupMembersScreen } from '../screens/GroupMembersScreen';
-import { AddGroupMembersScreen } from '../screens/AddGroupMembersScreen';
-import { ChatBackgroundScreen } from '../screens/ChatBackgroundScreen';
-import { ChatBackupScreen } from '../screens/ChatBackupScreen';
-import { DataClearScreen } from '../screens/DataClearScreen';
-import { ImageViewerScreen } from '../screens/ImageViewerScreen';
-import { FileViewerScreen } from '../screens/FileViewerScreen';
-import { VideoCallScreen } from '../screens/VideoCallScreen';
-import { VoiceCallScreen } from '../screens/VoiceCallScreen';
-import { EditProfileScreen } from '../screens/EditProfileScreen';
-import { MentionsScreen } from '../screens/MentionsScreen';
+import { LoginWindow } from '../screens/LoginWindow';
+import { RegisterWindow } from '../screens/RegisterWindow';
+import { ForgotPasswordWindow } from '../screens/ForgotPasswordWindow';
+import { MainWindow } from '../screens/MainWindow';
+import { ViewProfileWindow } from '../screens/ViewProfileWindow';
+import { SettingsWindow } from '../screens/SettingsWindow';
+import { ThemeWindow } from '../screens/ThemeWindow';
+import { AboutWindow } from '../screens/AboutWindow';
+import { NotificationSettingsWindow } from '../screens/NotificationSettingsWindow';
+import { ChatSettingsWindow } from '../screens/ChatSettingsWindow';
+import { CreateGroupWindow } from '../screens/CreateGroupWindow';
+import { FavoritesWindow } from '../screens/FavoritesWindow';
+import { SearchWindow } from '../screens/SearchWindow';
+import { ForwardWindow } from '../screens/ForwardWindow';
+import { AccountSecurityWindow } from '../screens/AccountSecurityWindow';
+import { GroupInfoWindow } from '../screens/GroupInfoWindow';
+import { GroupMembersWindow } from '../screens/GroupMembersWindow';
+import { AddGroupMembersWindow } from '../screens/AddGroupMembersWindow';
+import { ChatBackgroundWindow } from '../screens/ChatBackgroundWindow';
+import { ChatBackupWindow } from '../screens/ChatBackupWindow';
+import { DataClearWindow } from '../screens/DataClearWindow';
+import { ImageViewerWindow } from '../screens/ImageViewerWindow';
+import { FileViewerWindow } from '../screens/FileViewerWindow';
+import { VideoCallWindow } from '../screens/VideoCallWindow';
+import { VoiceCallWindow } from '../screens/VoiceCallWindow';
+import { EditProfileWindow } from '../screens/EditProfileWindow';
+import { MentionsWindow } from '../screens/MentionsWindow';
+import { ProfileWindow } from '../screens/ProfileWindow';
+import { ContactsWindow } from '../screens/ContactsWindow';
 
 // Type imports
 import type { RootStackParamList } from '@neochat/shared';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator();
-
-const MainTabs = () => {
-  return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          paddingBottom: 5,
-          height: 60,
-          backgroundColor: COLORS.dark.surface,
-          borderTopColor: COLORS.dark.border,
-        },
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.dark.text.secondary,
-      }}
-    >
-      <Tab.Screen
-        name="MainChat"
-        component={MainChatScreen}
-        options={{
-          tabBarLabel: '消息',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Contacts"
-        component={ContactsScreen}
-        options={{
-          tabBarLabel: '联系人',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: '我的',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
-        }}
-      />
-    </Tab.Navigator>
-  );
-};
 
 export const AppNavigator = () => {
   const { isAuthenticated } = useAuthStore();
@@ -102,145 +50,141 @@ export const AppNavigator = () => {
     >
       {!isAuthenticated ? (
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Login" component={LoginWindow} />
+          <Stack.Screen name="Register" component={RegisterWindow} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordWindow} options={{ headerShown: false }} />
         </>
       ) : (
         <>
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen
-            name="Chat"
-            component={ChatScreen}
-            options={{
-              headerShown: true,
-              headerStyle: {
-                backgroundColor: COLORS.dark.surface,
-              },
-              headerTintColor: COLORS.dark.text.primary,
-              headerTitleStyle: {
-                color: COLORS.dark.text.primary,
-              },
-            }}
-          />
+          <Stack.Screen name="Main" component={MainWindow} />
           <Stack.Screen
             name="ViewProfile"
-            component={ViewProfileScreen}
+            component={ViewProfileWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Settings"
-            component={SettingsScreen}
+            component={SettingsWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Theme"
-            component={ThemeScreen}
+            component={ThemeWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="About"
-            component={AboutScreen}
+            component={AboutWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="NotificationSettings"
-            component={NotificationSettingsScreen}
+            component={NotificationSettingsWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="ChatSettings"
-            component={ChatSettingsScreen}
+            component={ChatSettingsWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="CreateGroup"
-            component={CreateGroupScreen}
+            component={CreateGroupWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Favorites"
-            component={FavoritesScreen}
+            component={FavoritesWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Search"
-            component={SearchScreen}
+            component={SearchWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Forward"
-            component={ForwardScreen}
+            component={ForwardWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="AccountSecurity"
-            component={AccountSecurityScreen}
+            component={AccountSecurityWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="GroupInfo"
-            component={GroupInfoScreen}
+            component={GroupInfoWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="GroupMembers"
-            component={GroupMembersScreen}
+            component={GroupMembersWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="AddGroupMembers"
-            component={AddGroupMembersScreen}
+            component={AddGroupMembersWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="ChatBackground"
-            component={ChatBackgroundScreen}
+            component={ChatBackgroundWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="ChatBackup"
-            component={ChatBackupScreen}
+            component={ChatBackupWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="DataClear"
-            component={DataClearScreen}
+            component={DataClearWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="ImageViewer"
-            component={ImageViewerScreen}
+            component={ImageViewerWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="FileViewer"
-            component={FileViewerScreen}
+            component={FileViewerWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="VideoCall"
-            component={VideoCallScreen}
+            component={VideoCallWindow}
             options={{ headerShown: false, gestureEnabled: false }}
           />
           <Stack.Screen
             name="VoiceCall"
-            component={VoiceCallScreen}
+            component={VoiceCallWindow}
             options={{ headerShown: false, gestureEnabled: false }}
           />
           <Stack.Screen
             name="EditProfile"
-            component={EditProfileScreen}
+            component={EditProfileWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Help"
-            component={AboutScreen}
+            component={AboutWindow}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Mentions"
-            component={MentionsScreen}
+            component={MentionsWindow}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Profile"
+            component={ProfileWindow}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Contacts"
+            component={ContactsWindow}
             options={{ headerShown: false }}
           />
         </>
