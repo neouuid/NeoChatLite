@@ -1,44 +1,111 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { StatusBar, Alert, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 
-import { useAuthStore, COLORS } from '@neochat/shared';
-import { LoginWindow } from './screens/LoginWindow';
-import { RegisterWindow } from './screens/RegisterWindow';
-import { MainWindow } from './screens/MainWindow';
-
-type AuthView = 'login' | 'register';
+import { AppNavigator } from './navigation/AppNavigator';
+import { CallInviteModal } from './components';
+import { useWebRTC, useWebSocket, useAuth, useAuthStore, useUserStore, COLORS, SPACING, TYPOGRAPHY } from '@neochat/shared';
 
 const App: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuthStore();
-  const [authView, setAuthView] = useState<AuthView>('login');
+  const { callState } = useWebRTC();
+  const { isLoading: isAuthLoading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+  const { addFriendRequest, addFriend } = useUserStore();
+  const isCallModalVisible = callState.status === 'incoming' || callState.status === 'calling';
 
-  if (isLoading) {
-    return <View style={styles.loadingContainer} />;
+  // Loading screen component
+  const LoadingScreen = () => (
+    <View style={loadingStyles.container}>
+      <ActivityIndicator size="large" color={COLORS.primary} />
+      <Text style={loadingStyles.text}>加载中...</Text>
+    </View>
+  );
+
+  // WebSocket 好友请求监听
+  useWebSocket({
+    onFriendRequest: (data) => {
+      // 添加到好友请求列表
+      addFriendRequest({
+        id: data.user_id,
+        user_id: user?.id || '',
+        friend_id: data.user_id,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        friend: {
+          id: data.user_id,
+          username: data.username,
+          nickname: data.username,
+          status: 'online',
+          avatar: data.avatar,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      });
+      // 显示通知
+      Alert.alert('好友请求', `${data.username} 请求添加你为好友`);
+    },
+    onFriendAccepted: (data) => {
+      // 添加到好友列表
+      addFriend({
+        id: data.user_id,
+        user_id: user?.id || '',
+        friend_id: data.user_id,
+        status: 'accepted',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        friend: {
+          id: data.user_id,
+          username: data.username,
+          nickname: data.username,
+          status: 'online',
+          avatar: data.avatar,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      });
+      // 显示通知
+      Alert.alert('好友已添加', `${data.username} 已接受你的好友请求`);
+    },
+  });
+
+  // Show loading screen while auth is initializing
+  if (isLoading || isAuthLoading) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <LoadingScreen />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    );
   }
 
   return (
-    <View style={styles.container}>
-      {!isAuthenticated ? (
-        authView === 'login' ? (
-          <LoginWindow onSwitchToRegister={() => setAuthView('register')} />
-        ) : (
-          <RegisterWindow onSwitchToLogin={() => setAuthView('login')} />
-        )
-      ) : (
-        <MainWindow />
-      )}
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+          <AppNavigator />
+          <CallInviteModal visible={isCallModalVisible} />
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 
-const styles = StyleSheet.create({
+const loadingStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.dark.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.lg,
   },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.dark.background,
+  text: {
+    color: COLORS.dark.text.secondary,
+    fontSize: TYPOGRAPHY.sizes.md,
   },
 });
 
