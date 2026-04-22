@@ -19,10 +19,11 @@ import {
   useAuthStore,
   useChatStore,
   useWebRTC,
+  VideoView,
+  Avatar,
   type User,
 } from '@neochat/shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
 
 type VideoCallScreenRouteProp = {
@@ -50,6 +51,8 @@ export const VideoCallScreen: React.FC = () => {
 
   const {
     callState,
+    localStream,
+    remoteStream,
     initiateCall,
     acceptCall,
     rejectCall,
@@ -214,15 +217,24 @@ export const VideoCallScreen: React.FC = () => {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* 远程视频区域 */}
       <View style={styles.remoteVideoContainer}>
-        <View style={styles.remoteVideoPlaceholder}>
-          <View style={styles.remoteAvatarContainer}>
-            <Avatar
-              uri={remoteUser?.avatar}
-              nickname={displayName}
-              size="xl"
-            />
+        {/* 远程视频流 */}
+        {remoteStream ? (
+          <VideoView
+            stream={remoteStream}
+            style={styles.remoteVideo}
+            objectFit="cover"
+          />
+        ) : (
+          <View style={styles.remoteVideoPlaceholder}>
+            <View style={styles.remoteAvatarContainer}>
+              <Avatar
+                uri={remoteUser?.avatar}
+                nickname={displayName}
+                size="xl"
+              />
+            </View>
           </View>
-        </View>
+        )}
 
         {/* 通话信息叠加层 */}
         <View style={styles.infoOverlay}>
@@ -235,15 +247,24 @@ export const VideoCallScreen: React.FC = () => {
 
         {/* 自己的小视频窗口 */}
         <View style={styles.selfVideoContainer}>
-          <View style={styles.selfVideoPlaceholder}>
-            <View style={styles.selfAvatarContainer}>
-              <Avatar
-                uri={currentUser?.avatar}
-                nickname={currentUserDisplayName}
-                size="md"
-              />
+          {localStream && callState.isVideoEnabled !== false ? (
+            <VideoView
+              stream={localStream}
+              style={styles.selfVideo}
+              mirror={true}
+              objectFit="cover"
+            />
+          ) : (
+            <View style={styles.selfVideoPlaceholder}>
+              <View style={styles.selfAvatarContainer}>
+                <Avatar
+                  uri={currentUser?.avatar}
+                  nickname={currentUserDisplayName}
+                  size="md"
+                />
+              </View>
             </View>
-          </View>
+          )}
         </View>
       </View>
 
@@ -305,13 +326,17 @@ const styles = StyleSheet.create({
   },
   remoteVideoContainer: {
     flex: 1,
-    backgroundColor: '#2d2d44',
+    backgroundColor: '#000000',
     position: 'relative',
+  },
+  remoteVideo: {
+    flex: 1,
   },
   remoteVideoPlaceholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#2d2d44',
   },
   remoteAvatarContainer: {
     width: 120,
@@ -352,6 +377,11 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
+    backgroundColor: '#1a1a2e',
+  },
+  selfVideo: {
+    width: '100%',
+    height: '100%',
   },
   selfVideoPlaceholder: {
     flex: 1,

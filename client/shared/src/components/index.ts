@@ -9,3 +9,4 @@ export * from './ConversationItem';
 export * from './MessageItem';
 export * from './MessageList';
 export * from './MentionPicker';
+export * from './VideoView';
