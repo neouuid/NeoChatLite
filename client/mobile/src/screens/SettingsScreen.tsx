@@ -50,13 +50,6 @@ export const SettingsScreen: React.FC = () => {
       screen: 'ChatBackground' as const,
     },
     {
-      id: 'privacy',
-      title: '隐私设置',
-      icon: 'shield-checkmark-outline',
-      type: 'navigate' as const,
-      screen: 'Privacy' as const,
-    },
-    {
       id: 'security',
       title: '账号安全',
       icon: 'lock-closed-outline',
