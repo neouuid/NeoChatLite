@@ -12,6 +12,7 @@
     "moduleResolution": "bundler",
     "customConditions": [],
     "baseUrl": "./src",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["*"],
       "@neochat/shared": ["../../shared/src"]
