@@ -65,6 +65,11 @@ func (r *Repository) UpdateConversation(conv *Conversation) error {
 	return r.db.Save(conv).Error
 }
 
+// DeleteConversation 删除会话（软删除）
+func (r *Repository) DeleteConversation(id uuid.UUID) error {
+	return r.db.Delete(&Conversation{}, id).Error
+}
+
 // ==================== ConversationMember Repository Methods ====================
 
 // AddConversationMember 添加会话成员

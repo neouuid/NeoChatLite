@@ -16,6 +16,8 @@ import {
   BORDER_RADIUS,
 } from '@neochat/shared';
 
+import { pickImageFromGalleryWeb, takePhotoWeb } from '../utils/mediaWeb';
+
 interface ChatBackgroundWindowProps {
   onBack?: () => void;
 }
@@ -24,12 +26,21 @@ export const ChatBackgroundWindow: React.FC<ChatBackgroundWindowProps> = ({ onBa
   const [currentBackground, setCurrentBackground] = useState<string>('default');
 
   const backgroundOptions = [
-    { id: 'default', type: 'color', color: '#ffffff', label: '默认' },
-    { id: 'light-blue', type: 'color', color: '#e3f2fd', label: '浅蓝' },
-    { id: 'light-green', type: 'color', color: '#e8f5e9', label: '浅绿' },
-    { id: 'light-pink', type: 'color', color: '#fce4ec', label: '浅粉' },
-    { id: 'light-yellow', type: 'color', color: '#fff8e1', label: '浅黄' },
-    { id: 'light-purple', type: 'color', color: '#f3e5f5', label: '浅紫' },
+    { id: 'default', type: 'color' as const, color: '#ffffff', label: '默认' },
+    { id: 'light-blue', type: 'color' as const, color: '#e3f2fd', label: '浅蓝' },
+    { id: 'light-green', type: 'color' as const, color: '#e8f5e9', label: '浅绿' },
+    { id: 'light-pink', type: 'color' as const, color: '#fce4ec', label: '浅粉' },
+    { id: 'light-yellow', type: 'color' as const, color: '#fff8e1', label: '浅黄' },
+    { id: 'light-purple', type: 'color' as const, color: '#f3e5f5', label: '浅紫' },
+  ];
+
+  const presetImageBackgrounds = [
+    { id: 'bg1', label: '渐变蓝', gradient: ['#667eea', '#764ba2'] },
+    { id: 'bg2', label: '渐变绿', gradient: ['#11998e', '#38ef7d'] },
+    { id: 'bg3', label: '渐变粉', gradient: ['#f093fb', '#f5576c'] },
+    { id: 'bg4', label: '渐变橙', gradient: ['#fa709a', '#fee140'] },
+    { id: 'bg5', label: '渐变紫', gradient: ['#a18cd1', '#fbc2eb'] },
+    { id: 'bg6', label: '渐变青', gradient: ['#4facfe', '#00f2fe'] },
   ];
 
   // 选择背景
@@ -39,13 +50,39 @@ export const ChatBackgroundWindow: React.FC<ChatBackgroundWindowProps> = ({ onBa
   };
 
   // 从相册选择
-  const handleSelectFromGallery = () => {
-    Alert.alert('提示', '从相册选择功能开发中');
+  const handleSelectFromGallery = async () => {
+    try {
+      const result = await pickImageFromGalleryWeb();
+      if (result) {
+        setCurrentBackground(`custom-${Date.now()}`);
+        Alert.alert('成功', '背景已设置');
+      }
+    } catch (error) {
+      console.error('Failed to pick image:', error);
+    }
   };
 
   // 拍照
-  const handleTakePhoto = () => {
-    Alert.alert('提示', '拍照功能开发中');
+  const handleTakePhoto = async () => {
+    try {
+      const result = await takePhotoWeb();
+      if (result) {
+        setCurrentBackground(`custom-${Date.now()}`);
+        Alert.alert('成功', '背景已设置');
+      }
+    } catch (error) {
+      console.error('Failed to take photo:', error);
+    }
+  };
+
+  // 渲染渐变背景预览
+  const renderGradientPreview = (gradient: string[]) => {
+    return (
+      <View style={styles.gradientPreview}>
+        <View style={[styles.gradientColor, { backgroundColor: gradient[0], flex: 1 }]} />
+        <View style={[styles.gradientColor, { backgroundColor: gradient[1], flex: 1 }]} />
+      </View>
+    );
   };
 
   return (
@@ -105,12 +142,28 @@ export const ChatBackgroundWindow: React.FC<ChatBackgroundWindowProps> = ({ onBa
           </View>
         </View>
 
-        {/* 预设图片 - 暂时只显示占位符 */}
+        {/* 预设渐变背景 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>预设图片</Text>
-          <View style={styles.placeholderCard}>
-            <Ionicons name="image-outline" size={48} color="#8080a0" />
-            <Text style={styles.placeholderText}>更多背景图片即将上线</Text>
+          <Text style={styles.sectionTitle}>预设渐变</Text>
+          <View style={styles.colorGrid}>
+            {presetImageBackgrounds.map((option) => (
+              <TouchableOpacity
+                key={option.id}
+                style={[
+                  styles.colorItem,
+                  currentBackground === option.id && styles.colorItemSelected,
+                ]}
+                onPress={() => handleSelectBackground(option.id)}
+              >
+                {renderGradientPreview(option.gradient)}
+                <Text style={styles.colorLabel}>{option.label}</Text>
+                {currentBackground === option.id && (
+                  <View style={styles.checkOverlay}>
+                    <Ionicons name="checkmark-circle" size={32} color="#5b7cff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -215,6 +268,16 @@ const styles = StyleSheet.create({
     width: '80%',
     height: '80%',
     borderRadius: BORDER_RADIUS.md,
+  },
+  gradientPreview: {
+    width: '80%',
+    height: '80%',
+    borderRadius: BORDER_RADIUS.md,
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  gradientColor: {
+    height: '100%',
   },
   colorLabel: {
     color: '#1a1a2e',

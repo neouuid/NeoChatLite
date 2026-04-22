@@ -20,13 +20,13 @@ import (
 
 // HandlerDependencies 包含所有路由处理器依赖
 type HandlerDependencies struct {
-	AuthHandler  *auth.Handler
-	UserHandler  *user.Handler
-	ChatHandler  *chat.Handler
-	UploadHandler *chat.UploadHandler
-	WsHub        *chat.WebSocketHub
+	AuthHandler    *auth.Handler
+	UserHandler    *user.Handler
+	ChatHandler    *chat.Handler
+	UploadHandler  *chat.UploadHandler
+	WsHub          *chat.WebSocketHub
 	AuthMiddleware *auth.Middleware
-	Cfg          *config.Config
+	Cfg            *config.Config
 }
 
 // SetupRoutes 设置所有路由
@@ -69,12 +69,22 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			authGroup.POST("/register", deps.AuthHandler.Register)
 			authGroup.POST("/login", deps.AuthHandler.Login)
 			authGroup.POST("/refresh", deps.AuthHandler.RefreshToken)
+			authGroup.POST("/logout", deps.AuthHandler.Logout)
 			authGroup.GET("/profile", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.GetProfile)
+			authGroup.PUT("/profile", deps.AuthMiddleware.AuthMiddleware(), deps.UserHandler.UpdateProfile)
+			authGroup.GET("/me", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.GetMe)
 			authGroup.POST("/forgot-password", deps.AuthHandler.ForgotPassword)
 			authGroup.POST("/reset-password", deps.AuthHandler.ResetPassword)
 			authGroup.POST("/change-password", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.ChangePassword)
 			authGroup.POST("/send-verification-email", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.SendEmailVerification)
 			authGroup.POST("/verify-email", deps.AuthHandler.VerifyEmail)
+			// 新增的安全相关路由
+			authGroup.POST("/delete-account", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.DeleteAccount)
+			authGroup.POST("/send-phone-verification", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.SendPhoneVerification)
+			authGroup.POST("/update-phone", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.UpdatePhone)
+			authGroup.POST("/update-email", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.UpdateEmail)
+			authGroup.GET("/login-history", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.GetLoginHistory)
+			authGroup.GET("/devices", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.GetDevices)
 		}
 
 		// 用户路由
@@ -119,6 +129,8 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			chatGroup.GET("/conversation/:id", deps.ChatHandler.GetConversation)
 			chatGroup.POST("/conversation/single", deps.ChatHandler.CreateSingleConversation)
 			chatGroup.POST("/conversation/:id/read", deps.ChatHandler.MarkConversationAsRead)
+			chatGroup.PUT("/conversations/:id", deps.ChatHandler.UpdateConversation)
+			chatGroup.DELETE("/conversations/:id", deps.ChatHandler.DeleteConversation)
 
 			// 消息路由
 			chatGroup.GET("/conversation/:id/messages", deps.ChatHandler.GetConversationMessages)

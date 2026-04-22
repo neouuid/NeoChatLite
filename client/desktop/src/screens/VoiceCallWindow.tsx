@@ -46,6 +46,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   } = useWebRTC();
 
   const [callDuration, setCallDuration] = useState(0);
+  const [animationFrame, setAnimationFrame] = useState(0);
 
   // 从路由参数获取数据
   const {
@@ -85,13 +86,18 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
     return null;
   }, [propRemoteUser, conversationId, conversations, currentUser, userId, userName, userAvatar]);
 
-  // 计时器
+  // 计时器 + 音频波浪动画
   useEffect(() => {
     let timer: any;
+    let animationTimer: any;
     if (callState.status === 'connected') {
       timer = setInterval(() => {
         setCallDuration(prev => prev + 1);
       }, 1000);
+      // 动画刷新器
+      animationTimer = setInterval(() => {
+        setAnimationFrame(prev => prev + 1);
+      }, 50);
     } else if (callState.status === 'ended') {
       setTimeout(() => {
         navigation.goBack();
@@ -99,6 +105,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
     }
     return () => {
       if (timer) clearInterval(timer);
+      if (animationTimer) clearInterval(animationTimer);
     };
   }, [callState.status, navigation]);
 
@@ -149,6 +156,37 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
 
   const displayName = remoteUser ? formatDisplayName(remoteUser.nickname, remoteUser.username) : '用户';
 
+  // 获取音频可视化波浪动画
+  const renderAudioWave = () => {
+    if (callState.status !== 'connected') return null;
+
+    const barCount = 7;
+    return (
+      <View style={styles.waveContainer}>
+        {Array.from({ length: barCount }).map((_, i) => {
+          const phase = i * 0.8;
+          const freq = 1 + i * 0.3;
+          const baseHeight = 20;
+          const amplitude = callState.isMuted ? 5 : 25;
+          const height = baseHeight + Math.sin(animationFrame * 0.15 * freq + phase) * amplitude;
+
+          return (
+            <View
+              key={i}
+              style={[
+                styles.waveBar,
+                {
+                  height: Math.max(10, height),
+                  opacity: callState.isMuted ? 0.3 : 0.8,
+                },
+              ]}
+            />
+          );
+        })}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* 主内容区 */}
@@ -185,6 +223,9 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
         {callState.status === 'connected' && (
           <Text style={styles.timer}>{formatDuration(callDuration)}</Text>
         )}
+
+        {/* 音频波浪动画 */}
+        {renderAudioWave()}
 
         {/* 控制按钮 */}
         {callState.status === 'incoming' ? (
@@ -292,6 +333,17 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontFamily: TYPOGRAPHY.fontFamily,
     fontWeight: TYPOGRAPHY.fontWeight.semibold,
+  },
+  waveContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 24,
+  },
+  waveBar: {
+    width: 4,
+    backgroundColor: '#5b7cff',
+    borderRadius: 2,
   },
   controls: {
     flexDirection: 'row',

@@ -11,10 +11,22 @@ import (
 
 type Handler struct {
 	service *Service
+	hub     interface{
+		SendFriendRequest(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string)
+		SendFriendAccepted(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string)
+	}
 }
 
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
+}
+
+// SetWebSocketHub 设置WebSocket集线器
+func (h *Handler) SetWebSocketHub(hub interface{
+	SendFriendRequest(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string)
+	SendFriendAccepted(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string)
+}) {
+	h.hub = hub
 }
 
 // GetUserIDFromContext 从上下文中获取用户ID
@@ -206,6 +218,18 @@ func (h *Handler) SendFriendRequest(c *gin.Context) {
 		return
 	}
 
+	// 通过WebSocket发送好友请求通知
+	if h.hub != nil {
+		fromUser, err := h.service.GetUserProfile(userID)
+		if err == nil {
+			fromUserName := fromUser.Nickname
+			if fromUserName == "" {
+				fromUserName = fromUser.Username
+			}
+			h.hub.SendFriendRequest(friendID, userID, fromUserName, fromUser.Avatar)
+		}
+	}
+
 	response.Success(c, friend)
 }
 
@@ -239,6 +263,19 @@ func (h *Handler) AcceptFriendRequest(c *gin.Context) {
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
+	}
+
+	// 通过WebSocket发送好友已接受通知
+	if h.hub != nil {
+		fromUser, err := h.service.GetUserProfile(userID)
+		if err == nil {
+			fromUserName := fromUser.Nickname
+			if fromUserName == "" {
+				fromUserName = fromUser.Username
+			}
+			// 通知原请求发送者
+			h.hub.SendFriendAccepted(friend.UserID, userID, fromUserName, fromUser.Avatar)
+		}
 	}
 
 	response.Success(c, friend)

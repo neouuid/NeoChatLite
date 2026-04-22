@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -353,4 +355,257 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 	response.Success(c, gin.H{
 		"message": "email verified successfully",
 	})
+}
+
+// DeleteAccount 删除账户
+func (h *Handler) DeleteAccount(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		response.Unauthorized(c, "invalid user ID")
+		return
+	}
+
+	var req DeleteAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if req.Password == "" {
+		response.BadRequest(c, "password is required")
+		return
+	}
+
+	if err := h.service.DeleteAccount(userID, &req); err != nil {
+		if err.Error() == "invalid password" {
+			response.Unauthorized(c, err.Error())
+		} else {
+			response.BadRequest(c, err.Error())
+		}
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "account deleted successfully",
+	})
+}
+
+// SendPhoneVerification 发送手机验证码
+func (h *Handler) SendPhoneVerification(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		response.Unauthorized(c, "invalid user ID")
+		return
+	}
+
+	var req SendPhoneVerificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if req.Phone == "" {
+		response.BadRequest(c, "phone is required")
+		return
+	}
+
+	token, err := h.service.SendPhoneVerification(userID, req.Phone)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "verification code sent",
+		"code":    token, // 仅用于测试
+	})
+}
+
+// UpdatePhone 更新手机号
+func (h *Handler) UpdatePhone(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		response.Unauthorized(c, "invalid user ID")
+		return
+	}
+
+	var req UpdatePhoneRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if req.Phone == "" {
+		response.BadRequest(c, "phone is required")
+		return
+	}
+
+	if req.Code == "" {
+		response.BadRequest(c, "code is required")
+		return
+	}
+
+	if err := h.service.UpdatePhone(userID, &req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "phone updated successfully",
+	})
+}
+
+// UpdateEmail 更新邮箱
+func (h *Handler) UpdateEmail(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		response.Unauthorized(c, "invalid user ID")
+		return
+	}
+
+	var req UpdateEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if req.Email == "" {
+		response.BadRequest(c, "email is required")
+		return
+	}
+
+	if req.Code == "" {
+		response.BadRequest(c, "code is required")
+		return
+	}
+
+	if err := h.service.UpdateEmail(userID, &req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "email updated successfully",
+	})
+}
+
+// GetLoginHistory 获取登录历史
+func (h *Handler) GetLoginHistory(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		response.Unauthorized(c, "invalid user ID")
+		return
+	}
+
+	page := 1
+	pageSize := 20
+
+	if pageStr := c.Query("page"); pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil {
+			page = p
+		}
+	}
+
+	if pageSizeStr := c.Query("page_size"); pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil {
+			pageSize = ps
+		}
+	}
+
+	history, total, err := h.service.GetUserLoginHistory(userID, page, pageSize)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{
+		"list":  history,
+		"total": total,
+		"page":  page,
+		"size":  pageSize,
+	})
+}
+
+// GetDevices 获取登录设备列表
+func (h *Handler) GetDevices(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		response.Unauthorized(c, "invalid user ID")
+		return
+	}
+
+	devices, err := h.service.GetUserDevices(userID)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{
+		"devices": devices,
+	})
+}
+
+// Logout 登出接口
+// @Summary 用户登出
+// @Description 清除用户的认证状态
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.ApiResponse
+// @Router /api/v1/auth/logout [post]
+func (h *Handler) Logout(c *gin.Context) {
+	// 这里可以添加将 token 加入黑名单的逻辑
+	response.Success(c, gin.H{
+		"message": "logged out successfully",
+	})
+}
+
+// GetMe 获取当前用户信息（别名）
+// @Summary 获取当前用户信息
+// @Description 获取已登录用户的详细信息
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.ApiResponse{data=user.User}
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/auth/me [get]
+func (h *Handler) GetMe(c *gin.Context) {
+	h.GetProfile(c)
 }

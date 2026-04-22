@@ -23,6 +23,7 @@ import {
 
 import { Avatar } from '@neochat/shared/src/components/Avatar';
 import { formatDisplayName } from '@neochat/shared/src/utils';
+import { pickImageFromGalleryWeb } from '../utils/mediaWeb';
 
 interface EditProfileWindowProps {
   onBack?: () => void;
@@ -34,6 +35,8 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [tempAvatar, setTempAvatar] = useState<string | null>(null);
 
   // 保存个人资料
   const handleSave = useCallback(async () => {
@@ -47,12 +50,14 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
       const response = await chatService.updateProfile({
         nickname: nickname.trim(),
         bio: bio.trim() || undefined,
+        avatar: tempAvatar || undefined,
       });
 
       if (response.success && response.data) {
         const updatedUser = response.data;
         updateUser(updatedUser);
         updateUserInStore(updatedUser);
+        setTempAvatar(null);
         Alert.alert('成功', '资料已更新', [
           { text: '确定', onPress: onBack },
         ]);
@@ -62,11 +67,36 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
     } finally {
       setIsSaving(false);
     }
-  }, [nickname, bio, user, updateUser, updateUserInStore, onBack]);
+  }, [nickname, bio, tempAvatar, user, updateUser, updateUserInStore, onBack]);
 
   // 更换头像
-  const handleChangeAvatar = useCallback(() => {
-    Alert.alert('提示', '头像更换功能开发中');
+  const handleChangeAvatar = useCallback(async () => {
+    try {
+      const result = await pickImageFromGalleryWeb();
+      if (result) {
+        setIsUploading(true);
+        try {
+          // 先上传图片
+          const uploadResponse = await chatService.uploadFile(
+            result.file!,
+            `avatar_${Date.now()}.jpg`
+          );
+
+          if (uploadResponse.success && uploadResponse.data) {
+            setTempAvatar(uploadResponse.data.url);
+            Alert.alert('成功', '头像已选择，请点击保存完成');
+          } else {
+            Alert.alert('错误', uploadResponse.message || '上传失败');
+          }
+        } catch (uploadError) {
+          Alert.alert('错误', '上传头像失败');
+        } finally {
+          setIsUploading(false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to pick image:', error);
+    }
   }, []);
 
   return (
@@ -93,16 +123,16 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
             <Avatar
-              uri={user?.avatar}
+              uri={tempAvatar || user?.avatar}
               nickname={formatDisplayName(user?.nickname, user?.username)}
               size="xl"
               style={styles.avatar}
             />
-            <TouchableOpacity style={styles.changeAvatarButton} onPress={handleChangeAvatar}>
+            <TouchableOpacity style={styles.changeAvatarButton} onPress={handleChangeAvatar} disabled={isUploading}>
               <Ionicons name="camera-outline" size={20} color="#ffffff" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.changeAvatarText}>点击更换头像</Text>
+          <Text style={styles.changeAvatarText}>{isUploading ? '上传中...' : '点击更换头像'}</Text>
         </View>
 
         {/* 资料表单 */}

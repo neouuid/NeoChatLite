@@ -59,6 +59,7 @@ export const VoiceCallScreen: React.FC = () => {
   } = useWebRTC();
 
   const [callDuration, setCallDuration] = useState(0);
+  const [animationFrame, setAnimationFrame] = useState(0);
 
   // 获取通话对方用户信息
   const remoteUser = useMemo((): User | null => {
@@ -87,13 +88,18 @@ export const VoiceCallScreen: React.FC = () => {
     return null;
   }, [conversationId, conversations, currentUser, userId, userName, userAvatar]);
 
-  // 计时器
+  // 计时器 + 音频波浪动画
   useEffect(() => {
     let timer: NodeJS.Timeout;
+    let animationTimer: NodeJS.Timeout;
     if (callState.status === 'connected') {
       timer = setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
+      // 动画刷新器
+      animationTimer = setInterval(() => {
+        setAnimationFrame((prev) => prev + 1);
+      }, 50);
     } else if (callState.status === 'ended') {
       setTimeout(() => {
         navigation.goBack();
@@ -101,6 +107,7 @@ export const VoiceCallScreen: React.FC = () => {
     }
     return () => {
       if (timer) clearInterval(timer);
+      if (animationTimer) clearInterval(animationTimer);
     };
   }, [callState.status, navigation]);
 
@@ -166,20 +173,30 @@ export const VoiceCallScreen: React.FC = () => {
   const renderAudioWave = () => {
     if (callState.status !== 'connected') return null;
 
+    const barCount = 7;
     return (
       <View style={styles.waveContainer}>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <View
-            key={i}
-            style={[
-              styles.waveBar,
-              {
-                height: callState.isMuted ? 20 : 20 + Math.sin(Date.now() / 200 + i) * 20,
-                opacity: callState.isMuted ? 0.3 : 0.7,
-              },
-            ]}
-          />
-        ))}
+        {Array.from({ length: barCount }).map((_, i) => {
+          // 每个 bar 使用不同的相位和频率，创造更自然的波浪效果
+          const phase = i * 0.8;
+          const freq = 1 + i * 0.3;
+          const baseHeight = 20;
+          const amplitude = callState.isMuted ? 5 : 25;
+          const height = baseHeight + Math.sin(animationFrame * 0.15 * freq + phase) * amplitude;
+
+          return (
+            <View
+              key={i}
+              style={[
+                styles.waveBar,
+                {
+                  height: Math.max(10, height),
+                  opacity: callState.isMuted ? 0.3 : 0.8,
+                },
+              ]}
+            />
+          );
+        })}
       </View>
     );
   };

@@ -84,6 +84,60 @@ export class AuthService {
       throw new Error(response.message || 'Failed to verify email');
     }
   }
+
+  static async updatePhone(phone: string, code: string): Promise<void> {
+    const response = await api.post('/auth/update-phone', { phone, code });
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to update phone');
+    }
+  }
+
+  static async updateEmail(email: string, code: string): Promise<void> {
+    const response = await api.post('/auth/update-email', { email, code });
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to update email');
+    }
+  }
+
+  static async sendPhoneVerification(phone: string): Promise<string> {
+    const response = await api.post<{ token: string }>('/auth/send-phone-verification', { phone });
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to send verification code');
+    }
+    return response.data?.token || '';
+  }
+
+  static async sendEmailVerification(): Promise<string> {
+    const response = await api.post<{ code: string }>('/auth/send-verification-email');
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to send verification email');
+    }
+    return response.data?.code || '';
+  }
+
+  static async deleteAccount(password: string): Promise<void> {
+    const response = await api.post('/auth/delete-account', { password });
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to delete account');
+    }
+    api.clearTokens();
+  }
+
+  static async getLoginHistory(page: number = 1, pageSize: number = 20): Promise<any> {
+    const response = await api.get(`/auth/login-history?page=${page}&page_size=${pageSize}`);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to get login history');
+    }
+    return response.data;
+  }
+
+  static async getDevices(): Promise<any> {
+    const response = await api.get('/auth/devices');
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to get devices');
+    }
+    return response.data;
+  }
 }
 
 export default AuthService;

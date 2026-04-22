@@ -24,5 +24,6 @@ export { NotificationSettingsWindow } from './NotificationSettingsWindow';
 export { AccountSecurityWindow } from './AccountSecurityWindow';
 export { ThemeWindow } from './ThemeWindow';
 export { AboutWindow } from './AboutWindow';
+export { SettingsWindow } from './SettingsWindow';
 export { VideoCallWindow } from './VideoCallWindow';
 export { VoiceCallWindow } from './VoiceCallWindow';

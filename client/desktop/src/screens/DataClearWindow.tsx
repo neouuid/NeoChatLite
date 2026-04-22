@@ -1,6 +1,6 @@
 // 桌面端数据清除页面
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  useChatStore,
 } from '@neochat/shared';
 
 interface DataClearWindowProps {
@@ -21,6 +22,43 @@ interface DataClearWindowProps {
 }
 
 export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
+  const { clearAllMessages, conversations } = useChatStore();
+  const [isClearingChat, setIsClearingChat] = useState(false);
+  const [isClearingCache, setIsClearingCache] = useState(false);
+
+  // 计算本地存储大小（模拟）
+  const [storageInfo, setStorageInfo] = useState([
+    { label: '聊天记录', size: '0 MB' },
+    { label: '图片', size: '0 MB' },
+    { label: '文件', size: '0 MB' },
+    { label: '视频', size: '0 MB' },
+    { label: '其他', size: '0 MB' },
+  ]);
+
+  // 计算存储大小
+  useEffect(() => {
+    const messageCount = Object.values(conversations).reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
+    const approxSizeMB = Math.min(messageCount * 0.1, 500); // 假设每条消息 0.1 MB
+
+    setStorageInfo([
+      { label: '聊天记录', size: `${Math.round(approxSizeMB)} MB` },
+      { label: '图片', size: `${Math.round(approxSizeMB * 2)} MB` },
+      { label: '文件', size: `${Math.round(approxSizeMB * 1.5)} MB` },
+      { label: '视频', size: `${Math.round(approxSizeMB * 3)} MB` },
+      { label: '其他', size: '64 MB' },
+    ]);
+  }, [conversations]);
+
+  const totalSize = storageInfo.reduce((acc, item) => {
+    const match = item.size.match(/(\d+\.?\d*) (MB|GB)/);
+    if (!match) return acc;
+    const value = parseFloat(match[1]);
+    const unit = match[2];
+    return acc + (unit === 'GB' ? value * 1024 : value);
+  }, 0);
+
+  const totalSizeText = totalSize > 1024 ? `${(totalSize / 1024).toFixed(1)} GB` : `${Math.round(totalSize)} MB`;
+
   // 清除聊天记录
   const handleClearChat = () => {
     Alert.alert(
@@ -32,7 +70,15 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
           text: '确定清除',
           style: 'destructive',
           onPress: async () => {
-            Alert.alert('提示', '清除功能开发中');
+            setIsClearingChat(true);
+            try {
+              clearAllMessages();
+              Alert.alert('成功', '聊天记录已清除');
+            } catch (error) {
+              Alert.alert('错误', '清除失败');
+            } finally {
+              setIsClearingChat(false);
+            }
           },
         },
       ]
@@ -49,30 +95,29 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
         {
           text: '确定清除',
           onPress: async () => {
-            Alert.alert('提示', '清除功能开发中');
+            setIsClearingCache(true);
+            try {
+              // Web端清除 localStorage 中的缓存数据
+              const keysToRemove: string[] = [];
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('cache') || key.includes('media') || key.includes('image'))) {
+                  keysToRemove.push(key);
+                }
+              }
+              keysToRemove.forEach(key => localStorage.removeItem(key));
+
+              Alert.alert('成功', '缓存已清除');
+            } catch (error) {
+              Alert.alert('错误', '清除失败');
+            } finally {
+              setIsClearingCache(false);
+            }
           },
         },
       ]
     );
   };
-
-  const storageInfo = [
-    { label: '聊天记录', size: '256 MB' },
-    { label: '图片', size: '1.2 GB' },
-    { label: '文件', size: '512 MB' },
-    { label: '视频', size: '2.5 GB' },
-    { label: '其他', size: '128 MB' },
-  ];
-
-  const totalSize = storageInfo.reduce((acc, item) => {
-    const match = item.size.match(/(\d+\.?\d*) (MB|GB)/);
-    if (!match) return acc;
-    const value = parseFloat(match[1]);
-    const unit = match[2];
-    return acc + (unit === 'GB' ? value * 1024 : value);
-  }, 0);
-
-  const totalSizeText = totalSize > 1024 ? `${(totalSize / 1024).toFixed(1)} GB` : `${Math.round(totalSize)} MB`;
 
   return (
     <View style={styles.container}>
@@ -89,7 +134,7 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
         {/* 存储空间 */}
         <View style={styles.storageSection}>
           <View style={styles.storageCard}>
-            <View style={storageHeader}>
+            <View style={styles.storageHeader}>
               <Text style={styles.storageTitle}>存储空间</Text>
               <Text style={styles.storageTotal}>共 {totalSizeText}</Text>
             </View>
@@ -111,22 +156,26 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>数据清除</Text>
           <View style={styles.clearCard}>
-            <TouchableOpacity style={styles.clearItem} onPress={handleClearChat}>
+            <TouchableOpacity style={styles.clearItem} onPress={handleClearChat} disabled={isClearingChat}>
               <View style={styles.clearLeft}>
                 <View style={styles.clearIconContainer}>
                   <Ionicons name="chatbox-ellipses-outline" size={20} color="#ffffff" />
                 </View>
-                <Text style={styles.clearTitle}>清除聊天记录</Text>
+                <Text style={styles.clearTitle}>
+                  {isClearingChat ? '清除中...' : '清除聊天记录'}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#8b8bb3" />
             </TouchableOpacity>
             <View style={styles.clearDivider} />
-            <TouchableOpacity style={styles.clearItem} onPress={handleClearCache}>
+            <TouchableOpacity style={styles.clearItem} onPress={handleClearCache} disabled={isClearingCache}>
               <View style={styles.clearLeft}>
                 <View style={styles.clearIconContainer}>
                   <Ionicons name="folder-outline" size={20} color="#ffffff" />
                 </View>
-                <Text style={styles.clearTitle}>清除缓存</Text>
+                <Text style={styles.clearTitle}>
+                  {isClearingCache ? '清除中...' : '清除缓存'}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#8b8bb3" />
             </TouchableOpacity>

@@ -23,6 +23,8 @@ import {
   copyToClipboard,
 } from '@neochat/shared';
 
+import { pickImageFromGalleryWeb, pickFileWeb, MediaItemWeb } from '../utils/mediaWeb';
+
 import { MessageList } from '@neochat/shared/src/components/MessageList';
 import { ChatInput } from '@neochat/shared/src/components/ChatInput';
 
@@ -158,6 +160,72 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       setReplyingTo(null);
     }
   }, [user, conversation, replyingTo, addMessage, setSending]);
+
+  // 处理媒体上传
+  const handleSendMedia = useCallback(async (item: MediaItemWeb, mediaType: 'image' | 'file') => {
+    if (!user || !conversation) return;
+
+    try {
+      setSending(true);
+
+      // 上传文件
+      const uploadResult = await chatService.uploadFile(
+        item.file!,
+        item.filename
+      );
+
+      if (uploadResult.success && uploadResult.data) {
+        // 发送消息
+        const response = await chatService.sendMessage({
+          conversation_id: conversation.id,
+          type: mediaType,
+          content: item.filename || '',
+          media_url: uploadResult.data.url,
+          file_name: item.filename,
+          file_size: item.fileSize,
+          reply_to_id: replyingTo?.id,
+        });
+
+        if (response.success && response.data) {
+          addMessage(conversation.id, response.data);
+        } else {
+          Alert.alert('错误', response.message || '发送消息失败');
+        }
+      } else {
+        Alert.alert('错误', uploadResult.message || '上传文件失败');
+      }
+    } catch (error) {
+      console.error('Failed to send media:', error);
+      Alert.alert('错误', '发送失败');
+    } finally {
+      setSending(false);
+      setReplyingTo(null);
+    }
+  }, [user, conversation, replyingTo, addMessage, setSending]);
+
+  // 发送图片
+  const handleSendImage = useCallback(async () => {
+    try {
+      const result = await pickImageFromGalleryWeb();
+      if (result) {
+        await handleSendMedia(result, 'image');
+      }
+    } catch (error) {
+      console.error('Failed to pick image:', error);
+    }
+  }, [handleSendMedia]);
+
+  // 发送文件
+  const handleSendFile = useCallback(async () => {
+    try {
+      const result = await pickFileWeb();
+      if (result) {
+        await handleSendMedia(result, 'file');
+      }
+    } catch (error) {
+      console.error('Failed to pick file:', error);
+    }
+  }, [handleSendMedia]);
 
   // 加载更多消息（分页）
   const handleLoadMore = useCallback(async () => {
@@ -334,8 +402,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       <View style={styles.inputContainer}>
         <ChatInput
           onSendMessage={handleSendMessage}
-          onSendImage={() => {}}
-          onSendFile={() => {}}
+          onSendImage={handleSendImage}
+          onSendFile={handleSendFile}
           isSending={isSending}
           replyingTo={replyingTo}
           onCancelReply={handleCancelReply}

@@ -7,6 +7,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Image,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -15,6 +17,7 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   chatService,
+  downloadFile,
 } from '@neochat/shared';
 
 interface ImageViewerWindowProps {
@@ -74,15 +77,25 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
   const handleForward = () => {
     if (messageId && onForward) {
       onForward(messageId);
+    } else {
+      Alert.alert('提示', '转发功能需要从消息列表进入');
     }
   };
 
   // 下载图片
   const handleDownload = async () => {
+    if (!imageUrl) {
+      Alert.alert('错误', '没有可下载的图片');
+      return;
+    }
+
     setIsDownloading(true);
     try {
-      // 这里应该调用下载工具函数
-      Alert.alert('提示', '下载功能开发中');
+      const success = await downloadFile(imageUrl, fileName);
+      Alert.alert(
+        success ? '下载成功' : '下载失败',
+        success ? '图片已下载' : '下载图片失败，请重试'
+      );
     } catch (error) {
       Alert.alert('错误', '下载失败');
     } finally {
@@ -106,35 +119,40 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
           </View>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerButton} onPress={handleDownload}>
+          <TouchableOpacity style={styles.headerButton} onPress={handleDownload} disabled={isDownloading}>
             <Ionicons name="download-outline" size={20} color="#ffffff" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleForward}>
             <Ionicons name="share-outline" size={20} color="#ffffff" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={handleDelete}>
+          <TouchableOpacity style={styles.headerButton} onPress={handleDelete} disabled={isDeleting}>
             <Ionicons name="trash-outline" size={20} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* 图片展示区域 */}
-      <View style={styles.mainContent}>
-        <View style={styles.imageContainer}>
-          {imageUrl ? (
-            // 这里应该用 <Image> 组件，但为了演示我们先放一个占位符
-            <View style={styles.placeholderImage}>
-              <Ionicons name="image-outline" size={80} color="#8080a0" />
-              <Text style={styles.placeholderText}>图片预览</Text>
-            </View>
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Ionicons name="image-outline" size={80} color="#8080a0" />
-              <Text style={styles.placeholderText}>无图片</Text>
-            </View>
-          )}
-        </View>
-      </View>
+      <ScrollView
+        style={styles.mainContent}
+        contentContainerStyle={styles.imageContent}
+        minimumZoomScale={1}
+        maximumZoomScale={3}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+      >
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.image}
+            resizeMode="contain"
+          />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Ionicons name="image-outline" size={80} color="#8080a0" />
+            <Text style={styles.placeholderText}>无图片</Text>
+          </View>
+        )}
+      </ScrollView>
 
       {/* 底部导航栏 */}
       <View style={styles.footer}>
@@ -159,7 +177,7 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -167,6 +185,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -177,7 +196,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: '#2d2d44',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -202,21 +221,21 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: '#2d2d44',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   mainContent: {
     flex: 1,
+  },
+  imageContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
   },
-  imageContainer: {
-    borderRadius: BORDER_RADIUS.lg,
-    overflow: 'hidden',
-    maxWidth: '100%',
-    maxHeight: '100%',
+  image: {
+    width: '100%',
+    height: '100%',
   },
   placeholderImage: {
     width: 600,
@@ -237,6 +256,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   navigationLeft: {
     flexDirection: 'row',
@@ -250,7 +270,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#2d2d44',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },

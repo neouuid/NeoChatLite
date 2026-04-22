@@ -15,6 +15,8 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   chatService,
+  downloadFile,
+  openFilePreview,
 } from '@neochat/shared';
 
 interface FileViewerWindowProps {
@@ -42,6 +44,7 @@ export const FileViewerWindow: React.FC<FileViewerWindowProps> = ({
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
 
   // 获取文件图标
   const getFileIcon = () => {
@@ -111,15 +114,25 @@ export const FileViewerWindow: React.FC<FileViewerWindowProps> = ({
   const handleForward = () => {
     if (messageId && onForward) {
       onForward(messageId);
+    } else {
+      Alert.alert('提示', '转发功能需要从消息列表进入');
     }
   };
 
   // 下载文件
   const handleDownload = async () => {
+    if (!fileUrl) {
+      Alert.alert('错误', '没有可下载的文件');
+      return;
+    }
+
     setIsDownloading(true);
     try {
-      // 这里应该调用下载工具函数
-      Alert.alert('提示', '下载功能开发中');
+      const success = await downloadFile(fileUrl, fileName);
+      Alert.alert(
+        success ? '下载成功' : '下载失败',
+        success ? '文件已下载' : '下载文件失败，请重试'
+      );
     } catch (error) {
       Alert.alert('错误', '下载失败');
     } finally {
@@ -129,11 +142,27 @@ export const FileViewerWindow: React.FC<FileViewerWindowProps> = ({
 
   // 打开文件
   const handleOpen = async () => {
+    if (!fileUrl) {
+      Alert.alert('错误', '没有可打开的文件');
+      return;
+    }
+
+    setIsOpening(true);
     try {
-      Alert.alert('提示', '文件预览功能开发中');
+      const success = await openFilePreview(fileUrl, fileName);
+      if (!success) {
+        Alert.alert('提示', '无法打开此文件类型，请先下载');
+      }
     } catch (error) {
       Alert.alert('错误', '打开文件失败');
+    } finally {
+      setIsOpening(false);
     }
+  };
+
+  // 直接打开
+  const handleDirectOpen = async () => {
+    await handleOpen();
   };
 
   return (
@@ -157,7 +186,7 @@ export const FileViewerWindow: React.FC<FileViewerWindowProps> = ({
           <TouchableOpacity style={styles.headerButton} onPress={handleForward}>
             <Ionicons name="share-outline" size={20} color="#ffffff" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={handleDownload}>
+          <TouchableOpacity style={styles.headerButton} onPress={handleDownload} disabled={isDownloading}>
             <Ionicons name="download-outline" size={20} color="#ffffff" />
           </TouchableOpacity>
         </View>
@@ -177,13 +206,9 @@ export const FileViewerWindow: React.FC<FileViewerWindowProps> = ({
       {/* 底部操作栏 */}
       <View style={styles.footer}>
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.printButton} onPress={() => {}}>
-            <Ionicons name="print-outline" size={18} color="#ffffff" />
-            <Text style={styles.printButtonText}>打印</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.openButton} onPress={handleOpen}>
+          <TouchableOpacity style={styles.openButton} onPress={handleDirectOpen} disabled={isOpening}>
             <Ionicons name="open-outline" size={18} color="#ffffff" />
-            <Text style={styles.openButtonText}>用其他应用打开</Text>
+            <Text style={styles.openButtonText}>打开文件</Text>
           </TouchableOpacity>
         </View>
       </View>

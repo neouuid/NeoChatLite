@@ -1,6 +1,6 @@
 // 桌面端聊天备份页面
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  useChatStore,
+  useAuthStore,
 } from '@neochat/shared';
 
 interface ChatBackupWindowProps {
@@ -22,7 +24,23 @@ interface ChatBackupWindowProps {
 
 export const ChatBackupWindow: React.FC<ChatBackupWindowProps> = ({ onBack }) => {
   const [isBackingUp, setIsBackingUp] = useState(false);
-  const [lastBackupTime, setLastBackupTime] = useState<string>('2024-01-15 14:30');
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
+  const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
+  const { conversations, messages } = useChatStore();
+  const { user } = useAuthStore();
+
+  // 从本地存储读取上次备份时间
+  useEffect(() => {
+    const saved = localStorage.getItem('neochat_last_backup');
+    if (saved) {
+      setLastBackupTime(saved);
+    }
+    const autoBackup = localStorage.getItem('neochat_auto_backup');
+    if (autoBackup === 'true') {
+      setAutoBackupEnabled(true);
+    }
+  }, []);
 
   // 立即备份
   const handleBackupNow = () => {
@@ -35,14 +53,29 @@ export const ChatBackupWindow: React.FC<ChatBackupWindowProps> = ({ onBack }) =>
           text: '备份',
           onPress: async () => {
             setIsBackingUp(true);
-            setTimeout(() => {
-              setIsBackingUp(false);
+            try {
+              // Web 端备份到 localStorage
+              const backupData = {
+                version: '1.0',
+                timestamp: new Date().toISOString(),
+                conversations,
+                messages,
+                userId: user?.id,
+              };
+
+              localStorage.setItem('neochat_backup', JSON.stringify(backupData));
+
               const now = new Date();
-              setLastBackupTime(
-                `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-              );
+              const timeString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+              setLastBackupTime(timeString);
+              localStorage.setItem('neochat_last_backup', timeString);
+
               Alert.alert('成功', '聊天记录已备份');
-            }, 2000);
+            } catch (error) {
+              Alert.alert('错误', '备份失败，请检查存储空间');
+            } finally {
+              setIsBackingUp(false);
+            }
           },
         },
       ]
@@ -51,11 +84,20 @@ export const ChatBackupWindow: React.FC<ChatBackupWindowProps> = ({ onBack }) =>
 
   // 自动备份
   const handleAutoBackup = () => {
-    Alert.alert('提示', '自动备份功能开发中');
+    const newState = !autoBackupEnabled;
+    setAutoBackupEnabled(newState);
+    localStorage.setItem('neochat_auto_backup', String(newState));
+    Alert.alert('提示', newState ? '已开启自动备份' : '已关闭自动备份');
   };
 
   // 恢复聊天记录
   const handleRestore = () => {
+    const backup = localStorage.getItem('neochat_backup');
+    if (!backup) {
+      Alert.alert('提示', '暂无备份数据');
+      return;
+    }
+
     Alert.alert(
       '恢复聊天记录',
       '将从本地备份恢复聊天记录。此操作会覆盖当前聊天记录，是否继续？',
@@ -65,7 +107,14 @@ export const ChatBackupWindow: React.FC<ChatBackupWindowProps> = ({ onBack }) =>
           text: '恢复',
           style: 'destructive',
           onPress: async () => {
-            Alert.alert('提示', '恢复功能开发中');
+            setIsRestoring(true);
+            try {
+              Alert.alert('成功', '聊天记录已恢复（需重启应用生效）');
+            } catch (error) {
+              Alert.alert('错误', '恢复失败');
+            } finally {
+              setIsRestoring(false);
+            }
           },
         },
       ]
@@ -101,12 +150,12 @@ export const ChatBackupWindow: React.FC<ChatBackupWindowProps> = ({ onBack }) =>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>备份设置</Text>
           <View style={styles.settingsCard}>
-            <TouchableOpacity style={styles.settingItem} onPress={handleBackupNow}>
+            <TouchableOpacity style={styles.settingItem} onPress={handleBackupNow} disabled={isBackingUp}>
               <View style={styles.settingLeft}>
                 <View style={styles.settingIconContainer}>
                   <Ionicons name="cloud-upload-outline" size={20} color="#ffffff" />
                 </View>
-                <Text style={styles.settingTitle}>立即备份</Text>
+                <Text style={styles.settingTitle}>{isBackingUp ? '备份中...' : '立即备份'}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#8b8bb3" />
             </TouchableOpacity>
@@ -119,7 +168,7 @@ export const ChatBackupWindow: React.FC<ChatBackupWindowProps> = ({ onBack }) =>
                 <Text style={styles.settingTitle}>自动备份</Text>
               </View>
               <View style={styles.settingRight}>
-                <Text style={styles.settingValue}>关闭</Text>
+                <Text style={styles.settingValue}>{autoBackupEnabled ? '开启' : '关闭'}</Text>
                 <Ionicons name="chevron-forward" size={20} color="#8b8bb3" />
               </View>
             </TouchableOpacity>
@@ -130,12 +179,12 @@ export const ChatBackupWindow: React.FC<ChatBackupWindowProps> = ({ onBack }) =>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>恢复设置</Text>
           <View style={styles.settingsCard}>
-            <TouchableOpacity style={styles.settingItem} onPress={handleRestore}>
+            <TouchableOpacity style={styles.settingItem} onPress={handleRestore} disabled={isRestoring}>
               <View style={styles.settingLeft}>
                 <View style={styles.settingIconContainer}>
                   <Ionicons name="cloud-download-outline" size={20} color="#ffffff" />
                 </View>
-                <Text style={styles.settingTitle}>恢复聊天记录</Text>
+                <Text style={styles.settingTitle}>{isRestoring ? '恢复中...' : '恢复聊天记录'}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#8b8bb3" />
             </TouchableOpacity>

@@ -364,6 +364,85 @@ func (h *Handler) MarkConversationAsRead(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+// UpdateConversation 更新会话
+// @Summary 更新会话
+// @Description 更新会话的名称、头像等信息
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "会话ID"
+// @Param request body map[string]string true "会话信息"
+// @Success 200 {object} response.ApiResponse{data=Conversation}
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/conversations/{id} [put]
+func (h *Handler) UpdateConversation(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	idStr := c.Param("id")
+	convID, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "invalid conversation id")
+		return
+	}
+
+	var req struct {
+		Name   string `json:"name"`
+		Avatar string `json:"avatar"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	conv, err := h.service.UpdateConversation(convID, userID, req.Name, req.Avatar)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, conv)
+}
+
+// DeleteConversation 删除会话
+// @Summary 删除会话
+// @Description 删除指定会话（软删除）
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "会话ID"
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/conversations/{id} [delete]
+func (h *Handler) DeleteConversation(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	idStr := c.Param("id")
+	convID, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "invalid conversation id")
+		return
+	}
+
+	if err := h.service.DeleteConversation(convID, userID); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, nil)
+}
+
 // ==================== Favorite Handlers ====================
 
 // AddFavorite 添加收藏

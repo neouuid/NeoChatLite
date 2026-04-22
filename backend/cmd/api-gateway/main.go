@@ -77,6 +77,7 @@ func main() {
 	uploadHandler := chat.NewUploadHandler(chatService, cfg)
 	wsHub := chat.NewWebSocketHub(chatService, cfg)
 	chatService.SetWebSocketHub(wsHub)
+	userHandler.SetWebSocketHub(wsHub)
 	go wsHub.Run()
 
 	// 设置路由

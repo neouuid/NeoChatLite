@@ -70,6 +70,28 @@ type VerifyEmailRequest struct {
 	Code string `json:"code"`
 }
 
+// DeleteAccountRequest 删除账户请求
+type DeleteAccountRequest struct {
+	Password string `json:"password"`
+}
+
+// UpdatePhoneRequest 更新手机号请求
+type UpdatePhoneRequest struct {
+	Phone string `json:"phone"`
+	Code  string `json:"code"`
+}
+
+// UpdateEmailRequest 更新邮箱请求
+type UpdateEmailRequest struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
+}
+
+// SendPhoneVerificationRequest 发送手机验证码请求
+type SendPhoneVerificationRequest struct {
+	Phone string `json:"phone"`
+}
+
 // AuthResponse 认证响应
 type AuthResponse struct {
 	AccessToken  string     `json:"access_token"`
@@ -389,4 +411,192 @@ func generateRandomToken(length int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+// DeleteAccount 删除账户
+func (s *Service) DeleteAccount(userID uuid.UUID, req *DeleteAccountRequest) error {
+	// 获取用户
+	u, err := s.repo.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+
+	// 验证密码
+	if !utils.CheckPasswordHash(req.Password, u.Password) {
+		return errors.New("invalid password")
+	}
+
+	// 删除用户（软删除）
+	return s.repo.DeleteUser(userID)
+}
+
+// SendPhoneVerification 发送手机验证码
+func (s *Service) SendPhoneVerification(userID uuid.UUID, phone string) (string, error) {
+	// 检查手机号是否已被使用
+	exists, err := s.repo.CheckPhoneExists(phone)
+	if err != nil {
+		return "", err
+	}
+	if exists {
+		// 检查是否是当前用户的手机号
+		u, err := s.repo.GetUserByID(userID)
+		if err != nil {
+			return "", err
+		}
+		if u.Phone != phone {
+			return "", errors.New("phone already in use")
+		}
+	}
+
+	// 删除用户之前的手机验证令牌
+	if err := s.repo.DeleteUserVerificationTokens(userID, TokenTypePhoneVerification); err != nil {
+		return "", err
+	}
+
+	// 生成6位数字验证码
+	token := generateNumericCode(6)
+
+	vt := &VerificationToken{
+		UserID:    userID,
+		Token:     token,
+		Type:      TokenTypePhoneVerification,
+		ExpiresAt: time.Now().Add(10 * time.Minute), // 10分钟过期
+	}
+
+	if err := s.repo.CreateVerificationToken(vt); err != nil {
+		return "", err
+	}
+
+	// 直接返回验证码用于测试（生产环境需集成短信服务）
+	return token, nil
+}
+
+// UpdatePhone 更新手机号
+func (s *Service) UpdatePhone(userID uuid.UUID, req *UpdatePhoneRequest) error {
+	// 获取验证令牌
+	vt, err := s.repo.GetVerificationToken(req.Code, TokenTypePhoneVerification)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("invalid or expired code")
+		}
+		return err
+	}
+
+	// 检查令牌是否过期
+	if vt.IsExpired() {
+		return errors.New("code has expired")
+	}
+
+	// 检查令牌是否属于当前用户
+	if vt.UserID != userID {
+		return errors.New("invalid code")
+	}
+
+	// 检查手机号是否已被其他用户使用
+	exists, err := s.repo.CheckPhoneExists(req.Phone)
+	if err != nil {
+		return err
+	}
+	if exists {
+		u, err := s.repo.GetUserByPhone(req.Phone)
+		if err == nil && u.ID != userID {
+			return errors.New("phone already in use")
+		}
+	}
+
+	// 获取用户
+	u, err := s.repo.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+
+	// 更新手机号
+	u.Phone = req.Phone
+	if err := s.repo.UpdateUser(u); err != nil {
+		return err
+	}
+
+	// 删除已使用的令牌
+	return s.repo.DeleteVerificationToken(vt.ID)
+}
+
+// UpdateEmail 更新邮箱
+func (s *Service) UpdateEmail(userID uuid.UUID, req *UpdateEmailRequest) error {
+	// 获取验证令牌
+	vt, err := s.repo.GetVerificationToken(req.Code, TokenTypeEmailVerification)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("invalid or expired code")
+		}
+		return err
+	}
+
+	// 检查令牌是否过期
+	if vt.IsExpired() {
+		return errors.New("code has expired")
+	}
+
+	// 检查令牌是否属于当前用户
+	if vt.UserID != userID {
+		return errors.New("invalid code")
+	}
+
+	// 检查邮箱是否已被其他用户使用
+	exists, err := s.repo.CheckEmailExists(req.Email)
+	if err != nil {
+		return err
+	}
+	if exists {
+		u, err := s.repo.GetUserByEmail(req.Email)
+		if err == nil && u.ID != userID {
+			return errors.New("email already in use")
+		}
+	}
+
+	// 获取用户
+	u, err := s.repo.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+
+	// 更新邮箱
+	u.Email = req.Email
+	if err := s.repo.UpdateUser(u); err != nil {
+		return err
+	}
+
+	// 删除已使用的令牌
+	return s.repo.DeleteVerificationToken(vt.ID)
+}
+
+// GetUserDevices 获取用户的登录设备
+func (s *Service) GetUserDevices(userID uuid.UUID) ([]*Device, error) {
+	return s.repo.GetUserDevices(userID)
+}
+
+// GetUserLoginHistory 获取用户的登录历史
+func (s *Service) GetUserLoginHistory(userID uuid.UUID, page int, pageSize int) ([]*LoginHistory, int64, error) {
+	return s.repo.GetUserLoginHistory(userID, page, pageSize)
+}
+
+// CreateLoginHistoryRecord 创建登录历史记录
+func (s *Service) CreateLoginHistoryRecord(userID uuid.UUID, loginType string, ipAddress string, userAgent string) error {
+	history := &LoginHistory{
+		UserID:    userID,
+		Type:      loginType,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		CreatedAt: time.Now(),
+	}
+	return s.repo.CreateLoginHistory(history)
+}
+
+// generateNumericCode 生成指定长度的数字验证码
+func generateNumericCode(length int) string {
+	code := make([]byte, length)
+	for i := 0; i < length; i++ {
+		code[i] = byte('0' + (time.Now().UnixNano() % 10))
+		time.Sleep(1 * time.Nanosecond)
+	}
+	return string(code)
 }

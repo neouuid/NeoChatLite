@@ -154,11 +154,92 @@ func (s *Service) GetUserConversations(userID uuid.UUID) ([]*Conversation, error
 }
 
 // UpdateConversation 更新会话
-func (s *Service) UpdateConversation(conv *Conversation) error {
-	err := s.repo.UpdateConversation(conv)
+func (s *Service) UpdateConversation(convID, userID uuid.UUID, name, avatar string) (*Conversation, error) {
+	// 验证用户是否是会话成员
+	member, err := s.repo.GetConversationMember(convID, userID)
+	if err != nil {
+		return nil, errors.New("not a member of this conversation")
+	}
+
+	// 获取会话
+	conv, err := s.repo.GetConversationByID(convID)
+	if err != nil {
+		return nil, errors.New("conversation not found")
+	}
+
+	// 如果是群聊，验证权限（只有群主和管理员可以修改）
+	if conv.Type == ConversationTypeGroup {
+		if member.Role != MemberRoleOwner && member.Role != MemberRoleAdmin {
+			return nil, errors.New("not authorized to modify this conversation")
+		}
+	}
+
+	// 更新字段
+	if name != "" {
+		conv.Name = name
+	}
+	if avatar != "" {
+		conv.Avatar = avatar
+	}
+	conv.UpdatedAt = time.Now()
+
+	if err := s.repo.UpdateConversation(conv); err != nil {
+		return nil, err
+	}
+
+	// 失效缓存
+	_ = redis.InvalidateConversationCache(convID.String())
+
+	// 如果是群聊，同步更新群组信息
+	if conv.Type == ConversationTypeGroup {
+		group, err := s.repo.GetGroupByID(convID)
+		if err == nil {
+			if name != "" {
+				group.Name = name
+			}
+			if avatar != "" {
+				group.Avatar = avatar
+			}
+			group.UpdatedAt = time.Now()
+			_ = s.repo.UpdateGroup(group)
+		}
+	}
+
+	return s.repo.GetConversationByID(convID)
+}
+
+// DeleteConversation 删除会话
+func (s *Service) DeleteConversation(convID, userID uuid.UUID) error {
+	// 验证用户是否是会话成员
+	member, err := s.repo.GetConversationMember(convID, userID)
+	if err != nil {
+		return errors.New("not a member of this conversation")
+	}
+
+	// 获取会话
+	conv, err := s.repo.GetConversationByID(convID)
+	if err != nil {
+		return errors.New("conversation not found")
+	}
+
+	// 如果是群聊，验证权限（只有群主可以删除/解散）
+	if conv.Type == ConversationTypeGroup {
+		if member.Role != MemberRoleOwner {
+			return errors.New("only group owner can delete this conversation")
+		}
+		// 同时删除群组记录
+		_ = s.repo.DeleteGroup(convID)
+	}
+
+	// 删除会话（软删除）
+	err = s.repo.DeleteConversation(convID)
 	if err == nil {
 		// 失效缓存
-		_ = redis.InvalidateConversationCache(conv.ID.String())
+		_ = redis.InvalidateConversationCache(convID.String())
+		// 失效所有成员的会话列表缓存
+		for _, m := range conv.Members {
+			_ = redis.Delete(redis.KeyPrefixConversations + m.UserID.String())
+		}
 	}
 	return err
 }
