@@ -9,7 +9,7 @@
 using namespace winrt;
 using namespace xaml;
 
-namespace winrt::neochat-desktop::implementation
+namespace winrt::neochat_desktop::implementation
 {
     MainPage::MainPage()
     {

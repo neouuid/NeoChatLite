@@ -31,7 +31,7 @@
     <Application
       Id="App"
       Executable="$targetnametoken$.exe"
-      EntryPoint="neochat-desktop.App">
+      EntryPoint="neochat_desktop.App">
       <uap:VisualElements
         DisplayName="neochat-desktop"
         Square150x150Logo="Assets\Square150x150Logo.png"

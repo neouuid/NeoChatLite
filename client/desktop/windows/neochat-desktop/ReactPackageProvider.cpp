@@ -4,7 +4,7 @@
 
 using namespace winrt::Microsoft::ReactNative;
 
-namespace winrt::neochat-desktop::implementation
+namespace winrt::neochat_desktop::implementation
 {
 
 void ReactPackageProvider::CreatePackage(IReactPackageBuilder const &packageBuilder) noexcept
@@ -12,4 +12,4 @@ void ReactPackageProvider::CreatePackage(IReactPackageBuilder const &packageBuil
     AddAttributedModules(packageBuilder, true);
 }
 
-} // namespace winrt::neochat-desktop::implementation
+} // namespace winrt::neochat_desktop::implementation

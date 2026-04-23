@@ -2,7 +2,7 @@
 #include "MainPage.g.h"
 #include <winrt/Microsoft.ReactNative.h>
 
-namespace winrt::neochat-desktop::implementation
+namespace winrt::neochat_desktop::implementation
 {
     struct MainPage : MainPageT<MainPage>
     {
@@ -10,7 +10,7 @@ namespace winrt::neochat-desktop::implementation
     };
 }
 
-namespace winrt::neochat-desktop::factory_implementation
+namespace winrt::neochat_desktop::factory_implementation
 {
     struct MainPage : MainPageT<MainPage, implementation::MainPage>
     {

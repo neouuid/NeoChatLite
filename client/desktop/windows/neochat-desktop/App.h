@@ -6,7 +6,7 @@
 
 namespace activation = winrt::Windows::ApplicationModel::Activation;
 
-namespace winrt::neochat-desktop::implementation
+namespace winrt::neochat_desktop::implementation
 {
     struct App : AppT<App>
     {
@@ -18,4 +18,4 @@ namespace winrt::neochat-desktop::implementation
       private:
         using super = AppT<App>;
     };
-} // namespace winrt::neochat-desktop::implementation
+} // namespace winrt::neochat_desktop::implementation

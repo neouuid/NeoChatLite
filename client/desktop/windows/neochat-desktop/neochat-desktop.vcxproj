@@ -8,7 +8,7 @@
     <MinimalCoreWin>true</MinimalCoreWin>
     <ProjectGuid>{f2951312-7126-4e37-982f-94860e286043}</ProjectGuid>
     <ProjectName>neochat-desktop</ProjectName>
-    <RootNamespace>neochat-desktop</RootNamespace>
+    <RootNamespace>neochat_desktop</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
     <MinimumVisualStudioVersion>17.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
