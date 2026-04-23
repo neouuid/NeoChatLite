@@ -72,6 +72,7 @@ coverage.html
 *.tmp
 *.temp
 .cache/
+build_android.ps1
 
 # MSBuild
 *.binlog
