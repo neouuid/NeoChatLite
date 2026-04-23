@@ -1,4 +1,4 @@
-// 桌面端主题设置页面
+// 桌面端主题设置页�?
 
 import React, { useState } from 'react';
 import {
@@ -15,7 +15,7 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   useUISettingsStore,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
 interface ThemeWindowProps {
   onBack?: () => void;

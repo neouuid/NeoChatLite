@@ -6,7 +6,7 @@ import { StatusBar, Alert, View, Text, ActivityIndicator, StyleSheet } from 'rea
 
 import { AppNavigator } from './navigation/AppNavigator';
 import { CallInviteModal } from './components';
-import { useWebRTC, useWebSocket, useAuth, useAuthStore, useUserStore, COLORS, SPACING, TYPOGRAPHY } from '@neochat/shared';
+import { useWebRTC, useWebSocket, useAuth, useAuthStore, useUserStore, COLORS, SPACING, TYPOGRAPHY } from 'neochat-shared';
 
 const App: React.FC = () => {
   const { callState } = useWebRTC();
@@ -19,14 +19,14 @@ const App: React.FC = () => {
   const LoadingScreen = () => (
     <View style={loadingStyles.container}>
       <ActivityIndicator size="large" color={COLORS.primary} />
-      <Text style={loadingStyles.text}>加载中...</Text>
+      <Text style={loadingStyles.text}>加载�?..</Text>
     </View>
   );
 
   // WebSocket 好友请求监听
   useWebSocket({
     onFriendRequest: (data) => {
-      // 添加到好友请求列表
+      // 添加到好友请求列�?
       addFriendRequest({
         id: data.user_id,
         user_id: user?.id || '',
@@ -48,7 +48,7 @@ const App: React.FC = () => {
       Alert.alert('好友请求', `${data.username} 请求添加你为好友`);
     },
     onFriendAccepted: (data) => {
-      // 添加到好友列表
+      // 添加到好友列�?
       addFriend({
         id: data.user_id,
         user_id: user?.id || '',
@@ -67,7 +67,7 @@ const App: React.FC = () => {
         },
       });
       // 显示通知
-      Alert.alert('好友已添加', `${data.username} 已接受你的好友请求`);
+      Alert.alert('好友已添�?, `${data.username} 已接受你的好友请求`);
     },
   });
 

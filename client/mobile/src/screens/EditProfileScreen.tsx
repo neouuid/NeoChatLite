@@ -24,11 +24,11 @@ import {
   useMediaPicker,
   useMediaUpload,
   type MediaItem,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { RootStackParamList } from '@neochat/shared/src/types';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { RootStackParamList } from 'neochat-shared/src/types';
 import type { NavigationProp } from '@react-navigation/native';
 
 export const EditProfileScreen: React.FC = () => {
@@ -76,7 +76,7 @@ export const EditProfileScreen: React.FC = () => {
       setIsSaving(true);
       const updatedUser = await authService.updateProfile(data);
       setUser(updatedUser);
-      Alert.alert('成功', '资料已更新');
+      Alert.alert('成功', '资料已更�?);
     } catch (error) {
       console.error('Failed to update profile:', error);
       Alert.alert('错误', '更新资料失败');
@@ -137,7 +137,7 @@ export const EditProfileScreen: React.FC = () => {
           disabled={isSaving || isUploading}
         >
           <Text style={styles.saveButtonText}>
-            {isSaving || isUploading ? '保存中...' : '保存'}
+            {isSaving || isUploading ? '保存�?..' : '保存'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -168,28 +168,28 @@ export const EditProfileScreen: React.FC = () => {
               style={styles.formInput}
               value={nickname}
               onChangeText={setNickname}
-              placeholder="请输入昵称"
+              placeholder="请输入昵�?
               placeholderTextColor={COLORS.dark.text.tertiary}
               maxLength={30}
             />
           </View>
 
-          {/* 用户名（只读） */}
+          {/* 用户名（只读�?*/}
           <View style={styles.formItem}>
-            <Text style={styles.formLabel}>用户名</Text>
+            <Text style={styles.formLabel}>用户�?/Text>
             <TextInput
               style={[styles.formInput, styles.formInputDisabled]}
               value={user?.username || ''}
-              placeholder="用户名"
+              placeholder="用户�?
               placeholderTextColor={COLORS.dark.text.tertiary}
               editable={false}
             />
-            <Text style={styles.formHint}>用户名不可修改</Text>
+            <Text style={styles.formHint}>用户名不可修�?/Text>
           </View>
 
-          {/* 个性签名 */}
+          {/* 个性签�?*/}
           <View style={styles.formItem}>
-            <Text style={styles.formLabel}>个性签名</Text>
+            <Text style={styles.formLabel}>个性签�?/Text>
             <TextInput
               style={[styles.formInput, styles.textArea]}
               value={bio}

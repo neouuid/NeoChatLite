@@ -18,7 +18,7 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   useUISettingsStore,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
 export const NotificationSettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -48,7 +48,7 @@ export const NotificationSettingsScreen: React.FC = () => {
     {
       id: 'preview',
       title: '消息预览',
-      subtitle: '在通知中显示消息内容',
+      subtitle: '在通知中显示消息内�?,
       type: 'toggle' as const,
       value: messagePreviewEnabled,
       onToggle: setMessagePreviewEnabled,
@@ -56,7 +56,7 @@ export const NotificationSettingsScreen: React.FC = () => {
     },
     {
       id: 'sound',
-      title: '提示音',
+      title: '提示�?,
       subtitle: '收到消息时播放提示音',
       type: 'toggle' as const,
       value: soundEnabled,
@@ -66,7 +66,7 @@ export const NotificationSettingsScreen: React.FC = () => {
     {
       id: 'vibrate',
       title: '震动',
-      subtitle: '收到消息时震动',
+      subtitle: '收到消息时震�?,
       type: 'toggle' as const,
       value: vibrateEnabled,
       onToggle: setVibrateEnabled,
@@ -168,7 +168,7 @@ export const NotificationSettingsScreen: React.FC = () => {
         {!notificationsEnabled && (
           <View style={styles.hintContainer}>
             <Ionicons name="information-circle-outline" size={20} color={COLORS.dark.text.tertiary} style={styles.hintIcon} />
-            <Text style={styles.hintText}>开启新消息通知后才能使用以下功能</Text>
+            <Text style={styles.hintText}>开启新消息通知后才能使用以下功�?/Text>
           </View>
         )}
 

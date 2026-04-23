@@ -12,10 +12,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { useAuthStore, AuthService, Input, Button } from '@neochat/shared';
-import type { RootStackParamList } from '@neochat/shared';
-import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '@neochat/shared';
-import { validateUsername, validatePassword, validateEmail, validatePhone } from '@neochat/shared';
+import { useAuthStore, AuthService, Input, Button } from 'neochat-shared';
+import type { RootStackParamList } from 'neochat-shared';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from 'neochat-shared';
+import { validateUsername, validatePassword, validateEmail, validatePhone } from 'neochat-shared';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
@@ -36,14 +36,13 @@ export const RegisterScreen: React.FC = () => {
   const handleRegister = async () => {
     // 验证必填字段
     if (!username || !password || !confirmPassword) {
-      Alert.alert('提示', '请填写必填字段');
+      Alert.alert('提示', '请填写必填字�?);
       return;
     }
 
-    // 验证用户名
-    const usernameError = validateUsername(username);
+    // 验证用户�?    const usernameError = validateUsername(username);
     if (usernameError) {
-      Alert.alert('用户名错误', usernameError);
+      Alert.alert('用户名错�?, usernameError);
       return;
     }
 
@@ -56,7 +55,7 @@ export const RegisterScreen: React.FC = () => {
 
     // 验证密码确认
     if (password !== confirmPassword) {
-      Alert.alert('提示', '两次输入的密码不一致');
+      Alert.alert('提示', '两次输入的密码不一�?);
       return;
     }
 
@@ -69,11 +68,10 @@ export const RegisterScreen: React.FC = () => {
       }
     }
 
-    // 验证手机号（如果提供）
-    if (phone) {
+    // 验证手机号（如果提供�?    if (phone) {
       const phoneError = validatePhone(phone);
       if (phoneError) {
-        Alert.alert('手机号错误', phoneError);
+        Alert.alert('手机号错�?, phoneError);
         return;
       }
     }
@@ -90,7 +88,7 @@ export const RegisterScreen: React.FC = () => {
       });
       setAuth(auth);
     } catch (error) {
-      Alert.alert('注册失败', error instanceof Error ? error.message : '请稍后重试');
+      Alert.alert('注册失败', error instanceof Error ? error.message : '请稍后重�?);
     } finally {
       setIsSubmitting(false);
     }
@@ -106,15 +104,15 @@ export const RegisterScreen: React.FC = () => {
           {/* Header Section */}
           <View style={styles.headerSection}>
             <Text style={styles.title}>创建账号</Text>
-            <Text style={styles.subtitle}>加入NeoChat，开始聊天</Text>
+            <Text style={styles.subtitle}>加入NeoChat，开始聊�?/Text>
           </View>
 
           {/* Form Section */}
           <View style={styles.formSection}>
             {/* Username Input */}
             <Input
-              label="用户名 *"
-              placeholder="请输入用户名（4-20个字符）"
+              label="用户�?*"
+              placeholder="请输入用户名�?-20个字符）"
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
@@ -142,7 +140,7 @@ export const RegisterScreen: React.FC = () => {
 
             {/* Phone Input */}
             <Input
-              label="手机号"
+              label="手机�?
               placeholder="请输入手机号（可选）"
               value={phone}
               onChangeText={setPhone}
@@ -158,7 +156,7 @@ export const RegisterScreen: React.FC = () => {
               secureTextEntry={!showPassword}
               rightIcon={
                 <Text style={styles.eyeIcon}>
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                  {showPassword ? '👁�? : '👁️‍🗨️'}
                 </Text>
               }
               onRightIconPress={() => setShowPassword(!showPassword)}
@@ -167,13 +165,13 @@ export const RegisterScreen: React.FC = () => {
             {/* Confirm Password Input */}
             <Input
               label="确认密码 *"
-              placeholder="请再次输入密码"
+              placeholder="请再次输入密�?
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showConfirmPassword}
               rightIcon={
                 <Text style={styles.eyeIcon}>
-                  {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                  {showConfirmPassword ? '👁�? : '👁️‍🗨️'}
                 </Text>
               }
               onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -181,7 +179,7 @@ export const RegisterScreen: React.FC = () => {
 
             {/* Register Button */}
             <Button
-              title={isSubmitting ? '注册中...' : '注册'}
+              title={isSubmitting ? '注册�?..' : '注册'}
               onPress={handleRegister}
               disabled={isSubmitting}
               loading={isSubmitting}
@@ -192,7 +190,7 @@ export const RegisterScreen: React.FC = () => {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>已有账号？</Text>
+            <Text style={styles.footerText}>已有账号�?/Text>
             <Text
               style={styles.loginLink}
               onPress={() => navigation.navigate('Login')}

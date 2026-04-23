@@ -20,11 +20,11 @@ import {
   BORDER_RADIUS,
   useChatStore,
   ChatService,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { User } from '@neochat/shared/src/types';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { User } from 'neochat-shared/src/types';
 
 type GroupInfoScreenRouteProp = {
   params: {
@@ -42,8 +42,7 @@ export const GroupInfoScreen: React.FC = () => {
   const [muted, setMuted] = useState(false);
   const [stickToTop, setStickToTop] = useState(false);
 
-  // 从 store 中获取会话数据
-  const conversation = useMemo(() =>
+  // �?store 中获取会话数�?  const conversation = useMemo(() =>
     conversations.find(c => c.id === (conversationId || groupId)),
     [conversations, conversationId, groupId]
   );
@@ -85,10 +84,9 @@ export const GroupInfoScreen: React.FC = () => {
     navigation.navigate('AddGroupMembers' as never, { conversationId: conversationId || groupId } as never);
   };
 
-  // 退出群组
-  const handleLeaveGroup = () => {
+  // 退出群�?  const handleLeaveGroup = () => {
     Alert.alert(
-      '退出群组',
+      '退出群�?,
       '确定要退出该群组吗？',
       [
         { text: '取消', style: 'cancel' },
@@ -99,11 +97,11 @@ export const GroupInfoScreen: React.FC = () => {
             const result = await ChatService.leaveGroup(conversationId || groupId);
             if (result.success) {
               removeConversation(conversationId || groupId);
-              Alert.alert('已退出', '您已退出该群组', [
+              Alert.alert('已退�?, '您已退出该群组', [
                 { text: '确定', onPress: () => navigation.popToTop() },
               ]);
             } else {
-              Alert.alert('失败', result.message || '退出群组失败');
+              Alert.alert('失败', result.message || '退出群组失�?);
             }
           },
         },
@@ -122,14 +120,13 @@ export const GroupInfoScreen: React.FC = () => {
       case 'owner':
         return '群主';
       case 'admin':
-        return '管理员';
+        return '管理�?;
       default:
         return '';
     }
   };
 
-  // 渲染成员项
-  const renderMemberItem = ({ item }: { item: typeof members[0] }) => {
+  // 渲染成员�?  const renderMemberItem = ({ item }: { item: typeof members[0] }) => {
     const roleLabel = getRoleLabel(item.role);
 
     return (
@@ -164,8 +161,7 @@ export const GroupInfoScreen: React.FC = () => {
     );
   };
 
-  // 渲染设置项
-  const renderSettingItem = (
+  // 渲染设置�?  const renderSettingItem = (
     title: string,
     value: boolean,
     onToggle: (v: boolean) => void
@@ -217,10 +213,10 @@ export const GroupInfoScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 群成员 */}
+        {/* 群成�?*/}
         <View style={styles.membersSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>群成员 ({groupInfo.member_count})</Text>
+            <Text style={styles.sectionTitle}>群成�?({groupInfo.member_count})</Text>
             <TouchableOpacity style={styles.moreButton} onPress={handleViewAllMembers}>
               <Text style={styles.moreButtonText}>全部</Text>
               <Ionicons name="chevron-forward" size={16} color={COLORS.dark.text.tertiary} />
@@ -254,18 +250,18 @@ export const GroupInfoScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 群设置 */}
+        {/* 群设�?*/}
         <View style={styles.settingsSection}>
           <View style={styles.settingsCard}>
-            {renderSettingItem('消息免打扰', muted, setMuted)}
+            {renderSettingItem('消息免打�?, muted, setMuted)}
             <View style={styles.settingDivider} />
             {renderSettingItem('置顶聊天', stickToTop, setStickToTop)}
           </View>
         </View>
 
-        {/* 群成员列表 */}
+        {/* 群成员列�?*/}
         <View style={styles.membersListSection}>
-          <Text style={styles.sectionTitle}>群成员</Text>
+          <Text style={styles.sectionTitle}>群成�?/Text>
           <View style={styles.membersListCard}>
             <FlatList
               data={members}
@@ -277,11 +273,11 @@ export const GroupInfoScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 退出群组 */}
+        {/* 退出群�?*/}
         <View style={styles.dangerSection}>
           <TouchableOpacity style={styles.leaveButton} onPress={handleLeaveGroup}>
             <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
-            <Text style={styles.leaveButtonText}>退出群组</Text>
+            <Text style={styles.leaveButtonText}>退出群�?/Text>
           </TouchableOpacity>
         </View>
 

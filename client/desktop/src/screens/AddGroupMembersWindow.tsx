@@ -19,7 +19,7 @@ import {
   useAuthStore,
   useChatStore,
   ChatService,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
 interface AddGroupMembersWindowProps {
   onBack?: () => void;
@@ -69,12 +69,12 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
     }
   }, [currentUser, propConversationId]);
 
-  // 从 store 中获取会话数据
+  // �?store 中获取会话数�?
   const conversation = useCallback(() =>
     propConversationId ? conversations.find(c => c.id === propConversationId) : undefined,
   [conversations, propConversationId]);
 
-  // 初始化数据
+  // 初始化数�?
   useEffect(() => {
     // 如果 store 中已有会话成员，优先使用
     const conv = propConversationId ? conversations.find(c => c.id === propConversationId) : undefined;
@@ -108,17 +108,17 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
     });
   }, []);
 
-  // 全选/取消全选
+  // 全�?取消全�?
   const toggleSelectAll = useCallback(() => {
     const availableIds = filteredFriends
       .filter((f) => !existingMemberIds.has(f.friend.id))
       .map((f) => f.friend.id);
 
     if (selectedIds.size === availableIds.length) {
-      // 取消全选
+      // 取消全�?
       setSelectedIds(new Set());
     } else {
-      // 全选
+      // 全�?
       setSelectedIds(new Set(availableIds));
     }
   }, [filteredFriends, selectedIds]);
@@ -131,7 +131,7 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
 
     Alert.alert(
       '添加成员',
-      `确定要添加 ${selectedIds.size} 位成员到群组吗？`,
+      `确定要添�?${selectedIds.size} 位成员到群组吗？`,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -152,11 +152,11 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
               }
 
               if (successCount > 0) {
-                Alert.alert('添加成功', `已添加 ${successCount} 位成员`, [
+                Alert.alert('添加成功', `已添�?${successCount} 位成员`, [
                   { text: '确定', onPress: () => onBack?.() },
                 ]);
               } else {
-                Alert.alert('添加失败', '添加成员时出错');
+                Alert.alert('添加失败', '添加成员时出�?);
               }
             } catch (error) {
               Alert.alert('错误', error instanceof Error ? error.message : '添加失败');
@@ -187,12 +187,12 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
           disabled={selectedIds.size === 0 || isAdding}
         >
           <Text style={[styles.confirmButtonText, (selectedIds.size === 0 || isAdding) && styles.confirmButtonTextDisabled]}>
-            {isAdding ? '添加中...' : selectedIds.size > 0 ? `确定 (${selectedIds.size})` : '确定'}
+            {isAdding ? '添加�?..' : selectedIds.size > 0 ? `确定 (${selectedIds.size})` : '确定'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* 搜索框 */}
+      {/* 搜索�?*/}
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={18} color="#86909c" style={styles.searchIcon} />
@@ -211,13 +211,13 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
           )}
         </View>
 
-        {/* 全选 */}
+        {/* 全�?*/}
         {canSelectAll && (
           <TouchableOpacity style={styles.selectAllContainer} onPress={toggleSelectAll}>
             <View style={[styles.checkbox, isAllSelected && styles.checkboxSelected]}>
               {isAllSelected && <Ionicons name="checkmark" size={16} color="#ffffff" />}
             </View>
-            <Text style={styles.selectAllText}>全选</Text>
+            <Text style={styles.selectAllText}>全�?/Text>
           </TouchableOpacity>
         )}
       </View>

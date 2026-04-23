@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore, COLORS } from '@neochat/shared';
+import { useAuthStore, COLORS } from 'neochat-shared';
 
 import { LoginWindow } from '../screens/LoginWindow';
 import { RegisterWindow } from '../screens/RegisterWindow';
@@ -34,7 +34,7 @@ import { ProfileWindow } from '../screens/ProfileWindow';
 import { ContactsWindow } from '../screens/ContactsWindow';
 
 // Type imports
-import type { RootStackParamList } from '@neochat/shared';
+import type { RootStackParamList } from 'neochat-shared';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

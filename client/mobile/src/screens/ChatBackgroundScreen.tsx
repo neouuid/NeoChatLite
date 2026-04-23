@@ -17,8 +17,8 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
-} from '@neochat/shared';
-import { useMediaPicker } from '@neochat/shared/src/hooks/useMediaPicker';
+} from 'neochat-shared';
+import { useMediaPicker } from 'neochat-shared/src/hooks/useMediaPicker';
 
 // 预设背景
 const presetBackgrounds = [
@@ -39,7 +39,7 @@ export const ChatBackgroundScreen: React.FC = () => {
   const { pickImageFromGallery, takePhoto } = useMediaPicker({
     onImageSelected: (item) => {
       setCustomBackground(item.uri);
-      Alert.alert('成功', '背景已设置');
+      Alert.alert('成功', '背景已设�?);
     },
     onError: (error) => {
       Alert.alert('错误', error.message || '选择图片失败');
@@ -57,8 +57,7 @@ export const ChatBackgroundScreen: React.FC = () => {
     await pickImageFromGallery();
   }, [pickImageFromGallery]);
 
-  // 拍一张
-  const handleTakePhoto = useCallback(async () => {
+  // 拍一�?  const handleTakePhoto = useCallback(async () => {
     await takePhoto();
   }, [takePhoto]);
 
@@ -66,22 +65,21 @@ export const ChatBackgroundScreen: React.FC = () => {
   const handleResetDefault = () => {
     Alert.alert(
       '恢复默认',
-      '确定要恢复默认背景吗？',
+      '确定要恢复默认背景吗�?,
       [
         { text: '取消', style: 'cancel' },
         {
           text: '确定',
           onPress: () => {
             setSelectedBackground('bg1');
-            Alert.alert('已恢复', '已恢复默认背景');
+            Alert.alert('已恢�?, '已恢复默认背�?);
           },
         },
       ]
     );
   };
 
-  // 渲染背景项
-  const renderBackgroundItem = (bg: typeof presetBackgrounds[0]) => {
+  // 渲染背景�?  const renderBackgroundItem = (bg: typeof presetBackgrounds[0]) => {
     const isSelected = selectedBackground === bg.id;
 
     return (
@@ -132,7 +130,7 @@ export const ChatBackgroundScreen: React.FC = () => {
             <View style={styles.actionIcon}>
               <Ionicons name="camera-outline" size={24} color={COLORS.primary} />
             </View>
-            <Text style={styles.actionText}>拍一张</Text>
+            <Text style={styles.actionText}>拍一�?/Text>
           </TouchableOpacity>
         </View>
 

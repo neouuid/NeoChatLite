@@ -2,7 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore, COLORS } from '@neochat/shared';
+import { useAuthStore, COLORS } from 'neochat-shared';
 
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
@@ -36,7 +36,7 @@ import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { MentionsScreen } from '../screens/MentionsScreen';
 
 // Type imports
-import type { RootStackParamList } from '@neochat/shared';
+import type { RootStackParamList } from 'neochat-shared';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -70,7 +70,7 @@ const MainTabs = () => {
         name="Contacts"
         component={ContactsScreen}
         options={{
-          tabBarLabel: '联系人',
+          tabBarLabel: '联系�?,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people-outline" size={size} color={color} />
           ),

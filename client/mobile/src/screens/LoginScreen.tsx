@@ -12,9 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { useAuthStore, AuthService, Input, Button } from '@neochat/shared';
-import type { RootStackParamList } from '@neochat/shared';
-import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '@neochat/shared';
+import { useAuthStore, AuthService, Input, Button } from 'neochat-shared';
+import type { RootStackParamList } from 'neochat-shared';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from 'neochat-shared';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -38,7 +38,7 @@ export const LoginScreen: React.FC = () => {
       const auth = await AuthService.login({ identifier, password });
       setAuth(auth);
     } catch (error) {
-      Alert.alert('登录失败', error instanceof Error ? error.message : '请稍后重试');
+      Alert.alert('登录失败', error instanceof Error ? error.message : '请稍后重�?);
     } finally {
       setIsSubmitting(false);
     }
@@ -64,8 +64,8 @@ export const LoginScreen: React.FC = () => {
           <View style={styles.formSection}>
             {/* Identifier Input */}
             <Input
-              label="用户名/邮箱/手机号"
-              placeholder="请输入用户名、邮箱或手机号"
+              label="用户�?邮箱/手机�?
+              placeholder="请输入用户名、邮箱或手机�?
               value={identifier}
               onChangeText={setIdentifier}
               autoCapitalize="none"
@@ -75,13 +75,13 @@ export const LoginScreen: React.FC = () => {
             {/* Password Input */}
             <Input
               label="密码"
-              placeholder="请输入密码"
+              placeholder="请输入密�?
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
               rightIcon={
                 <Text style={styles.eyeIcon}>
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                  {showPassword ? '👁�? : '👁️‍🗨️'}
                 </Text>
               }
               onRightIconPress={() => setShowPassword(!showPassword)}
@@ -90,19 +90,18 @@ export const LoginScreen: React.FC = () => {
             {/* Options Row */}
             <View style={styles.optionsRow}>
               <View style={styles.rememberRow}>
-                <Text style={styles.rememberText}>记住我</Text>
+                <Text style={styles.rememberText}>记住�?/Text>
               </View>
               <Text
                 style={styles.forgotLink}
                 onPress={() => navigation.navigate('ForgotPassword')}
               >
-                忘记密码？
-              </Text>
+                忘记密码�?              </Text>
             </View>
 
             {/* Login Button */}
             <Button
-              title={isSubmitting ? '登录中...' : '登录'}
+              title={isSubmitting ? '登录�?..' : '登录'}
               onPress={handleLogin}
               disabled={isSubmitting}
               loading={isSubmitting}
@@ -112,7 +111,7 @@ export const LoginScreen: React.FC = () => {
             {/* Divider */}
             <View style={styles.dividerContainer}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>或者</Text>
+              <Text style={styles.dividerText}>或�?/Text>
               <View style={styles.dividerLine} />
             </View>
           </View>
@@ -124,8 +123,7 @@ export const LoginScreen: React.FC = () => {
               style={styles.registerLink}
               onPress={() => navigation.navigate('Register')}
             >
-              注册新账号
-            </Text>
+              注册新账�?            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

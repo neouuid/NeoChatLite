@@ -18,7 +18,7 @@ import {
   BORDER_RADIUS,
   chatService,
   downloadFile,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
 interface ImageViewerWindowProps {
   imageUrl: string;
@@ -44,7 +44,7 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
   const handleDelete = () => {
     Alert.alert(
       '删除图片',
-      '确定要删除这张图片吗？',
+      '确定要删除这张图片吗�?,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -52,14 +52,14 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
           style: 'destructive',
           onPress: async () => {
             if (!messageId) {
-              Alert.alert('错误', '无法删除此图片');
+              Alert.alert('错误', '无法删除此图�?);
               return;
             }
 
             setIsDeleting(true);
             try {
               await chatService.deleteMessage(messageId);
-              Alert.alert('成功', '图片已删除', [
+              Alert.alert('成功', '图片已删�?, [
                 { text: '确定', onPress: onClose },
               ]);
             } catch (error) {
@@ -94,7 +94,7 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
       const success = await downloadFile(imageUrl, fileName);
       Alert.alert(
         success ? '下载成功' : '下载失败',
-        success ? '图片已下载' : '下载图片失败，请重试'
+        success ? '图片已下�? : '下载图片失败，请重试'
       );
     } catch (error) {
       Alert.alert('错误', '下载失败');
@@ -149,12 +149,12 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
         ) : (
           <View style={styles.placeholderImage}>
             <Ionicons name="image-outline" size={80} color="#8080a0" />
-            <Text style={styles.placeholderText}>无图片</Text>
+            <Text style={styles.placeholderText}>无图�?/Text>
           </View>
         )}
       </ScrollView>
 
-      {/* 底部导航栏 */}
+      {/* 底部导航�?*/}
       <View style={styles.footer}>
         <View style={styles.navigationLeft}>
           <TouchableOpacity style={styles.navButton} disabled>

@@ -18,7 +18,7 @@ import {
   TYPOGRAPHY,
   BORDER_RADIUS,
   useUISettingsStore,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -87,7 +87,7 @@ export const SettingsScreen: React.FC = () => {
     },
     {
       id: 'help',
-      title: '帮助与反馈',
+      title: '帮助与反�?,
       icon: 'help-circle-outline',
       type: 'navigate' as const,
       screen: 'Help' as const,

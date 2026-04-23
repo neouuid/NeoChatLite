@@ -1,5 +1,4 @@
-// 桌面端聊天列表面板
-
+// 桌面端聊天列表面�?
 import React, { useEffect, useCallback } from 'react';
 import {
   View,
@@ -18,9 +17,9 @@ import {
   COLORS,
   SPACING,
   TYPOGRAPHY,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { ConversationItem } from '@neochat/shared/src/components/ConversationItem';
+import { ConversationItem } from 'neochat-shared/src/components/ConversationItem';
 
 interface ChatListPanelProps {
   selectedConversationId?: string;
@@ -68,8 +67,7 @@ export const ChatListPanel: React.FC<ChatListPanelProps> = ({
     onSelectConversation?.(conversation);
   };
 
-  // 渲染会话项
-  const renderConversationItem = ({ item }: { item: Conversation }) => (
+  // 渲染会话�?  const renderConversationItem = ({ item }: { item: Conversation }) => (
     <TouchableOpacity
       onPress={() => handleConversationPress(item)}
       activeOpacity={0.7}
@@ -91,7 +89,7 @@ export const ChatListPanel: React.FC<ChatListPanelProps> = ({
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>暂无会话</Text>
-      <Text style={styles.emptySubtext}>开始聊天吧！</Text>
+      <Text style={styles.emptySubtext}>开始聊天吧�?/Text>
     </View>
   );
 
@@ -105,7 +103,7 @@ export const ChatListPanel: React.FC<ChatListPanelProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* 搜索栏 */}
+      {/* 搜索�?*/}
       <View style={styles.searchBar}>
         <Ionicons
           name="search-outline"

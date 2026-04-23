@@ -23,11 +23,11 @@ import {
   useMediaPicker,
   useMediaUpload,
   type MediaItem,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { MessageList } from '@neochat/shared/src/components/MessageList';
-import { ChatInput } from '@neochat/shared/src/components/ChatInput';
-import type { RootStackParamList } from '@neochat/shared';
+import { MessageList } from 'neochat-shared/src/components/MessageList';
+import { ChatInput } from 'neochat-shared/src/components/ChatInput';
+import type { RootStackParamList } from 'neochat-shared';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Chat'>;
 type RouteParams = { conversationId: string };
@@ -65,8 +65,7 @@ export const ChatScreen: React.FC = () => {
       setSending(true);
     },
     onUploadComplete: async (result) => {
-      // 发送媒体消息
-      await sendMediaMessage(result);
+      // 发送媒体消�?      await sendMediaMessage(result);
     },
     onUploadError: (error) => {
       setSending(false);
@@ -74,8 +73,7 @@ export const ChatScreen: React.FC = () => {
     },
   });
 
-  // 发送媒体消息
-  const sendMediaMessage = useCallback(async (result: any) => {
+  // 发送媒体消�?  const sendMediaMessage = useCallback(async (result: any) => {
     if (!user) return;
 
     try {
@@ -92,11 +90,11 @@ export const ChatScreen: React.FC = () => {
       if (response.success && response.data) {
         addMessage(conversationId, response.data);
       } else {
-        Alert.alert('错误', response.message || '发送消息失败');
+        Alert.alert('错误', response.message || '发送消息失�?);
       }
     } catch (error) {
       console.error('Failed to send media message:', error);
-      Alert.alert('错误', '发送消息失败');
+      Alert.alert('错误', '发送消息失�?);
     } finally {
       setSending(false);
       setReplyingTo(null);
@@ -153,8 +151,7 @@ export const ChatScreen: React.FC = () => {
       const response = await chatService.getConversation(conversationId);
       if (response.success && response.data) {
         setCurrentConversation(response.data);
-        // 设置导航栏标题
-        navigation.setOptions({
+        // 设置导航栏标�?        navigation.setOptions({
           title: getConversationTitle(response.data),
         });
       }
@@ -171,7 +168,7 @@ export const ChatScreen: React.FC = () => {
       const response = await chatService.getConversationMessages(conversationId);
       if (response.success && response.data) {
         setMessages(conversationId, response.data);
-        // 初始加载时，如果返回的消息数量少于 limit，则认为没有更多消息
+        // 初始加载时，如果返回的消息数量少�?limit，则认为没有更多消息
         setHasMoreMessages(conversationId, response.data.length >= 50);
       }
     } catch (error) {
@@ -185,8 +182,7 @@ export const ChatScreen: React.FC = () => {
   useEffect(() => {
     loadConversation();
     loadMessages();
-    // 重置分页状态
-    setHasMoreMessages(conversationId, true);
+    // 重置分页状�?    setHasMoreMessages(conversationId, true);
   }, [loadConversation, loadMessages, conversationId, setHasMoreMessages]);
 
   // 获取会话标题
@@ -194,8 +190,7 @@ export const ChatScreen: React.FC = () => {
     if (conv.type === 'group') {
       return conv.name || '群聊';
     }
-    // 单聊：显示对方名称
-    if (conv.members && user) {
+    // 单聊：显示对方名�?    if (conv.members && user) {
       const otherMember = conv.members.find((m) => m.user_id !== user.id);
       if (otherMember?.user) {
         return formatDisplayName(otherMember.user.nickname, otherMember.user.username);
@@ -204,8 +199,7 @@ export const ChatScreen: React.FC = () => {
     return '聊天';
   };
 
-  // 标记会话为已读
-  const markAsRead = useCallback(async () => {
+  // 标记会话为已�?  const markAsRead = useCallback(async () => {
     try {
       await chatService.markConversationAsRead(conversationId);
     } catch (error) {
@@ -217,8 +211,7 @@ export const ChatScreen: React.FC = () => {
     markAsRead();
   }, [markAsRead]);
 
-  // 清除高亮消息 ID（3秒后）
-  useEffect(() => {
+  // 清除高亮消息 ID�?秒后�?  useEffect(() => {
     if (highlightedMessageId) {
       const timer = setTimeout(() => {
         setHighlightedMessageId(null);
@@ -227,8 +220,7 @@ export const ChatScreen: React.FC = () => {
     }
   }, [highlightedMessageId, setHighlightedMessageId]);
 
-  // 发送消息
-  const handleSendMessage = useCallback(async (content: string) => {
+  // 发送消�?  const handleSendMessage = useCallback(async (content: string) => {
     if (!user) return;
 
     try {
@@ -243,11 +235,11 @@ export const ChatScreen: React.FC = () => {
       if (response.success && response.data) {
         addMessage(conversationId, response.data);
       } else {
-        Alert.alert('错误', response.message || '发送消息失败');
+        Alert.alert('错误', response.message || '发送消息失�?);
       }
     } catch (error) {
       console.error('Failed to send message:', error);
-      Alert.alert('错误', '发送消息失败');
+      Alert.alert('错误', '发送消息失�?);
     } finally {
       setSending(false);
       setReplyingTo(null);
@@ -276,8 +268,7 @@ export const ChatScreen: React.FC = () => {
       if (response.success && response.data) {
         if (response.data.length > 0) {
           prependMessages(conversationId, response.data);
-          // 如果返回的消息少于 limit，则没有更多了
-          setHasMoreMessages(conversationId, response.data.length >= 50);
+          // 如果返回的消息少�?limit，则没有更多�?          setHasMoreMessages(conversationId, response.data.length >= 50);
         } else {
           setHasMoreMessages(conversationId, false);
         }
@@ -309,7 +300,7 @@ export const ChatScreen: React.FC = () => {
         if (index === 0) {
           // 复制消息
           const success = await copyToClipboard(message.content);
-          Alert.alert(success ? '已复制' : '复制失败', success ? '消息已复制到剪贴板' : '复制消息失败，请重试');
+          Alert.alert(success ? '已复�? : '复制失败', success ? '消息已复制到剪贴�? : '复制消息失败，请重试');
         } else if (index === 1) {
           // 转发消息
           navigation.navigate('Forward', { messageId: message.id });
@@ -333,8 +324,7 @@ export const ChatScreen: React.FC = () => {
 
   // 头像点击
   const handleAvatarPress = useCallback((clickedUser: any) => {
-    // 导航到用户资料页面
-    navigation.navigate('ViewProfile', { userId: clickedUser.id });
+    // 导航到用户资料页�?    navigation.navigate('ViewProfile', { userId: clickedUser.id });
   }, [navigation]);
 
   // 取消回复
@@ -369,7 +359,7 @@ export const ChatScreen: React.FC = () => {
         />
       </View>
 
-      {/* 输入框 */}
+      {/* 输入�?*/}
       <ChatInput
         onSendMessage={handleSendMessage}
         onSendImage={handleSendImage}

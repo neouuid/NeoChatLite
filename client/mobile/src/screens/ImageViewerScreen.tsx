@@ -1,5 +1,4 @@
-// 图片查看器页面
-
+// 图片查看器页�?
 import React, { useState } from 'react';
 import {
   View,
@@ -21,8 +20,8 @@ import {
   TYPOGRAPHY,
   saveImageToLibrary,
   deleteFile,
-} from '@neochat/shared';
-import type { RootStackParamList } from '@neochat/shared/src/types';
+} from 'neochat-shared';
+import type { RootStackParamList } from 'neochat-shared/src/types';
 import type { NavigationProp, RouteProp } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -40,8 +39,7 @@ export const ImageViewerScreen: React.FC = () => {
 
   const [showControls, setShowControls] = useState(true);
 
-  // 切换控制栏显示
-  const toggleControls = () => {
+  // 切换控制栏显�?  const toggleControls = () => {
     setShowControls(!showControls);
   };
 
@@ -57,7 +55,7 @@ export const ImageViewerScreen: React.FC = () => {
   // 转发图片
   const handleForwardImage = () => {
     // 注意：这里需要实际的 messageId，当前通过路由参数只传递了 url
-    // 在实际项目中，应该传递 messageId
+    // 在实际项目中，应该传�?messageId
     Alert.alert('提示', '转发功能需要从消息列表进入');
   };
 
@@ -65,7 +63,7 @@ export const ImageViewerScreen: React.FC = () => {
   const handleDeleteImage = () => {
     Alert.alert(
       '删除图片',
-      '确定要删除这张图片吗？',
+      '确定要删除这张图片吗�?,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -74,7 +72,7 @@ export const ImageViewerScreen: React.FC = () => {
           onPress: async () => {
             const success = await deleteFile(url);
             if (success) {
-              Alert.alert('已删除', '图片已删除');
+              Alert.alert('已删�?, '图片已删�?);
               navigation.goBack();
             } else {
               Alert.alert('删除失败', '删除图片失败，请重试');
@@ -89,7 +87,7 @@ export const ImageViewerScreen: React.FC = () => {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <StatusBar hidden={!showControls} />
 
-      {/* 顶部控制栏 */}
+      {/* 顶部控制�?*/}
       {showControls && (
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -117,7 +115,7 @@ export const ImageViewerScreen: React.FC = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* 底部控制栏 */}
+      {/* 底部控制�?*/}
       {showControls && (
         <View style={styles.footer}>
           <TouchableOpacity style={styles.footerButton} onPress={handleSaveImage}>

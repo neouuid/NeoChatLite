@@ -15,7 +15,7 @@
     "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["*"],
-      "@neochat/shared": ["../../shared/src"]
+      "neochat-shared": ["../../shared/src"]
     },
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,

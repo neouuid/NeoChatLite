@@ -17,12 +17,12 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
 const APP_VERSION = '1.0.0';
 const GITHUB_URL = 'https://github.com/neochat/neochat';
-const WEBSITE_URL = 'https://neochat.app';
-const FEEDBACK_EMAIL = 'feedback@neochat.app';
+const WEBSITE_URL = 'https://neohope.com';
+const FEEDBACK_EMAIL = 'feedback@neohope.com';
 const APP_STORE_URL = 'https://apps.apple.com/app/neochat';
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.neochat';
 const PRIVACY_POLICY_URL = `${WEBSITE_URL}/privacy`;
@@ -69,7 +69,7 @@ export const AboutScreen: React.FC = () => {
     },
     {
       id: 'license',
-      title: '开源许可',
+      title: '开源许�?,
       icon: 'document-text-outline',
       onPress: () => Linking.openURL(LICENSE_URL),
     },
@@ -111,12 +111,10 @@ export const AboutScreen: React.FC = () => {
         {/* 描述 */}
         <View style={styles.descriptionSection}>
           <Text style={styles.descriptionText}>
-            NeoChat 是一款现代化的跨平台即时通讯应用，
-            支持 iOS、Android、Windows 和 macOS。
-          </Text>
+            NeoChat 是一款现代化的跨平台即时通讯应用�?            支持 iOS、Android、Windows �?macOS�?          </Text>
         </View>
 
-        {/* 菜单项 */}
+        {/* 菜单�?*/}
         <View style={styles.menuSection}>
           <View style={styles.menuCard}>
             {menuItems.map((item, index) => (

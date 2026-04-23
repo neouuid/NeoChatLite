@@ -18,11 +18,11 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { User, Friend } from '@neochat/shared/src/types';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { User, Friend } from 'neochat-shared/src/types';
 
 type TabType = 'friends' | 'requests' | 'blocked';
 
@@ -78,7 +78,7 @@ export const ContactsPanel: React.FC = () => {
   const handleAddFriend = useCallback((targetUser: User) => {
     Alert.alert(
       '添加好友',
-      `确定要添加 ${formatDisplayName(targetUser.nickname, targetUser.username)} 为好友吗？`,
+      `确定要添�?${formatDisplayName(targetUser.nickname, targetUser.username)} 为好友吗？`,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -86,9 +86,9 @@ export const ContactsPanel: React.FC = () => {
           onPress: async () => {
             try {
               await chatService.sendFriendRequest(targetUser.id);
-              Alert.alert('成功', '好友请求已发送');
+              Alert.alert('成功', '好友请求已发�?);
             } catch (error) {
-              Alert.alert('错误', error instanceof Error ? error.message : '发送请求失败');
+              Alert.alert('错误', error instanceof Error ? error.message : '发送请求失�?);
             }
           },
         },
@@ -103,7 +103,7 @@ export const ContactsPanel: React.FC = () => {
 
     Alert.alert(
       '删除好友',
-      `确定要删除 ${formatDisplayName(targetUser.nickname, targetUser.username)} 吗？`,
+      `确定要删�?${formatDisplayName(targetUser.nickname, targetUser.username)} 吗？`,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -112,7 +112,7 @@ export const ContactsPanel: React.FC = () => {
           onPress: async () => {
             try {
               await chatService.deleteFriend(friend.id);
-              Alert.alert('成功', '已删除好友');
+              Alert.alert('成功', '已删除好�?);
               loadFriends();
             } catch (error) {
               Alert.alert('错误', error instanceof Error ? error.message : '删除失败');
@@ -129,8 +129,7 @@ export const ContactsPanel: React.FC = () => {
     }
   }, [activeTab, loadFriends]);
 
-  // 渲染好友项
-  const renderFriendItem = (friend: Friend) => {
+  // 渲染好友�?  const renderFriendItem = (friend: Friend) => {
     const friendUser = friend.friend;
     if (!friendUser) return null;
 
@@ -168,8 +167,7 @@ export const ContactsPanel: React.FC = () => {
     );
   };
 
-  // 渲染搜索结果项
-  const renderSearchResultItem = (searchUser: User) => {
+  // 渲染搜索结果�?  const renderSearchResultItem = (searchUser: User) => {
     const isFriend = friends.some((f) => f.friend?.id === searchUser.id);
 
     return (
@@ -200,7 +198,7 @@ export const ContactsPanel: React.FC = () => {
           </TouchableOpacity>
         )}
         {isFriend && (
-          <Text style={styles.alreadyFriendText}>已添加</Text>
+          <Text style={styles.alreadyFriendText}>已添�?/Text>
         )}
       </TouchableOpacity>
     );
@@ -209,17 +207,17 @@ export const ContactsPanel: React.FC = () => {
   const tabs = [
     { key: 'friends' as const, label: '好友' },
     { key: 'requests' as const, label: '新的朋友' },
-    { key: 'blocked' as const, label: '黑名单' },
+    { key: 'blocked' as const, label: '黑名�? },
   ];
 
   return (
     <View style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>联系人</Text>
+        <Text style={styles.headerTitle}>联系�?/Text>
       </View>
 
-      {/* 搜索栏 */}
+      {/* 搜索�?*/}
       <View style={styles.searchSection}>
         <View style={styles.searchBar}>
           <Ionicons
@@ -247,7 +245,7 @@ export const ContactsPanel: React.FC = () => {
             <Text style={styles.sectionTitle}>搜索结果</Text>
             {searchResults.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>未找到相关用户</Text>
+                <Text style={styles.emptyText}>未找到相关用�?/Text>
               </View>
             ) : (
               searchResults.map(renderSearchResultItem)
@@ -256,7 +254,7 @@ export const ContactsPanel: React.FC = () => {
         </ScrollView>
       ) : (
         <>
-          {/* 标签页 */}
+          {/* 标签�?*/}
           <View style={styles.tabsContainer}>
             {tabs.map((tab) => (
               <TouchableOpacity
@@ -286,7 +284,7 @@ export const ContactsPanel: React.FC = () => {
                 {friends.length === 0 ? (
                   <View style={styles.emptyState}>
                     <Ionicons name="people-outline" size={48} color={COLORS.dark.text.tertiary} />
-                    <Text style={styles.emptyTitle}>还没有好友</Text>
+                    <Text style={styles.emptyTitle}>还没有好�?/Text>
                     <Text style={styles.emptySubtext}>搜索用户并添加好友吧</Text>
                   </View>
                 ) : (
@@ -308,7 +306,7 @@ export const ContactsPanel: React.FC = () => {
               <View style={styles.contentSection}>
                 <View style={styles.emptyState}>
                   <Ionicons name="ban-outline" size={48} color={COLORS.dark.text.tertiary} />
-                  <Text style={styles.emptyTitle}>黑名单为空</Text>
+                  <Text style={styles.emptyTitle}>黑名单为�?/Text>
                 </View>
               </View>
             )}

@@ -20,10 +20,10 @@ import {
   useChatStore,
   useWebRTC,
   type User,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
 
 type VoiceCallScreenRouteProp = {
   params: {
@@ -63,8 +63,7 @@ export const VoiceCallScreen: React.FC = () => {
 
   // 获取通话对方用户信息
   const remoteUser = useMemo((): User | null => {
-    // 如果路由参数直接提供了用户信息
-    if (userId && userName) {
+    // 如果路由参数直接提供了用户信�?    if (userId && userName) {
       return {
         id: userId,
         username: userName,
@@ -88,7 +87,7 @@ export const VoiceCallScreen: React.FC = () => {
     return null;
   }, [conversationId, conversations, currentUser, userId, userName, userAvatar]);
 
-  // 计时器 + 音频波浪动画
+  // 计时�?+ 音频波浪动画
   useEffect(() => {
     let timer: NodeJS.Timeout;
     let animationTimer: NodeJS.Timeout;
@@ -96,8 +95,7 @@ export const VoiceCallScreen: React.FC = () => {
       timer = setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
-      // 动画刷新器
-      animationTimer = setInterval(() => {
+      // 动画刷新�?      animationTimer = setInterval(() => {
         setAnimationFrame((prev) => prev + 1);
       }, 50);
     } else if (callState.status === 'ended') {
@@ -153,19 +151,18 @@ export const VoiceCallScreen: React.FC = () => {
     navigation.goBack();
   }, [rejectCall, navigation]);
 
-  // 获取通话状态文本
-  const getStatusText = () => {
+  // 获取通话状态文�?  const getStatusText = () => {
     switch (callState.status) {
       case 'calling':
-        return '呼叫中...';
+        return '呼叫�?..';
       case 'incoming':
-        return '来电中...';
+        return '来电�?..';
       case 'connected':
-        return '通话中';
+        return '通话�?;
       case 'ended':
-        return '通话已结束';
+        return '通话已结�?;
       default:
-        return '连接中...';
+        return '连接�?..';
     }
   };
 
@@ -177,8 +174,7 @@ export const VoiceCallScreen: React.FC = () => {
     return (
       <View style={styles.waveContainer}>
         {Array.from({ length: barCount }).map((_, i) => {
-          // 每个 bar 使用不同的相位和频率，创造更自然的波浪效果
-          const phase = i * 0.8;
+          // 每个 bar 使用不同的相位和频率，创造更自然的波浪效�?          const phase = i * 0.8;
           const freq = 1 + i * 0.3;
           const baseHeight = 20;
           const amplitude = callState.isMuted ? 5 : 25;
@@ -217,10 +213,10 @@ export const VoiceCallScreen: React.FC = () => {
           <Text style={styles.remoteName}>
             {remoteUser?.nickname || remoteUser?.username || '用户'}
           </Text>
-          <Text style={styles.callStatus}>来电中...</Text>
+          <Text style={styles.callStatus}>来电�?..</Text>
         </View>
 
-        {/* 来电控制栏 */}
+        {/* 来电控制�?*/}
         <View style={styles.incomingControlsContainer}>
           <TouchableOpacity
             style={[styles.controlButton, styles.rejectButton]}
@@ -264,7 +260,7 @@ export const VoiceCallScreen: React.FC = () => {
         {renderAudioWave()}
       </View>
 
-      {/* 控制栏 */}
+      {/* 控制�?*/}
       <View style={styles.controlsContainer}>
         <TouchableOpacity
           style={[styles.controlButton, callState.isMuted && styles.controlButtonActive]}
@@ -290,7 +286,7 @@ export const VoiceCallScreen: React.FC = () => {
             color="#ffffff"
           />
           <Text style={styles.controlButtonLabel}>
-            {callState.isSpeakerOn ? '听筒' : '扬声器'}
+            {callState.isSpeakerOn ? '听筒' : '扬声�?}
           </Text>
         </TouchableOpacity>
 

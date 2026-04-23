@@ -20,11 +20,11 @@ import {
   BORDER_RADIUS,
   chatService,
   useChatStore,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { User, Message, Conversation, RootStackParamList } from '@neochat/shared/src/types';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { User, Message, Conversation, RootStackParamList } from 'neochat-shared/src/types';
 import type { NavigationProp } from '@react-navigation/native';
 
 type SearchType = 'all' | 'contacts' | 'messages' | 'groups';
@@ -43,7 +43,7 @@ export const SearchScreen: React.FC = () => {
 
   const searchTypes: { key: SearchType; label: string }[] = [
     { key: 'all', label: '全部' },
-    { key: 'contacts', label: '联系人' },
+    { key: 'contacts', label: '联系�? },
     { key: 'groups', label: '群组' },
     { key: 'messages', label: '聊天记录' },
   ];
@@ -60,7 +60,7 @@ export const SearchScreen: React.FC = () => {
 
     setIsSearching(true);
     try {
-      // 并行调用所有搜索 API
+      // 并行调用所有搜�?API
       const [usersResponse, messagesResponse, groupsResponse] = await Promise.all([
         chatService.searchUsers(query),
         chatService.searchMessages(query),
@@ -81,8 +81,7 @@ export const SearchScreen: React.FC = () => {
     }
   }, []);
 
-  // 点击联系人
-  const handleContactPress = (contact: User) => {
+  // 点击联系�?  const handleContactPress = (contact: User) => {
     navigation.navigate('ViewProfile' as never, { userId: contact.id } as never);
   };
 
@@ -90,20 +89,16 @@ export const SearchScreen: React.FC = () => {
   const handleMessagePress = async (message: Message) => {
     // 设置高亮消息 ID
     setHighlightedMessageId(message.id);
-    // 确保消息已加载
-    await ensureMessageLoaded(message.conversation_id, message.id);
-    // 跳转到聊天页面
-    navigation.navigate('Chat', { conversationId: message.conversation_id });
+    // 确保消息已加�?    await ensureMessageLoaded(message.conversation_id, message.id);
+    // 跳转到聊天页�?    navigation.navigate('Chat', { conversationId: message.conversation_id });
   };
 
   // 点击群组
   const handleGroupPress = (group: any) => {
-    // 跳转到群聊页面
-    navigation.navigate('GroupChat', { conversationId: group.id });
+    // 跳转到群聊页�?    navigation.navigate('GroupChat', { conversationId: group.id });
   };
 
-  // 格式化日期
-  const formatDate = (dateStr: string) => {
+  // 格式化日�?  const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -141,12 +136,11 @@ export const SearchScreen: React.FC = () => {
           </Text>
         )}
       </View>
-      <Text style={styles.resultTypeLabel}>联系人</Text>
+      <Text style={styles.resultTypeLabel}>联系�?/Text>
     </TouchableOpacity>
   );
 
-  // 渲染消息项
-  const renderMessageItem = (message: Message & { sender?: User }) => {
+  // 渲染消息�?  const renderMessageItem = (message: Message & { sender?: User }) => {
     const sender = message.sender;
     const displayName = sender
       ? formatDisplayName(sender.nickname, sender.username)
@@ -182,8 +176,7 @@ export const SearchScreen: React.FC = () => {
     );
   };
 
-  // 渲染群组项
-  const renderGroupItem = (group: any) => (
+  // 渲染群组�?  const renderGroupItem = (group: any) => (
     <TouchableOpacity
       key={group.id}
       style={styles.resultItem}
@@ -197,8 +190,7 @@ export const SearchScreen: React.FC = () => {
           {group.name}
         </Text>
         <Text style={styles.resultSubtitle}>
-          {group.member_count} 名成员
-        </Text>
+          {group.member_count} 名成�?        </Text>
       </View>
       <Text style={styles.resultTypeLabel}>群组</Text>
     </TouchableOpacity>
@@ -215,7 +207,7 @@ export const SearchScreen: React.FC = () => {
       return (
         <View style={styles.emptyState}>
           <Ionicons name="search-outline" size={64} color={COLORS.dark.text.tertiary} />
-          <Text style={styles.emptyTitle}>未找到结果</Text>
+          <Text style={styles.emptyTitle}>未找到结�?/Text>
           <Text style={styles.emptySubtext}>试试其他关键词吧</Text>
         </View>
       );
@@ -227,7 +219,7 @@ export const SearchScreen: React.FC = () => {
           searchResults.contacts.length > 0 && (
             <View style={styles.resultSection}>
               {searchType === 'all' && (
-                <Text style={styles.sectionTitle}>联系人</Text>
+                <Text style={styles.sectionTitle}>联系�?/Text>
               )}
               {searchResults.contacts.map(renderContactItem)}
             </View>
@@ -258,7 +250,7 @@ export const SearchScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* 头部搜索栏 */}
+      {/* 头部搜索�?*/}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={COLORS.dark.text.primary} />
@@ -319,13 +311,13 @@ export const SearchScreen: React.FC = () => {
       <ScrollView style={styles.scrollView}>
         {isSearching ? (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>搜索中...</Text>
+            <Text style={styles.loadingText}>搜索�?..</Text>
           </View>
         ) : !searchQuery.trim() ? (
           <View style={styles.emptyState}>
             <Ionicons name="search-outline" size={64} color={COLORS.dark.text.tertiary} />
             <Text style={styles.emptyTitle}>搜索</Text>
-            <Text style={styles.emptySubtext}>搜索联系人、群组、聊天记录</Text>
+            <Text style={styles.emptySubtext}>搜索联系人、群组、聊天记�?/Text>
           </View>
         ) : (
           renderSearchResults()

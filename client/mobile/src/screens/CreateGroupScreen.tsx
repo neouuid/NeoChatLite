@@ -21,11 +21,11 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { User, Friend, RootStackParamList, Conversation } from '@neochat/shared/src/types';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { User, Friend, RootStackParamList, Conversation } from 'neochat-shared/src/types';
 import type { NavigationProp } from '@react-navigation/native';
 
 export const CreateGroupScreen: React.FC = () => {
@@ -70,11 +70,11 @@ export const CreateGroupScreen: React.FC = () => {
   // 创建群组
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
-      Alert.alert('提示', '请输入群组名称');
+      Alert.alert('提示', '请输入群组名�?);
       return;
     }
     if (selectedFriends.length === 0) {
-      Alert.alert('提示', '请至少选择一位好友');
+      Alert.alert('提示', '请至少选择一位好�?);
       return;
     }
 
@@ -92,8 +92,7 @@ export const CreateGroupScreen: React.FC = () => {
           {
             text: '确定',
             onPress: () => {
-              // 导航到群聊页面
-              navigation.navigate('GroupChat', { conversationId: conversation.id });
+              // 导航到群聊页�?              navigation.navigate('GroupChat', { conversationId: conversation.id });
             },
           },
         ]);
@@ -105,8 +104,7 @@ export const CreateGroupScreen: React.FC = () => {
     }
   };
 
-  // 移除已选好友
-  const removeSelectedFriend = (friendId: string) => {
+  // 移除已选好�?  const removeSelectedFriend = (friendId: string) => {
     setSelectedFriends((prev) => prev.filter((id) => id !== friendId));
   };
 
@@ -114,8 +112,7 @@ export const CreateGroupScreen: React.FC = () => {
     loadFriends();
   }, [loadFriends]);
 
-  // 渲染已选好友
-  const renderSelectedFriend = (friendId: string) => {
+  // 渲染已选好�?  const renderSelectedFriend = (friendId: string) => {
     const friend = friends.find((f) => f.friend?.id === friendId);
     const friendUser = friend?.friend;
     if (!friendUser) return null;
@@ -141,8 +138,7 @@ export const CreateGroupScreen: React.FC = () => {
     );
   };
 
-  // 渲染好友项
-  const renderFriendItem = ({ item }: { item: Friend }) => {
+  // 渲染好友�?  const renderFriendItem = ({ item }: { item: Friend }) => {
     const friendUser = item.friend;
     if (!friendUser) return null;
 
@@ -202,7 +198,7 @@ export const CreateGroupScreen: React.FC = () => {
           disabled={selectedFriends.length === 0 || !groupName.trim() || isCreating}
         >
           <Text style={styles.createButtonText}>
-            {isCreating ? '创建中...' : '创建'}
+            {isCreating ? '创建�?..' : '创建'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -216,7 +212,7 @@ export const CreateGroupScreen: React.FC = () => {
               <Text style={styles.inputLabel}>群组名称</Text>
               <TextInput
                 style={styles.input}
-                placeholder="请输入群组名称"
+                placeholder="请输入群组名�?
                 placeholderTextColor={COLORS.dark.text.tertiary}
                 value={groupName}
                 onChangeText={setGroupName}
@@ -239,11 +235,11 @@ export const CreateGroupScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 已选成员 */}
+        {/* 已选成�?*/}
         {selectedFriends.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              已选成员 ({selectedFriends.length})
+              已选成�?({selectedFriends.length})
             </Text>
             <View style={styles.selectedList}>
               {selectedFriends.map(renderSelectedFriend)}
@@ -256,7 +252,7 @@ export const CreateGroupScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>选择好友</Text>
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>加载�?..</Text>
             </View>
           ) : friends.length === 0 ? (
             <View style={styles.emptyState}>
@@ -265,7 +261,7 @@ export const CreateGroupScreen: React.FC = () => {
                 size={48}
                 color={COLORS.dark.text.tertiary}
               />
-              <Text style={styles.emptyTitle}>还没有好友</Text>
+              <Text style={styles.emptyTitle}>还没有好�?/Text>
               <Text style={styles.emptySubtext}>先添加好友吧</Text>
             </View>
           ) : (

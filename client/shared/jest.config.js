@@ -12,7 +12,7 @@ module.exports = {
     },
   },
   moduleNameMapper: {
-    '^@neochat/shared(.*)$': '<rootDir>/src$1',
+    '^neochat-shared(.*)$': '<rootDir>/src$1',
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   collectCoverageFrom: [

@@ -12,10 +12,10 @@ import {
   COLORS,
   SPACING,
   BORDER_RADIUS,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
 
 type ActivePanel = 'chat' | 'contacts' | 'favorites';
 
@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePanel, onPanelChange, on
           />
         </TouchableOpacity>
 
-        {/* 联系人图标 */}
+        {/* 联系人图�?*/}
         <TouchableOpacity
           style={[
             styles.iconContainer,

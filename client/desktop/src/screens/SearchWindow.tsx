@@ -1,4 +1,4 @@
-// 桌面端搜索页面
+// 桌面端搜索页�?
 
 import React, { useCallback, useState } from 'react';
 import {
@@ -18,11 +18,11 @@ import {
   BORDER_RADIUS,
   chatService,
   useChatStore,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { User, Message, Conversation } from '@neochat/shared/src/types';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { User, Message, Conversation } from 'neochat-shared/src/types';
 
 type SearchType = 'all' | 'contacts' | 'messages' | 'groups' | 'files';
 
@@ -47,13 +47,13 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
 
   const searchTypes: { key: SearchType; label: string }[] = [
     { key: 'all', label: '全部' },
-    { key: 'contacts', label: '联系人' },
+    { key: 'contacts', label: '联系�? },
     { key: 'groups', label: '群组' },
     { key: 'messages', label: '聊天记录' },
     { key: 'files', label: '文件' },
   ];
 
-  // 最近搜索标签
+  // 最近搜索标�?
   const recentSearches = ['NeoChat', '项目文档', '测试'];
 
   // 执行搜索
@@ -68,7 +68,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
 
     setIsSearching(true);
     try {
-      // 并行调用所有搜索 API
+      // 并行调用所有搜�?API
       const [usersResponse, messagesResponse, groupsResponse] = await Promise.all([
         chatService.searchUsers(query),
         chatService.searchMessages(query),
@@ -89,7 +89,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
     }
   }, []);
 
-  // 点击联系人
+  // 点击联系�?
   const handleContactPress = (contact: User) => {
     onNavigate?.('ViewProfile', { userId: contact.id });
   };
@@ -98,19 +98,19 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
   const handleMessagePress = async (message: Message) => {
     // 设置高亮消息 ID
     setHighlightedMessageId(message.id);
-    // 确保消息已加载
+    // 确保消息已加�?
     await ensureMessageLoaded(message.conversation_id, message.id);
-    // 跳转到聊天页面
+    // 跳转到聊天页�?
     onNavigate?.('Chat', { conversationId: message.conversation_id });
   };
 
   // 点击群组
   const handleGroupPress = (group: any) => {
-    // 跳转到群聊页面
+    // 跳转到群聊页�?
     onNavigate?.('Chat', { conversationId: group.id });
   };
 
-  // 格式化日期
+  // 格式化日�?
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -149,11 +149,11 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
           </Text>
         )}
       </View>
-      <Text style={styles.resultTypeLabel}>联系人</Text>
+      <Text style={styles.resultTypeLabel}>联系�?/Text>
     </TouchableOpacity>
   );
 
-  // 渲染消息项
+  // 渲染消息�?
   const renderMessageItem = (message: Message & { sender?: User }) => {
     const sender = message.sender;
     const displayName = sender
@@ -190,7 +190,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
     );
   };
 
-  // 渲染群组项
+  // 渲染群组�?
   const renderGroupItem = (group: any) => (
     <TouchableOpacity
       key={group.id}
@@ -205,7 +205,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
           {group.name}
         </Text>
         <Text style={styles.resultSubtitle}>
-          {group.member_count || 0} 名成员
+          {group.member_count || 0} 名成�?
         </Text>
       </View>
       <Text style={styles.resultTypeLabel}>群组</Text>
@@ -223,7 +223,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
       return (
         <View style={styles.emptyState}>
           <Ionicons name="search-outline" size={64} color="#8080a0" />
-          <Text style={styles.emptyTitle}>未找到结果</Text>
+          <Text style={styles.emptyTitle}>未找到结�?/Text>
           <Text style={styles.emptySubtext}>试试其他关键词吧</Text>
         </View>
       );
@@ -235,7 +235,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
           searchResults.contacts.length > 0 && (
             <View style={styles.resultSection}>
               {searchType === 'all' && (
-                <Text style={styles.sectionTitle}>联系人</Text>
+                <Text style={styles.sectionTitle}>联系�?/Text>
               )}
               {searchResults.contacts.map(renderContactItem)}
             </View>
@@ -266,7 +266,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* 头部搜索栏 */}
+      {/* 头部搜索�?*/}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Ionicons name="arrow-back" size={20} color="#1a1a2e" />
@@ -275,7 +275,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
         <View style={styles.headerRight} />
       </View>
 
-      {/* 搜索输入框 */}
+      {/* 搜索输入�?*/}
       <View style={styles.searchBarContainer}>
         <View style={styles.searchBar}>
           <Ionicons
@@ -286,7 +286,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="搜索聊天记录、好友、群组"
+            placeholder="搜索聊天记录、好友、群�?
             placeholderTextColor="#8080a0"
             value={searchQuery}
             onChangeText={handleSearch}
@@ -333,15 +333,15 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {isSearching ? (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>搜索中...</Text>
+            <Text style={styles.loadingText}>搜索�?..</Text>
           </View>
         ) : !searchQuery.trim() ? (
           /* 最近搜索和搜索历史 */
           <>
-            {/* 最近搜索 */}
+            {/* 最近搜�?*/}
             <View style={styles.recentSection}>
               <View style={styles.recentHeader}>
-                <Text style={styles.recentTitle}>最近搜索</Text>
+                <Text style={styles.recentTitle}>最近搜�?/Text>
                 <TouchableOpacity>
                   <Text style={styles.clearAllText}>清空</Text>
                 </TouchableOpacity>
@@ -364,7 +364,7 @@ export const SearchWindow: React.FC<SearchWindowProps> = ({
             <View style={styles.previewSection}>
               <View style={styles.previewHeader}>
                 <Text style={styles.previewTitle}>搜索结果</Text>
-                <Text style={styles.previewCount}>12 条</Text>
+                <Text style={styles.previewCount}>12 �?/Text>
               </View>
               <View style={styles.previewList}>
                 {/* 预览示例 */}

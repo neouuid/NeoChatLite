@@ -18,11 +18,11 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { User, Friend } from '@neochat/shared/src/types';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { User, Friend } from 'neochat-shared/src/types';
 
 type TabType = 'friends' | 'requests' | 'blocked';
 
@@ -87,7 +87,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
   const handleAddFriend = useCallback(async (targetUser: User) => {
     Alert.alert(
       '添加好友',
-      `确定要添加 ${formatDisplayName(targetUser.nickname, targetUser.username)} 为好友吗？`,
+      `确定要添�?${formatDisplayName(targetUser.nickname, targetUser.username)} 为好友吗？`,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -95,9 +95,9 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
           onPress: async () => {
             try {
               await chatService.sendFriendRequest(targetUser.id);
-              Alert.alert('成功', '好友请求已发送');
+              Alert.alert('成功', '好友请求已发�?);
             } catch (error) {
-              Alert.alert('错误', error instanceof Error ? error.message : '发送请求失败');
+              Alert.alert('错误', error instanceof Error ? error.message : '发送请求失�?);
             }
           },
         },
@@ -109,7 +109,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
   const handleAcceptFriend = useCallback(async (friendId: string) => {
     try {
       await chatService.acceptFriendRequest(friendId);
-      Alert.alert('成功', '已添加好友');
+      Alert.alert('成功', '已添加好�?);
       loadFriends();
     } catch (error) {
       Alert.alert('错误', error instanceof Error ? error.message : '操作失败');
@@ -120,7 +120,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
   const handleRejectFriend = useCallback(async (friendId: string) => {
     try {
       await chatService.rejectFriendRequest(friendId);
-      Alert.alert('成功', '已拒绝');
+      Alert.alert('成功', '已拒�?);
       loadFriends();
     } catch (error) {
       Alert.alert('错误', error instanceof Error ? error.message : '操作失败');
@@ -131,7 +131,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
   const handleDeleteFriend = useCallback(async (friendId: string) => {
     Alert.alert(
       '删除好友',
-      '确定要删除这个好友吗？',
+      '确定要删除这个好友吗�?,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -140,7 +140,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
           onPress: async () => {
             try {
               await chatService.deleteFriend(friendId);
-              Alert.alert('成功', '已删除好友');
+              Alert.alert('成功', '已删除好�?);
               loadFriends();
             } catch (error) {
               Alert.alert('错误', error instanceof Error ? error.message : '删除失败');
@@ -175,7 +175,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
   const tabs = [
     { key: 'friends' as const, label: '好友' },
     { key: 'requests' as const, label: '新的朋友' },
-    { key: 'blocked' as const, label: '黑名单' },
+    { key: 'blocked' as const, label: '黑名�? },
   ];
 
   const filteredFriends = friends.filter(f => f.status === 'accepted');
@@ -189,19 +189,19 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Ionicons name="arrow-back" size={20} color="#1a1a2e" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>通讯录</Text>
+        <Text style={styles.headerTitle}>通讯�?/Text>
         <TouchableOpacity style={styles.addButton}>
           <Ionicons name="person-add-outline" size={20} color="#1a1a2e" />
         </TouchableOpacity>
       </View>
 
-      {/* 搜索框 */}
+      {/* 搜索�?*/}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search-outline" size={20} color="#8080a0" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="搜索手机号/用户名/昵称"
+            placeholder="搜索手机�?用户�?昵称"
             placeholderTextColor="#8080a0"
             value={searchQuery}
             onChangeText={handleSearch}
@@ -214,7 +214,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
         </View>
       </View>
 
-      {/* 标签页 */}
+      {/* 标签�?*/}
       <View style={styles.tabsContainer}>
         {tabs.map((tab) => (
           <TouchableOpacity
@@ -243,7 +243,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
             {searchResults.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="search-outline" size={64} color="#8080a0" />
-                <Text style={styles.emptyTitle}>未找到相关用户</Text>
+                <Text style={styles.emptyTitle}>未找到相关用�?/Text>
               </View>
             ) : (
               searchResults.map((resultUser) => {
@@ -278,7 +278,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
                       </TouchableOpacity>
                     ) : (
                       <View style={styles.alreadyFriend}>
-                        <Text style={styles.alreadyFriendText}>已添加</Text>
+                        <Text style={styles.alreadyFriendText}>已添�?/Text>
                       </View>
                     )}
                   </View>
@@ -295,8 +295,8 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
               {filteredFriends.length === 0 ? (
                 <View style={styles.emptyState}>
                   <Ionicons name="people-outline" size={64} color="#8080a0" />
-                  <Text style={styles.emptyTitle}>还没有好友</Text>
-                  <Text style={styles.emptySubtext}>搜索添加好友吧</Text>
+                  <Text style={styles.emptyTitle}>还没有好�?/Text>
+                  <Text style={styles.emptySubtext}>搜索添加好友�?/Text>
                 </View>
               ) : (
                 filteredFriends.map((friend) => {
@@ -393,7 +393,7 @@ export const ContactsWindow: React.FC<ContactsWindowProps> = ({
               {blockedUsers.length === 0 ? (
                 <View style={styles.emptyState}>
                   <Ionicons name="ban-outline" size={64} color="#8080a0" />
-                  <Text style={styles.emptyTitle}>黑名单为空</Text>
+                  <Text style={styles.emptyTitle}>黑名单为�?/Text>
                 </View>
               ) : (
                 blockedUsers.map((friend) => {

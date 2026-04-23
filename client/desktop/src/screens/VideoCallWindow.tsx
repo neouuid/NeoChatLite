@@ -20,10 +20,10 @@ import {
   useWebRTC,
   VideoView,
   Avatar,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { User } from '@neochat/shared/src/types';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { User } from 'neochat-shared/src/types';
 
 type CallType = 'video' | 'voice';
 
@@ -78,7 +78,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
     if (propRemoteUser) {
       return propRemoteUser;
     }
-    // 如果路由参数直接提供了用户信息
+    // 如果路由参数直接提供了用户信�?
     if (userId && userName) {
       return {
         id: userId,
@@ -101,7 +101,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
     return null;
   }, [propRemoteUser, conversationId, conversations, currentUser, userId, userName, userAvatar]);
 
-  // 计时器
+  // 计时�?
   useEffect(() => {
     let timer: any;
     if (callState.status === 'connected') {
@@ -169,7 +169,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
 
   const currentUserDisplayName = currentUser
     ? formatDisplayName(currentUser.nickname, currentUser.username)
-    : '我';
+    : '�?;
 
   return (
     <View style={styles.container}>
@@ -297,7 +297,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
               />
             </TouchableOpacity>
 
-            {/* 视频通话时的视频开关 */}
+            {/* 视频通话时的视频开�?*/}
             {callType === 'video' && (
               <TouchableOpacity
                 style={[styles.controlButton, callState.isVideoEnabled === false && styles.controlButtonActive]}
@@ -311,7 +311,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
               </TouchableOpacity>
             )}
 
-            {/* 扬声器切换 */}
+            {/* 扬声器切�?*/}
             <TouchableOpacity
               style={[styles.controlButton, callState.isSpeakerOn && styles.controlButtonActive]}
               onPress={toggleSpeaker}
@@ -323,7 +323,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
               />
             </TouchableOpacity>
 
-            {/* 视频通话时的摄像头切换 */}
+            {/* 视频通话时的摄像头切�?*/}
             {callType === 'video' && (
               <TouchableOpacity
                 style={styles.controlButton}

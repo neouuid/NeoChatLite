@@ -1,4 +1,4 @@
-// 桌面端关于页面
+// 桌面端关于页�?
 
 import React from 'react';
 import {
@@ -15,12 +15,12 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
 const APP_VERSION = '1.0.0';
 const GITHUB_URL = 'https://github.com/neochat/neochat';
 const WEBSITE_URL = 'https://neochat.app';
-const FEEDBACK_EMAIL = 'feedback@neochat.app';
+const FEEDBACK_EMAIL = 'feedback@neohope.com';
 const PRIVACY_POLICY_URL = `${WEBSITE_URL}/privacy`;
 const TERMS_OF_SERVICE_URL = `${WEBSITE_URL}/terms`;
 const LICENSE_URL = `${GITHUB_URL}/blob/main/LICENSE`;
@@ -54,7 +54,7 @@ export const AboutWindow: React.FC<AboutWindowProps> = ({ onBack }) => {
     },
     {
       id: 'license',
-      title: '开源许可',
+      title: '开源许�?,
       icon: 'document-text-outline' as const,
       onPress: () => Linking.openURL(LICENSE_URL),
     },

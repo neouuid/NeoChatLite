@@ -1,5 +1,4 @@
-// 桌面端收藏面板
-
+// 桌面端收藏面�?
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
@@ -17,11 +16,11 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { Favorite, Message, User } from '@neochat/shared/src/types';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { Favorite, Message, User } from 'neochat-shared/src/types';
 
 interface FavoritesPanelProps {
   onSelectMessage?: (favorite: Favorite & { message?: Message }) => void;
@@ -57,7 +56,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
   const handleRemoveFavorite = (favorite: Favorite) => {
     Alert.alert(
       '取消收藏',
-      '确定要取消收藏这条消息吗？',
+      '确定要取消收藏这条消息吗�?,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -87,8 +86,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
     }
   };
 
-  // 跳转到消息位置
-  const handleGoToMessage = (favorite: Favorite & { message?: Message }) => {
+  // 跳转到消息位�?  const handleGoToMessage = (favorite: Favorite & { message?: Message }) => {
     onSelectMessage?.(favorite);
   };
 
@@ -96,8 +94,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
     loadFavorites();
   }, [loadFavorites]);
 
-  // 格式化日期
-  const formatDate = (dateStr: string) => {
+  // 格式化日�?  const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -114,8 +111,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
     }
   };
 
-  // 渲染收藏项
-  const renderFavoriteItem = (favorite: Favorite & { message?: Message; user?: User }) => {
+  // 渲染收藏�?  const renderFavoriteItem = (favorite: Favorite & { message?: Message; user?: User }) => {
     const message = favorite.message;
     const sender = message?.sender;
     const displayName = sender
@@ -188,7 +184,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
       <ScrollView style={styles.scrollView}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>加载中...</Text>
+            <Text style={styles.loadingText}>加载�?..</Text>
           </View>
         ) : favorites.length === 0 ? (
           <View style={styles.emptyState}>

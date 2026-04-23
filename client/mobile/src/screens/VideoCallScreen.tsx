@@ -22,9 +22,9 @@ import {
   VideoView,
   Avatar,
   type User,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { formatDisplayName } from '@neochat/shared/src/utils';
+import { formatDisplayName } from 'neochat-shared/src/utils';
 
 type VideoCallScreenRouteProp = {
   params: {
@@ -66,7 +66,7 @@ export const VideoCallScreen: React.FC = () => {
 
   // 获取通话对方用户信息
   const remoteUser = useMemo((): User | null => {
-    // 如果路由参数直接提供了用户信息
+    // 如果路由参数直接提供了用户信�?
     if (userId && userName) {
       return {
         id: userId,
@@ -91,7 +91,7 @@ export const VideoCallScreen: React.FC = () => {
     return null;
   }, [conversationId, conversations, currentUser, userId, userName, userAvatar]);
 
-  // 计时器
+  // 计时�?
   useEffect(() => {
     let timer: any;
     if (callState.status === 'connected') {
@@ -158,21 +158,21 @@ export const VideoCallScreen: React.FC = () => {
     : '用户';
   const currentUserDisplayName = currentUser
     ? formatDisplayName(currentUser.nickname, currentUser.username)
-    : '我';
+    : '�?;
 
-  // 获取通话状态文本
+  // 获取通话状态文�?
   const getStatusText = () => {
     switch (callState.status) {
       case 'calling':
-        return '呼叫中...';
+        return '呼叫�?..';
       case 'incoming':
-        return '来电中...';
+        return '来电�?..';
       case 'connected':
-        return '通话中';
+        return '通话�?;
       case 'ended':
-        return '通话已结束';
+        return '通话已结�?;
       default:
-        return '连接中...';
+        return '连接�?..';
     }
   };
 
@@ -190,9 +190,9 @@ export const VideoCallScreen: React.FC = () => {
           </View>
 
           <Text style={styles.remoteName}>{displayName}</Text>
-          <Text style={styles.callStatus}>来电中...</Text>
+          <Text style={styles.callStatus}>来电�?..</Text>
 
-          {/* 来电控制栏 */}
+          {/* 来电控制�?*/}
           <View style={styles.incomingControlsContainer}>
             <TouchableOpacity
               style={[styles.controlButton, styles.rejectButton]}
@@ -217,7 +217,7 @@ export const VideoCallScreen: React.FC = () => {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* 远程视频区域 */}
       <View style={styles.remoteVideoContainer}>
-        {/* 远程视频流 */}
+        {/* 远程视频�?*/}
         {remoteStream ? (
           <VideoView
             stream={remoteStream}
@@ -236,7 +236,7 @@ export const VideoCallScreen: React.FC = () => {
           </View>
         )}
 
-        {/* 通话信息叠加层 */}
+        {/* 通话信息叠加�?*/}
         <View style={styles.infoOverlay}>
           <Text style={styles.remoteName}>{displayName}</Text>
           <Text style={styles.callStatus}>{getStatusText()}</Text>
@@ -268,7 +268,7 @@ export const VideoCallScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* 控制栏 */}
+      {/* 控制�?*/}
       <View style={styles.controlsContainer}>
         <TouchableOpacity
           style={[styles.controlButton, callState.isMuted && styles.controlButtonActive]}

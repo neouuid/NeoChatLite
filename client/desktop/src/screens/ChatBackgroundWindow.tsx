@@ -1,4 +1,4 @@
-// 桌面端聊天背景页面
+// 桌面端聊天背景页�?
 
 import React, { useState } from 'react';
 import {
@@ -14,7 +14,7 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
 import { pickImageFromGalleryWeb, takePhotoWeb } from '../utils/mediaWeb';
 
@@ -35,18 +35,18 @@ export const ChatBackgroundWindow: React.FC<ChatBackgroundWindowProps> = ({ onBa
   ];
 
   const presetImageBackgrounds = [
-    { id: 'bg1', label: '渐变蓝', gradient: ['#667eea', '#764ba2'] },
-    { id: 'bg2', label: '渐变绿', gradient: ['#11998e', '#38ef7d'] },
-    { id: 'bg3', label: '渐变粉', gradient: ['#f093fb', '#f5576c'] },
-    { id: 'bg4', label: '渐变橙', gradient: ['#fa709a', '#fee140'] },
-    { id: 'bg5', label: '渐变紫', gradient: ['#a18cd1', '#fbc2eb'] },
-    { id: 'bg6', label: '渐变青', gradient: ['#4facfe', '#00f2fe'] },
+    { id: 'bg1', label: '渐变�?, gradient: ['#667eea', '#764ba2'] },
+    { id: 'bg2', label: '渐变�?, gradient: ['#11998e', '#38ef7d'] },
+    { id: 'bg3', label: '渐变�?, gradient: ['#f093fb', '#f5576c'] },
+    { id: 'bg4', label: '渐变�?, gradient: ['#fa709a', '#fee140'] },
+    { id: 'bg5', label: '渐变�?, gradient: ['#a18cd1', '#fbc2eb'] },
+    { id: 'bg6', label: '渐变�?, gradient: ['#4facfe', '#00f2fe'] },
   ];
 
   // 选择背景
   const handleSelectBackground = (backgroundId: string) => {
     setCurrentBackground(backgroundId);
-    Alert.alert('成功', '背景已设置');
+    Alert.alert('成功', '背景已设�?);
   };
 
   // 从相册选择
@@ -55,7 +55,7 @@ export const ChatBackgroundWindow: React.FC<ChatBackgroundWindowProps> = ({ onBa
       const result = await pickImageFromGalleryWeb();
       if (result) {
         setCurrentBackground(`custom-${Date.now()}`);
-        Alert.alert('成功', '背景已设置');
+        Alert.alert('成功', '背景已设�?);
       }
     } catch (error) {
       console.error('Failed to pick image:', error);
@@ -68,7 +68,7 @@ export const ChatBackgroundWindow: React.FC<ChatBackgroundWindowProps> = ({ onBa
       const result = await takePhotoWeb();
       if (result) {
         setCurrentBackground(`custom-${Date.now()}`);
-        Alert.alert('成功', '背景已设置');
+        Alert.alert('成功', '背景已设�?);
       }
     } catch (error) {
       console.error('Failed to take photo:', error);
@@ -99,7 +99,7 @@ export const ChatBackgroundWindow: React.FC<ChatBackgroundWindowProps> = ({ onBa
       <ScrollView style={styles.scrollView}>
         {/* 自定义选项 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>自定义背景</Text>
+          <Text style={styles.sectionTitle}>自定义背�?/Text>
           <View style={styles.customCard}>
             <TouchableOpacity style={styles.customItem} onPress={handleSelectFromGallery}>
               <View style={styles.customIconContainer}>

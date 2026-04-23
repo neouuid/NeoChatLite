@@ -20,11 +20,11 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
-} from '@neochat/shared';
+} from 'neochat-shared';
 
-import { Avatar } from '@neochat/shared/src/components/Avatar';
-import { formatDisplayName } from '@neochat/shared/src/utils';
-import type { RootStackParamList } from '@neochat/shared/src/types';
+import { Avatar } from 'neochat-shared/src/components/Avatar';
+import { formatDisplayName } from 'neochat-shared/src/utils';
+import type { RootStackParamList } from 'neochat-shared/src/types';
 import type { NavigationProp } from '@react-navigation/native';
 
 export const ProfileScreen: React.FC = () => {
@@ -88,7 +88,7 @@ export const ProfileScreen: React.FC = () => {
     },
     {
       id: 'help',
-      title: '帮助与反馈',
+      title: '帮助与反�?,
       icon: 'help-circle-outline',
       onPress: () => {
         navigation.navigate('Help' as never);
@@ -96,11 +96,10 @@ export const ProfileScreen: React.FC = () => {
     },
   ];
 
-  // 处理退出登录
-  const handleLogout = useCallback(() => {
+  // 处理退出登�?  const handleLogout = useCallback(() => {
     Alert.alert(
-      '退出登录',
-      '确定要退出登录吗？',
+      '退出登�?,
+      '确定要退出登录吗�?,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -213,10 +212,10 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 退出登录按钮 */}
+        {/* 退出登录按�?*/}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
-          <Text style={styles.logoutButtonText}>退出登录</Text>
+          <Text style={styles.logoutButtonText}>退出登�?/Text>
         </TouchableOpacity>
 
         {/* 底部安全区域 */}
