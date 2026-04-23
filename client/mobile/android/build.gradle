@@ -7,6 +7,14 @@ buildscript {
         ndkVersion = "25.1.8937393"
         kotlinVersion = "1.8.0"
     }
+    allprojects {
+        configurations.all {
+            resolutionStrategy {
+                force "androidx.core:core-ktx:1.13.1"
+                force "androidx.core:core:1.13.1"
+            }
+        }
+    }
     repositories {
         google()
         mavenCentral()
