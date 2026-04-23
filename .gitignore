@@ -72,3 +72,35 @@ coverage.html
 *.tmp
 *.temp
 .cache/
+
+# MSBuild
+*.binlog
+*.log
+*.user
+*.userosscache
+*.suo
+
+# React Native Windows
+windows/neochat-desktop/packages.lock.json
+windows/**/bin/
+windows/**/obj/
+windows/**/*.user
+windows/**/*.suo
+*.dbmdl
+*.vcxproj.user
+
+# Build outputs
+x64/
+x86/
+ARM/
+ARM64/
+Debug/
+Release/
+
+# NuGet
+*.nuget.props
+*.nuget.targets
+project.lock.json
+artifacts/
+*_wpftmp.csproj
+.vs/
