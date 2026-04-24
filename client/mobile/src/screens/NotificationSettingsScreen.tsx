@@ -48,7 +48,7 @@ export const NotificationSettingsScreen: React.FC = () => {
     {
       id: 'preview',
       title: '消息预览',
-      subtitle: '在通知中显示消息内�?,
+      subtitle: '在通知中显示消息内容',
       type: 'toggle' as const,
       value: messagePreviewEnabled,
       onToggle: setMessagePreviewEnabled,
@@ -56,7 +56,7 @@ export const NotificationSettingsScreen: React.FC = () => {
     },
     {
       id: 'sound',
-      title: '提示�?,
+      title: '提示音',
       subtitle: '收到消息时播放提示音',
       type: 'toggle' as const,
       value: soundEnabled,
@@ -66,7 +66,7 @@ export const NotificationSettingsScreen: React.FC = () => {
     {
       id: 'vibrate',
       title: '震动',
-      subtitle: '收到消息时震�?,
+      subtitle: '收到消息时震动',
       type: 'toggle' as const,
       value: vibrateEnabled,
       onToggle: setVibrateEnabled,
@@ -168,7 +168,7 @@ export const NotificationSettingsScreen: React.FC = () => {
         {!notificationsEnabled && (
           <View style={styles.hintContainer}>
             <Ionicons name="information-circle-outline" size={20} color={COLORS.dark.text.tertiary} style={styles.hintIcon} />
-            <Text style={styles.hintText}>开启新消息通知后才能使用以下功�?/Text>
+            <Text style={styles.hintText}>开启新消息通知后才能使用以下功能</Text>
           </View>
         )}
 
@@ -181,110 +181,110 @@ export const NotificationSettingsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: COLORS.dark.background,
+    flex: 1;
+    backgroundColor: COLORS.dark.background;
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.dark.border,
+    flexDirection: 'row';
+    alignItems: 'center';
+    justifyContent: 'space-between';
+    paddingHorizontal: SPACING.lg;
+    paddingVertical: SPACING.md;
+    borderBottomWidth: StyleSheet.hairlineWidth;
+    borderBottomColor: COLORS.dark.border;
   },
   backButton: {
-    padding: SPACING.xs,
+    padding: SPACING.xs;
   },
   headerTitle: {
-    color: COLORS.dark.text.primary,
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    color: COLORS.dark.text.primary;
+    fontSize: TYPOGRAPHY.sizes.lg;
+    fontWeight: TYPOGRAPHY.weights.semibold;
   },
   headerRight: {
-    width: 40,
+    width: 40;
   },
   scrollView: {
-    flex: 1,
+    flex: 1;
   },
   menuSection: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.lg;
   },
   sectionTitle: {
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.medium,
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.sm,
-    marginTop: SPACING.lg,
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.sm;
+    fontWeight: TYPOGRAPHY.weights.medium;
+    marginHorizontal: SPACING.lg;
+    marginBottom: SPACING.sm;
+    marginTop: SPACING.lg;
   },
   menuCard: {
-    backgroundColor: COLORS.dark.surface,
-    marginHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    overflow: 'hidden',
+    backgroundColor: COLORS.dark.surface;
+    marginHorizontal: SPACING.lg;
+    borderRadius: BORDER_RADIUS.lg;
+    overflow: 'hidden';
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    flexDirection: 'row';
+    alignItems: 'center';
+    paddingHorizontal: SPACING.lg;
+    paddingVertical: SPACING.md;
   },
   menuItemDisabled: {
-    opacity: 0.5,
+    opacity: 0.5;
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    flex: 1;
   },
   menuIconContainer: {
-    width: 32,
-    alignItems: 'center',
-    marginRight: SPACING.md,
+    width: 32;
+    alignItems: 'center';
+    marginRight: SPACING.md;
   },
   menuItemText: {
-    flex: 1,
+    flex: 1;
   },
   menuItemTitle: {
-    color: COLORS.dark.text.primary,
-    fontSize: TYPOGRAPHY.sizes.md,
+    color: COLORS.dark.text.primary;
+    fontSize: TYPOGRAPHY.sizes.md;
   },
   menuItemTitleDisabled: {
-    color: COLORS.dark.text.tertiary,
+    color: COLORS.dark.text.tertiary;
   },
   menuItemSubtitle: {
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    marginTop: SPACING.xs / 2,
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.sm;
+    marginTop: SPACING.xs / 2;
   },
   menuItemSubtitleDisabled: {
-    color: COLORS.dark.text.tertiary,
+    color: COLORS.dark.text.tertiary;
   },
   menuDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: COLORS.dark.border,
-    marginLeft: SPACING.lg,
+    height: StyleSheet.hairlineWidth;
+    backgroundColor: COLORS.dark.border;
+    marginLeft: SPACING.lg;
   },
   hintContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: SPACING.lg,
-    marginTop: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: `${COLORS.dark.surface}80`,
-    borderRadius: BORDER_RADIUS.md,
+    flexDirection: 'row';
+    alignItems: 'center';
+    marginHorizontal: SPACING.lg;
+    marginTop: SPACING.md;
+    paddingHorizontal: SPACING.md;
+    paddingVertical: SPACING.sm;
+    backgroundColor: `${COLORS.dark.surface}80`;
+    borderRadius: BORDER_RADIUS.md;
   },
   hintIcon: {
-    marginRight: SPACING.sm,
+    marginRight: SPACING.sm;
   },
   hintText: {
-    flex: 1,
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.sm,
+    flex: 1;
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.sm;
   },
   bottomSpacer: {
-    height: SPACING.xl,
+    height: SPACING.xl;
   },
 });

@@ -76,7 +76,7 @@ export const EditProfileScreen: React.FC = () => {
       setIsSaving(true);
       const updatedUser = await authService.updateProfile(data);
       setUser(updatedUser);
-      Alert.alert('成功', '资料已更�?);
+      Alert.alert('成功', '资料已更新');
     } catch (error) {
       console.error('Failed to update profile:', error);
       Alert.alert('错误', '更新资料失败');
@@ -137,7 +137,7 @@ export const EditProfileScreen: React.FC = () => {
           disabled={isSaving || isUploading}
         >
           <Text style={styles.saveButtonText}>
-            {isSaving || isUploading ? '保存�?..' : '保存'}
+            {isSaving || isUploading ? '保存中...' : '保存'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -153,7 +153,7 @@ export const EditProfileScreen: React.FC = () => {
               style={styles.avatar}
             />
             <View style={styles.avatarOverlay}>
-              <Ionicons name="camera" size={32} color="#ffffff" />
+              <Ionicons name="camera" size={32} color="#fff" />
             </View>
           </TouchableOpacity>
           <Text style={styles.avatarHint}>点击更换头像</Text>
@@ -168,28 +168,28 @@ export const EditProfileScreen: React.FC = () => {
               style={styles.formInput}
               value={nickname}
               onChangeText={setNickname}
-              placeholder="请输入昵�?
+              placeholder="请输入昵称"
               placeholderTextColor={COLORS.dark.text.tertiary}
               maxLength={30}
             />
           </View>
 
-          {/* 用户名（只读�?*/}
+          {/* 用户名（只读） */}
           <View style={styles.formItem}>
-            <Text style={styles.formLabel}>用户�?/Text>
+            <Text style={styles.formLabel}>用户名</Text>
             <TextInput
               style={[styles.formInput, styles.formInputDisabled]}
               value={user?.username || ''}
-              placeholder="用户�?
+              placeholder="用户名"
               placeholderTextColor={COLORS.dark.text.tertiary}
               editable={false}
             />
-            <Text style={styles.formHint}>用户名不可修�?/Text>
+            <Text style={styles.formHint}>用户名不可修改</Text>
           </View>
 
-          {/* 个性签�?*/}
+          {/* 个性签名 */}
           <View style={styles.formItem}>
-            <Text style={styles.formLabel}>个性签�?/Text>
+            <Text style={styles.formLabel}>个性签名</Text>
             <TextInput
               style={[styles.formInput, styles.textArea]}
               value={bio}
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.dark.text.tertiary,
   },
   saveButtonText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: TYPOGRAPHY.sizes.md,
     fontWeight: TYPOGRAPHY.weights.medium,
   },

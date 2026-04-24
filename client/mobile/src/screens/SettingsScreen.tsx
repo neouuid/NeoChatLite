@@ -87,7 +87,7 @@ export const SettingsScreen: React.FC = () => {
     },
     {
       id: 'help',
-      title: '帮助与反�?,
+      title: '帮助与反馈',
       icon: 'help-circle-outline',
       type: 'navigate' as const,
       screen: 'Help' as const,

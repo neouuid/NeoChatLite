@@ -51,7 +51,7 @@ export const ForwardScreen: React.FC = () => {
   const [groups, setGroups] = useState<any[]>([]);
 
   const tabs = [
-    { key: 'recent' as const, label: '最近聊�? },
+    { key: 'recent' as const, label: '最近聊天' },
     { key: 'friends' as const, label: '好友' },
     { key: 'groups' as const, label: '群组' },
   ];
@@ -95,7 +95,8 @@ export const ForwardScreen: React.FC = () => {
     });
   };
 
-  // 发送转�?  const handleForward = async () => {
+  // 发送转发
+  const handleForward = async () => {
     if (selectedTargets.length === 0) {
       Alert.alert('提示', '请选择转发目标');
       return;
@@ -110,7 +111,7 @@ export const ForwardScreen: React.FC = () => {
       );
 
       if (response.success) {
-        Alert.alert('成功', '消息已转�?, [
+        Alert.alert('成功', '消息已转发', [
           {
             text: '确定',
             onPress: () => navigation.goBack(),
@@ -135,7 +136,8 @@ export const ForwardScreen: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  // 渲染会话�?  const renderConversationItem = (conversation: Conversation & { friend?: User }) => {
+  // 渲染会话项
+  const renderConversationItem = (conversation: Conversation & { friend?: User }) => {
     const friend = conversation.friend;
     const displayName = conversation.name
       ? conversation.name
@@ -184,7 +186,8 @@ export const ForwardScreen: React.FC = () => {
     );
   };
 
-  // 渲染好友�?  const renderFriendItem = (friend: Friend) => {
+  // 渲染好友项
+  const renderFriendItem = (friend: Friend) => {
     const friendUser = friend.friend;
     if (!friendUser) return null;
 
@@ -223,7 +226,8 @@ export const ForwardScreen: React.FC = () => {
     );
   };
 
-  // 渲染群组�?  const renderGroupItem = (group: any) => {
+  // 渲染群组项
+  const renderGroupItem = (group: any) => {
     const isSelected = selectedTargets.includes(group.id);
 
     return (
@@ -240,7 +244,8 @@ export const ForwardScreen: React.FC = () => {
             {group.name}
           </Text>
           <Text style={styles.status}>
-            {group.member_count} 名成�?          </Text>
+            {group.member_count} 名成员
+          </Text>
         </View>
         <View
           style={[
@@ -271,7 +276,7 @@ export const ForwardScreen: React.FC = () => {
           disabled={selectedTargets.length === 0 || isForwarding}
         >
           <Text style={styles.confirmButtonText}>
-            {isForwarding ? '发送中...' : `发�?${selectedTargets.length})`}
+            {isForwarding ? '发送中...' : `发送(${selectedTargets.length})`}
           </Text>
         </TouchableOpacity>
       </View>
@@ -291,7 +296,7 @@ export const ForwardScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* 标签�?*/}
+      {/* 标签页 */}
       <View style={styles.tabsContainer}>
         {tabs.map((tab) => (
           <TouchableOpacity
@@ -317,7 +322,7 @@ export const ForwardScreen: React.FC = () => {
       {/* 内容 */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>加载�?..</Text>
+          <Text style={styles.loadingText}>加载中...</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>

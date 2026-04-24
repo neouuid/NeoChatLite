@@ -88,7 +88,7 @@ export const ProfileScreen: React.FC = () => {
     },
     {
       id: 'help',
-      title: '帮助与反�?,
+      title: '帮助与反馈',
       icon: 'help-circle-outline',
       onPress: () => {
         navigation.navigate('Help' as never);
@@ -96,10 +96,11 @@ export const ProfileScreen: React.FC = () => {
     },
   ];
 
-  // 处理退出登�?  const handleLogout = useCallback(() => {
+  // 处理退出登录
+  const handleLogout = useCallback(() => {
     Alert.alert(
-      '退出登�?,
-      '确定要退出登录吗�?,
+      '退出登录',
+      '确定要退出登录吗',
       [
         { text: '取消', style: 'cancel' },
         {
@@ -212,10 +213,10 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 退出登录按�?*/}
+        {/* 退出登录按钮 */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
-          <Text style={styles.logoutButtonText}>退出登�?/Text>
+          <Text style={styles.logoutButtonText}>退出登录</Text>
         </TouchableOpacity>
 
         {/* 底部安全区域 */}
@@ -228,129 +229,129 @@ export const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.dark.background,
+    backgroundColor: COLORS.dark.background;
   },
   scrollView: {
-    flex: 1,
+    flex: 1;
   },
   scrollContent: {
-    paddingBottom: SPACING.xl,
+    paddingBottom: SPACING.xl;
   },
   profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.dark.surface,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.xl,
-    marginBottom: SPACING.md,
+    flexDirection: 'row';
+    alignItems: 'center';
+    backgroundColor: COLORS.dark.surface;
+    paddingHorizontal: SPACING.lg;
+    paddingVertical: SPACING.xl;
+    marginBottom: SPACING.md;
   },
   avatar: {
-    marginRight: SPACING.lg,
+    marginRight: SPACING.lg;
   },
   userInfo: {
-    flex: 1,
+    flex: 1;
   },
   userName: {
-    color: COLORS.dark.text.primary,
-    fontSize: TYPOGRAPHY.sizes.xl,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    marginBottom: SPACING.xs,
+    color: COLORS.dark.text.primary;
+    fontSize: TYPOGRAPHY.sizes.xl;
+    fontWeight: TYPOGRAPHY.weights.semibold;
+    marginBottom: SPACING.xs;
   },
   userUsername: {
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    marginBottom: SPACING.xs,
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.sm;
+    marginBottom: SPACING.xs;
   },
   userBio: {
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.sm,
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.sm;
   },
   editButton: {
-    padding: SPACING.sm,
+    padding: SPACING.sm;
   },
   statsCard: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.dark.surface,
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    paddingVertical: SPACING.lg,
+    flexDirection: 'row';
+    backgroundColor: COLORS.dark.surface;
+    marginHorizontal: SPACING.lg;
+    marginBottom: SPACING.lg;
+    borderRadius: BORDER_RADIUS.lg;
+    paddingVertical: SPACING.lg;
   },
   statItem: {
-    flex: 1,
-    alignItems: 'center',
+    flex: 1;
+    alignItems: 'center';
   },
   statNumber: {
-    color: COLORS.dark.text.primary,
-    fontSize: TYPOGRAPHY.sizes['2xl'],
-    fontWeight: TYPOGRAPHY.weights.bold,
-    marginBottom: SPACING.xs,
+    color: COLORS.dark.text.primary;
+    fontSize: TYPOGRAPHY.sizes['2xl'];
+    fontWeight: TYPOGRAPHY.weights.bold;
+    marginBottom: SPACING.xs;
   },
   statLabel: {
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.sm,
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.sm;
   },
   statDivider: {
-    width: StyleSheet.hairlineWidth,
-    backgroundColor: COLORS.dark.border,
+    width: StyleSheet.hairlineWidth;
+    backgroundColor: COLORS.dark.border;
   },
   menuSection: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.lg;
   },
   sectionTitle: {
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.medium,
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.sm,
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.sm;
+    fontWeight: TYPOGRAPHY.weights.medium;
+    marginHorizontal: SPACING.lg;
+    marginBottom: SPACING.sm;
   },
   menuCard: {
-    backgroundColor: COLORS.dark.surface,
-    marginHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    overflow: 'hidden',
+    backgroundColor: COLORS.dark.surface;
+    marginHorizontal: SPACING.lg;
+    borderRadius: BORDER_RADIUS.lg;
+    overflow: 'hidden';
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    flexDirection: 'row';
+    alignItems: 'center';
+    paddingHorizontal: SPACING.lg;
+    paddingVertical: SPACING.md;
   },
   menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    flexDirection: 'row';
+    alignItems: 'center';
+    flex: 1;
   },
   menuIconContainer: {
-    width: 32,
-    alignItems: 'center',
-    marginRight: SPACING.md,
+    width: 32;
+    alignItems: 'center';
+    marginRight: SPACING.md;
   },
   menuItemTitle: {
-    color: COLORS.dark.text.primary,
-    fontSize: TYPOGRAPHY.sizes.md,
+    color: COLORS.dark.text.primary;
+    fontSize: TYPOGRAPHY.sizes.md;
   },
   menuDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: COLORS.dark.border,
-    marginLeft: SPACING.lg + 32 + SPACING.md,
+    height: StyleSheet.hairlineWidth;
+    backgroundColor: COLORS.dark.border;
+    marginLeft: SPACING.lg + 32 + SPACING.md;
   },
   logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.dark.surface,
-    marginHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    paddingVertical: SPACING.md,
-    gap: SPACING.sm,
+    flexDirection: 'row';
+    alignItems: 'center';
+    justifyContent: 'center';
+    backgroundColor: COLORS.dark.surface;
+    marginHorizontal: SPACING.lg;
+    borderRadius: BORDER_RADIUS.lg;
+    paddingVertical: SPACING.md;
+    gap: SPACING.sm;
   },
   logoutButtonText: {
-    color: COLORS.error,
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.medium,
+    color: COLORS.error;
+    fontSize: TYPOGRAPHY.sizes.md;
+    fontWeight: TYPOGRAPHY.weights.medium;
   },
   bottomSpacer: {
-    height: SPACING.xl,
+    height: SPACING.xl;
   },
 });

@@ -25,7 +25,7 @@ const themeOptions: { value: Theme; label: string; icon: string; description: st
     value: 'system',
     label: '跟随系统',
     icon: 'phone-portrait-outline',
-    description: '使用系统的主题设�?,
+    description: '使用系统的主题设置',
   },
   {
     value: 'light',

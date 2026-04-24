@@ -61,7 +61,8 @@ export const MentionsScreen: React.FC = () => {
   // 点击提及
   const handleMentionPress = useCallback(async (mention: Mention) => {
     if (mention.message) {
-      // 标记为已�?      try {
+      // 标记为已读
+      try {
         await ChatService.markMentionAsRead(mention.id);
       } catch (error) {
         console.error('Failed to mark mention as read:', error);
@@ -69,8 +70,10 @@ export const MentionsScreen: React.FC = () => {
 
       // 设置高亮消息 ID
       setHighlightedMessageId(mention.message.id);
-      // 确保消息已加�?      await ensureMessageLoaded(mention.message.conversation_id, mention.message.id);
-      // 跳转到聊天页�?      navigation.navigate('Chat', { conversationId: mention.message.conversation_id });
+      // 确保消息已加载
+      await ensureMessageLoaded(mention.message.conversation_id, mention.message.id);
+      // 跳转到聊天页面
+      navigation.navigate('Chat', { conversationId: mention.message.conversation_id });
     }
   }, [navigation, setHighlightedMessageId, ensureMessageLoaded]);
 
@@ -79,7 +82,8 @@ export const MentionsScreen: React.FC = () => {
     try {
       const result = await ChatService.markAllMentionsAsRead();
       if (result.success) {
-        // 更新本地状�?        setMentions(prev => prev.map(m => ({ ...m, has_read: true })));
+        // 更新本地状态
+        setMentions(prev => prev.map(m => ({ ...m, has_read: true })));
         Alert.alert('成功', '已标记所有提及为已读');
       } else {
         Alert.alert('错误', result.message || '操作失败');
@@ -90,7 +94,8 @@ export const MentionsScreen: React.FC = () => {
     }
   }, []);
 
-  // 格式化日�?  const formatDate = (dateStr: string) => {
+  // 格式化日期
+  const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -105,7 +110,8 @@ export const MentionsScreen: React.FC = () => {
     }
   };
 
-  // 渲染提及�?  const renderMentionItem = ({ item }: { item: Mention }) => {
+  // 渲染提及项
+  const renderMentionItem = ({ item }: { item: Mention }) => {
     const message = item.message;
     const sender = message?.sender;
     const displayName = sender
@@ -143,7 +149,8 @@ export const MentionsScreen: React.FC = () => {
     );
   };
 
-  // 渲染空状�?  const renderEmptyState = () => (
+  // 渲染空状态
+  const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="at-outline" size={64} color={COLORS.dark.text.tertiary} />
       <Text style={styles.emptyTitle}>暂无提及</Text>
@@ -168,7 +175,7 @@ export const MentionsScreen: React.FC = () => {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>加载�?..</Text>
+          <Text style={styles.loadingText}>加载中...</Text>
         </View>
       ) : (
         <FlatList
@@ -189,114 +196,114 @@ export const MentionsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: COLORS.dark.background,
+    flex: 1;
+    backgroundColor: COLORS.dark.background;
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.dark.border,
+    flexDirection: 'row';
+    alignItems: 'center';
+    paddingHorizontal: SPACING.lg;
+    paddingVertical: SPACING.md;
+    borderBottomWidth: StyleSheet.hairlineWidth;
+    borderBottomColor: COLORS.dark.border;
   },
   backButton: {
-    padding: SPACING.xs,
-    marginRight: SPACING.sm,
+    padding: SPACING.xs;
+    marginRight: SPACING.sm;
   },
   headerTitle: {
-    flex: 1,
-    color: COLORS.dark.text.primary,
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textAlign: 'center',
+    flex: 1;
+    color: COLORS.dark.text.primary;
+    fontSize: TYPOGRAPHY.sizes.lg;
+    fontWeight: TYPOGRAPHY.weights.semibold;
+    textAlign: 'center';
   },
   markAllButton: {
-    padding: SPACING.xs,
+    padding: SPACING.xs;
   },
   markAllButtonText: {
-    color: COLORS.primary,
-    fontSize: TYPOGRAPHY.sizes.md,
+    color: COLORS.primary;
+    fontSize: TYPOGRAPHY.sizes.md;
   },
   list: {
-    flex: 1,
+    flex: 1;
   },
   emptyListContent: {
-    flexGrow: 1,
+    flexGrow: 1;
   },
   loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1;
+    alignItems: 'center';
+    justifyContent: 'center';
   },
   loadingText: {
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.md,
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.md;
   },
   mentionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    position: 'relative',
+    flexDirection: 'row';
+    alignItems: 'center';
+    paddingHorizontal: SPACING.lg;
+    paddingVertical: SPACING.md;
+    position: 'relative';
   },
   mentionItemUnread: {
-    backgroundColor: `${COLORS.primary}08`,
+    backgroundColor: `${COLORS.primary}08`;
   },
   mentionAvatar: {
-    marginRight: SPACING.md,
+    marginRight: SPACING.md;
   },
   mentionContent: {
-    flex: 1,
+    flex: 1;
   },
   mentionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
+    flexDirection: 'row';
+    alignItems: 'center';
+    marginBottom: SPACING.xs;
   },
   mentionTitle: {
-    flex: 1,
-    color: COLORS.dark.text.primary,
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.medium,
+    flex: 1;
+    color: COLORS.dark.text.primary;
+    fontSize: TYPOGRAPHY.sizes.md;
+    fontWeight: TYPOGRAPHY.weights.medium;
   },
   mentionTime: {
-    color: COLORS.dark.text.tertiary,
-    fontSize: TYPOGRAPHY.sizes.sm,
+    color: COLORS.dark.text.tertiary;
+    fontSize: TYPOGRAPHY.sizes.sm;
   },
   mentionMessage: {
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    lineHeight: 18,
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.sm;
+    lineHeight: 18;
   },
   unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.primary,
-    position: 'absolute',
-    right: SPACING.lg,
-    top: '50%',
-    marginTop: -4,
+    width: 8;
+    height: 8;
+    borderRadius: 4;
+    backgroundColor: COLORS.primary;
+    position: 'absolute';
+    right: SPACING.lg;
+    top: '50%';
+    marginTop: -4;
   },
   emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.xxl * 2,
-    gap: SPACING.md,
+    flex: 1;
+    alignItems: 'center';
+    justifyContent: 'center';
+    paddingVertical: SPACING.xxl * 2;
+    gap: SPACING.md;
   },
   emptyTitle: {
-    color: COLORS.dark.text.primary,
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.medium,
+    color: COLORS.dark.text.primary;
+    fontSize: TYPOGRAPHY.sizes.lg;
+    fontWeight: TYPOGRAPHY.weights.medium;
   },
   emptySubtext: {
-    color: COLORS.dark.text.secondary,
-    fontSize: TYPOGRAPHY.sizes.md,
-    textAlign: 'center',
+    color: COLORS.dark.text.secondary;
+    fontSize: TYPOGRAPHY.sizes.md;
+    textAlign: 'center';
   },
   bottomSpacer: {
-    height: SPACING.xl,
+    height: SPACING.xl;
   },
 });
