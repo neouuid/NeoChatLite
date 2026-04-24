@@ -72,8 +72,10 @@ coverage.html
 *.tmp
 *.temp
 .cache/
+github_downloads/
 build_android.ps1
-build_windows.ps1
+build_windows_debug.ps1
+build_windows_release.ps1
 
 # MSBuild
 *.binlog
