@@ -129,7 +129,7 @@ export const CallInviteModal: React.FC<CallInviteModalProps> = ({ visible }) => 
           {/* Call type and status */}
           <Text style={styles.status}>
             {isIncoming
-              ? `${callState.callType === 'video' ? '视频' : '语音'}通话邀�?..`
+              ? `${callState.callType === 'video' ? '视频' : '语音'}通话邀请...`
               : `正在${callState.callType === 'video' ? '视频' : '语音'}呼叫...`}
           </Text>
 
@@ -143,7 +143,7 @@ export const CallInviteModal: React.FC<CallInviteModalProps> = ({ visible }) => 
                   onPress={handleReject}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.buttonIcon}>�?/Text>
+                  <Text style={styles.buttonIcon}>❌</Text>
                 </TouchableOpacity>
 
                 {/* Accept button */}
@@ -166,7 +166,7 @@ export const CallInviteModal: React.FC<CallInviteModalProps> = ({ visible }) => 
                   onPress={handleReject}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.buttonIcon}>�?/Text>
+                  <Text style={styles.buttonIcon}>❌</Text>
                 </TouchableOpacity>
               </>
             )}

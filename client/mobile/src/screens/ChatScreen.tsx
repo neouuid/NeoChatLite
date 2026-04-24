@@ -65,7 +65,8 @@ export const ChatScreen: React.FC = () => {
       setSending(true);
     },
     onUploadComplete: async (result) => {
-      // 发送媒体消息      await sendMediaMessage(result);
+      // 发送媒体消息
+      await sendMediaMessage(result);
     },
     onUploadError: (error) => {
       setSending(false);
@@ -168,7 +169,7 @@ export const ChatScreen: React.FC = () => {
       const response = await chatService.getConversationMessages(conversationId);
       if (response.success && response.data) {
         setMessages(conversationId, response.data);
-        // 初始加载时，如果返回的消息数量少�?limit，则认为没有更多消息
+        // 初始加载时，如果返回的消息数量少于 limit，则认为没有更多消息
         setHasMoreMessages(conversationId, response.data.length >= 50);
       }
     } catch (error) {
@@ -182,7 +183,8 @@ export const ChatScreen: React.FC = () => {
   useEffect(() => {
     loadConversation();
     loadMessages();
-    // 重置分页状�?    setHasMoreMessages(conversationId, true);
+    // 重置分页状态
+    setHasMoreMessages(conversationId, true);
   }, [loadConversation, loadMessages, conversationId, setHasMoreMessages]);
 
   // 获取会话标题

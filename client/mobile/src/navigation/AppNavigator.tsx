@@ -70,7 +70,7 @@ const MainTabs = () => {
         name="Contacts"
         component={ContactsScreen}
         options={{
-          tabBarLabel: '联系�?,
+          tabBarLabel: '联系人',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people-outline" size={size} color={color} />
           ),

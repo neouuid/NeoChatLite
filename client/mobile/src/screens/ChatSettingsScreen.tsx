@@ -43,7 +43,8 @@ export const ChatSettingsScreen: React.FC = () => {
   const [muted, setMuted] = useState(false);
   const [stickToTop, setStickToTop] = useState(false);
 
-  // 从 store 中获取会话数据  const conversation = useMemo(() =>
+  // 从 store 中获取会话数据
+  const conversation = useMemo(() =>
     conversations.find(c => c.id === conversationId),
     [conversations, conversationId]
   );

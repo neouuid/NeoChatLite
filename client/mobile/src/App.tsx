@@ -19,14 +19,15 @@ const App: React.FC = () => {
   const LoadingScreen = () => (
     <View style={loadingStyles.container}>
       <ActivityIndicator size="large" color={COLORS.primary} />
-      <Text style={loadingStyles.text}>加载�?..</Text>
+      <Text style={loadingStyles.text}>加载中...</Text>
     </View>
   );
 
   // WebSocket 好友请求监听
   useWebSocket({
     onFriendRequest: (data) => {
-      // 添加到好友请求列�?      addFriendRequest({
+      // 添加到好友请求列表
+      addFriendRequest({
         id: data.user_id,
         user_id: user?.id || '',
         friend_id: data.user_id,
@@ -47,7 +48,8 @@ const App: React.FC = () => {
       Alert.alert('好友请求', `${data.username} 请求添加你为好友`);
     },
     onFriendAccepted: (data) => {
-      // 添加到好友列�?      addFriend({
+      // 添加到好友列表
+      addFriend({
         id: data.user_id,
         user_id: user?.id || '',
         friend_id: data.user_id,
@@ -65,7 +67,7 @@ const App: React.FC = () => {
         },
       });
       // 显示通知
-      Alert.alert('好友已添�?, `${data.username} 已接受你的好友请求`);
+      Alert.alert('好友已添加', `${data.username} 已接受你的好友请求`);
     },
   });
 

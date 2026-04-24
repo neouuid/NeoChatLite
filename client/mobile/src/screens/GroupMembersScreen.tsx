@@ -43,7 +43,8 @@ export const GroupMembersScreen: React.FC = () => {
 
   const [searchText, setSearchText] = useState('');
 
-  // 从 store 中获取会话数据  const conversation = useMemo(() =>
+  // 从 store 中获取会话数据
+  const conversation = useMemo(() =>
     conversations.find(c => c.id === conversationId),
     [conversations, conversationId]
   );
@@ -70,7 +71,8 @@ export const GroupMembersScreen: React.FC = () => {
     }));
   }, [conversation, conversationId]);
 
-  // 当前用户角色 - 根据在成员列表中的位置推断  const currentUserRole = useMemo((): 'owner' | 'admin' | 'member' => {
+  // 当前用户角色 - 根据在成员列表中的位置推断
+  const currentUserRole = useMemo((): 'owner' | 'admin' | 'member' => {
     if (!currentUser || !conversation?.members) return 'member';
     const currentMemberIndex = conversation.members.findIndex(
       m => m.user_id === currentUser.id
@@ -112,9 +114,11 @@ export const GroupMembersScreen: React.FC = () => {
     }
   };
 
-  // 检查是否可以管理成员  const canManage = currentUserRole === 'owner' || currentUserRole === 'admin';
+  // 检查是否可以管理成员
+  const canManage = currentUserRole === 'owner' || currentUserRole === 'admin';
 
-  // 检查是否可以移除成员  const canRemoveMember = (member: typeof members[0]) => {
+  // 检查是否可以移除成员
+  const canRemoveMember = (member: typeof members[0]) => {
     if (currentUserRole === 'owner') {
       return member.role !== 'owner';
     }
@@ -124,7 +128,8 @@ export const GroupMembersScreen: React.FC = () => {
     return false;
   };
 
-  // 检查是否可以修改角色  const canChangeRole = (member: typeof members[0]) => {
+  // 检查是否可以修改角色
+  const canChangeRole = (member: typeof members[0]) => {
     if (currentUserRole === 'owner') {
       return member.role !== 'owner';
     }
@@ -203,7 +208,8 @@ export const GroupMembersScreen: React.FC = () => {
     navigation.navigate('ViewProfile' as never, { userId: user.id } as never);
   }, [navigation]);
 
-  // 设为管理员  const handleSetAdmin = useCallback((member: typeof members[0]) => {
+  // 设为管理员
+  const handleSetAdmin = useCallback((member: typeof members[0]) => {
     Alert.alert(
       '设为管理员',
       `确定要将 ${formatDisplayName(member.user.nickname, member.user.username)} 设为管理员吗？`,
@@ -225,7 +231,8 @@ export const GroupMembersScreen: React.FC = () => {
     );
   }, [conversationId, updateMemberRoleInConversation]);
 
-  // 取消管理员  const handleRemoveAdmin = useCallback((member: typeof members[0]) => {
+  // 取消管理员
+  const handleRemoveAdmin = useCallback((member: typeof members[0]) => {
     Alert.alert(
       '取消管理员',
       `确定要取消${formatDisplayName(member.user.nickname, member.user.username)} 的管理员资格吗？`,
@@ -276,7 +283,8 @@ export const GroupMembersScreen: React.FC = () => {
     navigation.navigate('AddGroupMembers' as never, { conversationId } as never);
   }, [navigation, conversationId]);
 
-  // 渲染成员项  const renderMemberItem = useCallback(({ item }: { item: typeof members[0] }) => {
+  // 渲染成员项
+  const renderMemberItem = useCallback(({ item }: { item: typeof members[0] }) => {
     const roleLabel = getRoleLabel(item.role);
     const roleColor = getRoleColor(item.role);
 
