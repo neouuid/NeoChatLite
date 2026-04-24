@@ -8,6 +8,24 @@ const rnwPath = fs.realpathSync(
   path.resolve(require.resolve('react-native-windows/package.json'), '..'),
 );
 
+// Find the workspace root (where the main package.json with workspaces is)
+const findWorkspaceRoot = (startPath) => {
+  let currentPath = startPath;
+  while (currentPath !== path.dirname(currentPath)) {
+    const pkgPath = path.join(currentPath, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      if (pkg.workspaces) {
+        return currentPath;
+      }
+    }
+    currentPath = path.dirname(currentPath);
+  }
+  return startPath;
+};
+
+const workspaceRoot = findWorkspaceRoot(__dirname);
+
 /**
  * Metro configuration
  * https://facebook.github.io/metro/docs/configuration
@@ -16,7 +34,18 @@ const rnwPath = fs.realpathSync(
  */
 
 const config = {
+  projectRoot: __dirname,
+  // Watch both the current directory and the workspace root
+  watchFolders: [
+    __dirname,
+    workspaceRoot,
+    path.join(workspaceRoot, 'shared'),
+  ],
   resolver: {
+    nodeModulesPaths: [
+      path.join(__dirname, 'node_modules'),
+      path.join(workspaceRoot, 'node_modules'),
+    ],
     blockList: exclusionList([
       // This stops "react-native run-windows" from causing the metro server to crash if its already running
       new RegExp(

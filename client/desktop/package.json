@@ -12,6 +12,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@expo/vector-icons": "^13.0.0",
     "neochat-shared": "*",
     "react": "18.2.0",
     "react-native": "0.73.0",

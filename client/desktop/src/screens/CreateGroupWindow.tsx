@@ -1,4 +1,4 @@
-// 桌面端创建群组页�?
+// 桌面端创建群组页面
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -74,11 +74,11 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
   // 创建群组
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
-      Alert.alert('提示', '请输入群组名�?);
+      Alert.alert('提示', '请输入群组名称');
       return;
     }
     if (selectedFriends.length === 0) {
-      Alert.alert('提示', '请至少选择一位好�?);
+      Alert.alert('提示', '请至少选择一位好友');
       return;
     }
 
@@ -96,7 +96,7 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
           {
             text: '确定',
             onPress: () => {
-              // 导航到群聊页�?
+              // 导航到群聊页面
               onNavigate?.('Chat', { conversationId: conversation.id });
             },
           },
@@ -109,7 +109,7 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
     }
   };
 
-  // 移除已选好�?
+  // 移除已选好友
   const removeSelectedFriend = (friendId: string) => {
     setSelectedFriends((prev) => prev.filter((id) => id !== friendId));
   };
@@ -118,7 +118,7 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
     loadFriends();
   }, [loadFriends]);
 
-  // 渲染已选好�?
+  // 渲染已选好友
   const renderSelectedFriend = (friendId: string) => {
     const friend = friends.find((f) => f.friend?.id === friendId);
     const friendUser = friend?.friend;
@@ -147,7 +147,7 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
     );
   };
 
-  // 渲染好友�?
+  // 渲染好友项
   const renderFriendItem = ({ item }: { item: Friend }) => {
     const friendUser = item.friend;
     if (!friendUser) return null;
@@ -196,17 +196,17 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
       {/* 头部 */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-left" size={20} color="#1a1a2e" />
+          <Ionicons name="arrow-back" size={20} color="#1a1a2e" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>新建群组</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* 头像和群组信�?*/}
+        {/* 头像和群组信息 */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>�?/Text>
+            <Text style={styles.avatarText}>群</Text>
           </View>
           <Text style={styles.changeAvatarText}>点击更换头像</Text>
         </View>
@@ -218,7 +218,7 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.input}
-                placeholder="请输入群组名�?
+                placeholder="请输入群组名称"
                 placeholderTextColor="#a0a0c0"
                 value={groupName}
                 onChangeText={setGroupName}
@@ -247,10 +247,10 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
         <View style={styles.membersSection}>
           <View style={styles.membersHeader}>
             <Text style={styles.membersLabel}>选择成员</Text>
-            <Text style={styles.selectedCount}>已�?{selectedFriends.length} �?/Text>
+            <Text style={styles.selectedCount}>已选 {selectedFriends.length} 人</Text>
           </View>
 
-          {/* 已选成�?*/}
+          {/* 已选成员 */}
           {selectedFriends.length > 0 && (
             <View style={styles.selectedList}>
               {selectedFriends.map(renderSelectedFriend)}
@@ -260,7 +260,7 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
           {/* 好友列表 */}
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>加载�?..</Text>
+              <Text style={styles.loadingText}>加载中...</Text>
             </View>
           ) : friends.length === 0 ? (
             <View style={styles.emptyState}>
@@ -269,7 +269,7 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
                 size={48}
                 color="#8080a0"
               />
-              <Text style={styles.emptyTitle}>还没有好�?/Text>
+              <Text style={styles.emptyTitle}>还没有好友</Text>
               <Text style={styles.emptySubtext}>先添加好友吧</Text>
             </View>
           ) : (
@@ -300,7 +300,7 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
           disabled={selectedFriends.length === 0 || !groupName.trim() || isCreating}
         >
           <Text style={styles.createButtonText}>
-            {isCreating ? '创建�?..' : '创建群组'}
+            {isCreating ? '创建中...' : '创建群组'}
           </Text>
         </TouchableOpacity>
       </View>

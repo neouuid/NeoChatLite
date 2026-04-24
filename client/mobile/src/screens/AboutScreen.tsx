@@ -69,7 +69,7 @@ export const AboutScreen: React.FC = () => {
     },
     {
       id: 'license',
-      title: '开源许�?,
+      title: '开源许可',
       icon: 'document-text-outline',
       onPress: () => Linking.openURL(LICENSE_URL),
     },
@@ -111,10 +111,11 @@ export const AboutScreen: React.FC = () => {
         {/* 描述 */}
         <View style={styles.descriptionSection}>
           <Text style={styles.descriptionText}>
-            NeoChat 是一款现代化的跨平台即时通讯应用�?            支持 iOS、Android、Windows �?macOS�?          </Text>
+            NeoChat 是一款现代化的跨平台即时通讯应用，
+            支持 iOS、Android、Windows 和 macOS。          </Text>
         </View>
 
-        {/* 菜单�?*/}
+        {/* 菜单栏 */}
         <View style={styles.menuSection}>
           <View style={styles.menuCard}>
             {menuItems.map((item, index) => (

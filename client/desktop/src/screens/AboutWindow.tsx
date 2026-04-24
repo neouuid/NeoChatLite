@@ -1,4 +1,4 @@
-// 桌面端关于页�?
+// 桌面端关于页面
 
 import React from 'react';
 import {
@@ -54,7 +54,7 @@ export const AboutWindow: React.FC<AboutWindowProps> = ({ onBack }) => {
     },
     {
       id: 'license',
-      title: '开源许�?,
+      title: '开源许可',
       icon: 'document-text-outline' as const,
       onPress: () => Linking.openURL(LICENSE_URL),
     },

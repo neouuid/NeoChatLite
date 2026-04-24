@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePanel, onPanelChange, on
           />
         </TouchableOpacity>
 
-        {/* 联系人图�?*/}
+        {/* 联系人图标 */}
         <TouchableOpacity
           style={[
             styles.iconContainer,

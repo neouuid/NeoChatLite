@@ -1,4 +1,4 @@
-// 桌面端数据清除页�?
+// 桌面端数据清除页面
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -73,7 +73,7 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
             setIsClearingChat(true);
             try {
               clearAllMessages();
-              Alert.alert('成功', '聊天记录已清�?);
+              Alert.alert('成功', '聊天记录已清空');
             } catch (error) {
               Alert.alert('错误', '清除失败');
             } finally {
@@ -97,7 +97,7 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
           onPress: async () => {
             setIsClearingCache(true);
             try {
-              // Web端清�?localStorage 中的缓存数据
+              // Web端清除 localStorage 中的缓存数据
               const keysToRemove: string[] = [];
               for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
@@ -107,7 +107,7 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
               }
               keysToRemove.forEach(key => localStorage.removeItem(key));
 
-              Alert.alert('成功', '缓存已清�?);
+              Alert.alert('成功', '缓存已清除');
             } catch (error) {
               Alert.alert('错误', '清除失败');
             } finally {
@@ -136,7 +136,7 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
           <View style={styles.storageCard}>
             <View style={styles.storageHeader}>
               <Text style={styles.storageTitle}>存储空间</Text>
-              <Text style={styles.storageTotal}>�?{totalSizeText}</Text>
+              <Text style={styles.storageTotal}>共 {totalSizeText}</Text>
             </View>
             <View style={styles.storageBar}>
               <View style={styles.storageFill} />
@@ -162,7 +162,7 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
                   <Ionicons name="chatbox-ellipses-outline" size={20} color="#ffffff" />
                 </View>
                 <Text style={styles.clearTitle}>
-                  {isClearingChat ? '清除�?..' : '清除聊天记录'}
+                  {isClearingChat ? '清除中...' : '清除聊天记录'}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#8b8bb3" />
@@ -174,7 +174,7 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
                   <Ionicons name="folder-outline" size={20} color="#ffffff" />
                 </View>
                 <Text style={styles.clearTitle}>
-                  {isClearingCache ? '清除�?..' : '清除缓存'}
+                  {isClearingCache ? '清除中...' : '清除缓存'}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#8b8bb3" />
