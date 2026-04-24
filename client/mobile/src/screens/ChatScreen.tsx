@@ -74,7 +74,8 @@ export const ChatScreen: React.FC = () => {
     },
   });
 
-  // 发送媒体消息  const sendMediaMessage = useCallback(async (result: any) => {
+  // 发送媒体消息
+  const sendMediaMessage = useCallback(async (result: any) => {
     if (!user) return;
 
     try {
@@ -152,7 +153,8 @@ export const ChatScreen: React.FC = () => {
       const response = await chatService.getConversation(conversationId);
       if (response.success && response.data) {
         setCurrentConversation(response.data);
-        // 设置导航栏标题        navigation.setOptions({
+        // 设置导航栏标题
+        navigation.setOptions({
           title: getConversationTitle(response.data),
         });
       }
@@ -202,7 +204,8 @@ export const ChatScreen: React.FC = () => {
     return '聊天';
   };
 
-  // 标记会话为已读  const markAsRead = useCallback(async () => {
+  // 标记会话为已读
+  const markAsRead = useCallback(async () => {
     try {
       await chatService.markConversationAsRead(conversationId);
     } catch (error) {
@@ -214,7 +217,8 @@ export const ChatScreen: React.FC = () => {
     markAsRead();
   }, [markAsRead]);
 
-  // 清除高亮消息 ID（3秒后）  useEffect(() => {
+  // 清除高亮消息 ID（3秒后）
+  useEffect(() => {
     if (highlightedMessageId) {
       const timer = setTimeout(() => {
         setHighlightedMessageId(null);
@@ -223,7 +227,8 @@ export const ChatScreen: React.FC = () => {
     }
   }, [highlightedMessageId, setHighlightedMessageId]);
 
-  // 发送消息  const handleSendMessage = useCallback(async (content: string) => {
+  // 发送消息
+  const handleSendMessage = useCallback(async (content: string) => {
     if (!user) return;
 
     try {
@@ -271,7 +276,8 @@ export const ChatScreen: React.FC = () => {
       if (response.success && response.data) {
         if (response.data.length > 0) {
           prependMessages(conversationId, response.data);
-          // 如果返回的消息少于 limit，则没有更多了          setHasMoreMessages(conversationId, response.data.length >= 50);
+          // 如果返回的消息少于 limit，则没有更多了
+          setHasMoreMessages(conversationId, response.data.length >= 50);
         } else {
           setHasMoreMessages(conversationId, false);
         }
@@ -327,7 +333,8 @@ export const ChatScreen: React.FC = () => {
 
   // 头像点击
   const handleAvatarPress = useCallback((clickedUser: any) => {
-    // 导航到用户资料页面    navigation.navigate('ViewProfile', { userId: clickedUser.id });
+    // 导航到用户资料页面
+    navigation.navigate('ViewProfile', { userId: clickedUser.id });
   }, [navigation]);
 
   // 取消回复

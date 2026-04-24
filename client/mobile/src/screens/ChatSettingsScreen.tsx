@@ -84,7 +84,7 @@ export const ChatSettingsScreen: React.FC = () => {
           onPress: () => {
             // 清空本地消息
             setMessages(conversationId, []);
-            Alert.alert('成功', '聊天记录已清�?);
+            Alert.alert('成功', '聊天记录已清空');
           },
         },
       ]
@@ -126,9 +126,9 @@ export const ChatSettingsScreen: React.FC = () => {
       '请选择举报原因',
       [
         { text: '取消', style: 'cancel' },
-        { text: '垃圾消息', onPress: () => Alert.alert('感谢反馈', '我们会尽快处理) },
-        { text: '骚扰', onPress: () => Alert.alert('感谢反馈', '我们会尽快处理) },
-        { text: '其他', onPress: () => Alert.alert('感谢反馈', '我们会尽快处理) },
+        { text: '垃圾消息', onPress: () => Alert.alert('感谢反馈', '我们会尽快处理') },
+        { text: '骚扰', onPress: () => Alert.alert('感谢反馈', '我们会尽快处理') },
+        { text: '其他', onPress: () => Alert.alert('感谢反馈', '我们会尽快处理') },
       ]
     );
   };
