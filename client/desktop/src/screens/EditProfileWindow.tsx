@@ -1,4 +1,4 @@
-// 桌面端编辑个人资料页�?
+// 桌面端编辑个人资料页面
 
 import React, { useCallback, useState } from 'react';
 import {
@@ -58,7 +58,7 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
         updateUser(updatedUser);
         updateUserInStore(updatedUser);
         setTempAvatar(null);
-        Alert.alert('成功', '资料已更�?, [
+        Alert.alert('成功', '资料已更新', [
           { text: '确定', onPress: onBack },
         ]);
       }
@@ -76,7 +76,7 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
       if (result) {
         setIsUploading(true);
         try {
-          // 先上传图�?
+          // 先上传图片
           const uploadResponse = await chatService.uploadFile(
             result.file!,
             `avatar_${Date.now()}.jpg`
@@ -113,7 +113,7 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
           disabled={isSaving}
         >
           <Text style={styles.saveButtonText}>
-            {isSaving ? '保存�?..' : '保存'}
+            {isSaving ? '保存中...' : '保存'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -132,7 +132,7 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
               <Ionicons name="camera-outline" size={20} color="#ffffff" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.changeAvatarText}>{isUploading ? '上传�?..' : '点击更换头像'}</Text>
+          <Text style={styles.changeAvatarText}>{isUploading ? '上传中...' : '点击更换头像'}</Text>
         </View>
 
         {/* 资料表单 */}
@@ -144,7 +144,7 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
-                  placeholder="请输入昵�?
+                  placeholder="请输入昵称"
                   placeholderTextColor="#8080a0"
                   value={nickname}
                   onChangeText={setNickname}
@@ -158,24 +158,24 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
 
             <View style={styles.inputDivider} />
 
-            {/* 用户名（只读�?*/}
+            {/* 用户名（只读） */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>用户�?/Text>
+              <Text style={styles.inputLabel}>用户名</Text>
               <View style={styles.inputContainer}>
                 <Text style={styles.readOnlyText}>
                   @{user?.username || ''}
                 </Text>
               </View>
               <Text style={styles.inputHint}>
-                用户名不可修�?
+                用户名不可修改
               </Text>
             </View>
 
             <View style={styles.inputDivider} />
 
-            {/* 个性签�?*/}
+            {/* 个性签名 */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>个性签�?/Text>
+              <Text style={styles.inputLabel}>个性签名</Text>
               <View style={[styles.inputContainer, styles.textareaContainer]}>
                 <TextInput
                   style={[styles.input, styles.textarea]}

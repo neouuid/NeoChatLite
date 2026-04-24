@@ -39,7 +39,7 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [members, setMembers] = useState<(ConversationMember & { user: User; role: 'owner' | 'admin' | 'member' })[]>([]);
 
-  // �?store 中获取会话数�?
+  // 从 store 中获取会话数据
   const conversation = useMemo(() =>
     propConversationId ? conversations.find(c => c.id === propConversationId) : undefined,
     [conversations, propConversationId]
@@ -103,7 +103,7 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
       case 'owner':
         return '群主';
       case 'admin':
-        return '管理�?;
+        return '管理员';
       default:
         return '';
     }
@@ -121,10 +121,10 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
     }
   };
 
-  // 检查是否可以管理成�?
+  // 检查是否可以管理成员
   const canManage = currentUserRole === 'owner' || currentUserRole === 'admin';
 
-  // 检查是否可以移除成�?
+  // 检查是否可以移除成员
   const canRemoveMember = (member: typeof members[0]) => {
     if (currentUserRole === 'owner') {
       return member.role !== 'owner';
@@ -135,7 +135,7 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
     return false;
   };
 
-  // 检查是否可以修改角�?
+  // 检查是否可以修改角色
   const canChangeRole = (member: typeof members[0]) => {
     if (currentUserRole === 'owner') {
       return member.role !== 'owner';
@@ -148,11 +148,11 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
     onNavigate?.('ViewProfile', { userId: user.id });
   }, [onNavigate]);
 
-  // 设为管理�?
+  // 设为管理员
   const handleSetAdmin = useCallback((member: typeof members[0]) => {
     const convId = propConversationId || '1';
     Alert.alert(
-      '设为管理�?,
+      '设为管理员',
       `确定要将 ${formatDisplayName(member.user.nickname, member.user.username)} 设为管理员吗？`,
       [
         { text: '取消', style: 'cancel' },
@@ -172,12 +172,12 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
     );
   }, [propConversationId, updateMemberRoleInConversation]);
 
-  // 取消管理�?
+  // 取消管理员
   const handleRemoveAdmin = useCallback((member: typeof members[0]) => {
     const convId = propConversationId || '1';
     Alert.alert(
-      '取消管理�?,
-      `确定要取�?${formatDisplayName(member.user.nickname, member.user.username)} 的管理员资格吗？`,
+      '取消管理员',
+      `确定要取消 ${formatDisplayName(member.user.nickname, member.user.username)} 的管理员资格吗？`,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -211,7 +211,7 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
             const result = await ChatService.removeGroupMember(convId, member.user_id);
             if (result.success) {
               removeMemberFromConversation(convId, member.user_id);
-              Alert.alert('成功', '已移除成�?);
+              Alert.alert('成功', '已移除成员');
             } else {
               Alert.alert('失败', result.message || '操作失败');
             }
@@ -235,12 +235,12 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
     if (canChangeRole(member)) {
       if (member.role === 'member') {
         buttons.push({
-          text: '设为管理�?,
+          text: '设为管理员',
           onPress: () => handleSetAdmin(member),
         });
       } else if (member.role === 'admin') {
         buttons.push({
-          text: '取消管理�?,
+          text: '取消管理员',
           onPress: () => handleRemoveAdmin(member),
         });
       }
@@ -277,7 +277,7 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Ionicons name="arrow-back" size={20} color="#1D2129" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>群成�?({members.length})</Text>
+        <Text style={styles.headerTitle}>群成员({members.length})</Text>
         {canManage ? (
           <TouchableOpacity style={styles.addButton} onPress={handleAddMembers}>
             <Ionicons name="person-add" size={20} color="#6366f1" />
@@ -287,7 +287,7 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
         )}
       </View>
 
-      {/* 搜索�?*/}
+      {/* 搜索栏 */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={16} color="#86909c" style={styles.searchIcon} />

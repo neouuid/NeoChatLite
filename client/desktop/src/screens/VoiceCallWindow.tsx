@@ -48,7 +48,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   const [callDuration, setCallDuration] = useState(0);
   const [animationFrame, setAnimationFrame] = useState(0);
 
-  // 从路由参数获取数�?  const {
+  // 从路由参数获取数据
+  const {
     conversationId,
     userId,
     userName,
@@ -62,7 +63,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
     if (propRemoteUser) {
       return propRemoteUser;
     }
-    // 如果路由参数直接提供了用户信�?    if (userId && userName) {
+    // 如果路由参数直接提供了用户信息
+    if (userId && userName) {
       return {
         id: userId,
         username: userName,
@@ -84,7 +86,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
     return null;
   }, [propRemoteUser, conversationId, conversations, currentUser, userId, userName, userAvatar]);
 
-  // 计时�?+ 音频波浪动画
+  // 计时器 + 音频波浪动画
   useEffect(() => {
     let timer: any;
     let animationTimer: any;
@@ -92,7 +94,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
       timer = setInterval(() => {
         setCallDuration(prev => prev + 1);
       }, 1000);
-      // 动画刷新�?      animationTimer = setInterval(() => {
+      // 动画刷新率
+      animationTimer = setInterval(() => {
         setAnimationFrame(prev => prev + 1);
       }, 50);
     } else if (callState.status === 'ended') {
@@ -153,7 +156,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
 
   const displayName = remoteUser ? formatDisplayName(remoteUser.nickname, remoteUser.username) : '用户';
 
-  // 获取音频可视化波浪动�?  const renderAudioWave = () => {
+  // 获取音频可视化波浪动画
+  const renderAudioWave = () => {
     if (callState.status !== 'connected') return null;
 
     const barCount = 7;
@@ -203,7 +207,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
           )}
         </View>
 
-        {/* 姓名和状�?*/}
+        {/* 姓名和状态 */}
         <Text style={styles.name}>{displayName}</Text>
         <Text style={styles.status}>
           {callState.status === 'calling'
@@ -211,7 +215,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             : callState.status === 'incoming'
             ? '邀请你通话...'
             : callState.status === 'connected'
-            ? '通话�?..'
+            ? '通话中...'
             : '通话结束'}
         </Text>
 
@@ -230,7 +234,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             <TouchableOpacity
               style={[styles.controlButton, styles.declineButton]}
               onPress={handleRejectCall}
-            >
+              >
               <Ionicons name="call-outline" size={28} color="#ffffff" style={{ transform: [{ rotate: '135deg' }] }} />
             </TouchableOpacity>
             <TouchableOpacity
@@ -246,7 +250,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             <TouchableOpacity
               style={[styles.controlButton, callState.isMuted && styles.controlButtonActive]}
               onPress={toggleMute}
-            >
+              >
               <Ionicons
                 name={callState.isMuted ? 'mic-off' : 'mic'}
                 size={28}
@@ -254,7 +258,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
               />
             </TouchableOpacity>
 
-            {/* 键盘按钮 - 保留UI但暂不实现键�?*/}
+            {/* 键盘按钮 - 保留UI但暂不实现键盘 */}
             <TouchableOpacity style={styles.controlButton}>
               <Ionicons name="keypad" size={28} color="#ffffff" />
             </TouchableOpacity>
@@ -264,7 +268,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
               <Ionicons name="call" size={32} color="#ffffff" style={{ transform: [{ rotate: '135deg' }] }} />
             </TouchableOpacity>
 
-            {/* 扬声器按�?*/}
+            {/* 扬声器按钮 */}
             <TouchableOpacity
               style={[styles.controlButton, callState.isSpeakerOn && styles.controlButtonActive]}
               onPress={toggleSpeaker}

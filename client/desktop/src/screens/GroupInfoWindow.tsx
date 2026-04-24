@@ -1,4 +1,4 @@
-// 桌面端群组信息页�?
+// 桌面端群组信息页面
 
 import React, { useState, useMemo } from 'react';
 import {
@@ -42,7 +42,7 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
   const [muted, setMuted] = useState(false);
   const [stickToTop, setStickToTop] = useState(false);
 
-  // �?store 中获取会话数�?
+  // 从 store 中获取会话数据
   const conversation = useMemo(() =>
     conversations.find(c => c.id === (conversationId || groupId)),
     [conversations, conversationId, groupId]
@@ -68,7 +68,7 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
   const groupInfo = useMemo(() => ({
     id: conversation?.id || groupId,
     name: conversation?.name || '群聊',
-    description: conversation?.description || '欢迎加入技术交流群！请大家文明发言，共同维护良好的交流环境�?,
+    description: conversation?.description || '欢迎加入技术交流群！请大家文明发言，共同维护良好的交流环境。',
     owner_id: '',
     member_count: conversation?.members?.length || 0,
     max_members: 200,
@@ -85,10 +85,10 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
     onNavigate?.('AddGroupMembers', { conversationId: conversationId || groupId });
   };
 
-  // 退出群�?
+  // 退出群组
   const handleLeaveGroup = () => {
     Alert.alert(
-      '退出群�?,
+      '退出群组',
       '确定要退出该群组吗？',
       [
         { text: '取消', style: 'cancel' },
@@ -99,11 +99,11 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
             const result = await ChatService.leaveGroup(conversationId || groupId);
             if (result.success) {
               removeConversation(conversationId || groupId);
-              Alert.alert('已退�?, '您已退出该群组', [
+              Alert.alert('已退出', '您已退出该群组', [
                 { text: '确定', onPress: onBack },
               ]);
             } else {
-              Alert.alert('失败', result.message || '退出群组失�?);
+              Alert.alert('失败', result.message || '退出群组失败');
             }
           },
         },
@@ -122,13 +122,13 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
       case 'owner':
         return '群主';
       case 'admin':
-        return '管理�?;
+        return '管理员';
       default:
         return '';
     }
   };
 
-  // 渲染成员�?
+  // 渲染成员项
   const renderMemberItem = ({ item }: { item: typeof members[0] }) => {
     const roleLabel = getRoleLabel(item.role);
 
@@ -164,7 +164,7 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
     );
   };
 
-  // 渲染设置�?
+  // 渲染设置项
   const renderSettingItem = (
     title: string,
     value: boolean,
@@ -212,7 +212,7 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
           <View style={styles.groupInfo}>
             <Text style={styles.groupName}>{groupInfo.name}</Text>
             <Text style={styles.groupMeta}>
-              {groupInfo.member_count} �?· 2 位管理员
+              {groupInfo.member_count} 人 · 2 位管理员
             </Text>
           </View>
           <View style={styles.actionButtons}>
@@ -222,12 +222,12 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
           </View>
         </View>
 
-        {/* 群组公告和成�?*/}
+        {/* 群组公告和成员 */}
         <View style={styles.detailCard}>
           {/* 群组公告 */}
           <View style={styles.noticeSection}>
             <View style={styles.noticeHeader}>
-              <Text style={styles.noticeLabel}>群公�?/Text>
+              <Text style={styles.noticeLabel}>群公告</Text>
               <Ionicons name="chevron-forward" size={16} color="#86909C" />
             </View>
             <Text style={styles.noticeText}>{groupInfo.description}</Text>
@@ -235,10 +235,10 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
 
           <View style={styles.divider} />
 
-          {/* 群成�?*/}
+          {/* 群成员 */}
           <View style={styles.membersSection}>
             <View style={styles.membersHeader}>
-              <Text style={styles.membersLabel}>群成�?/Text>
+              <Text style={styles.membersLabel}>群成员</Text>
               <TouchableOpacity style={styles.moreButton} onPress={handleViewAllMembers}>
                 <Text style={styles.moreButtonText}>全部</Text>
                 <Ionicons name="chevron-forward" size={16} color="#86909C" />

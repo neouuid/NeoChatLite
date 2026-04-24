@@ -1,4 +1,4 @@
-// 桌面端转发页�?
+// 桌面端转发页面
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -51,7 +51,7 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
   const [groups, setGroups] = useState<any[]>([]);
 
   const tabs = [
-    { key: 'recent' as const, label: '最近聊�? },
+    { key: 'recent' as const, label: '最近聊天' },
     { key: 'friends' as const, label: '好友' },
     { key: 'groups' as const, label: '群组' },
   ];
@@ -95,7 +95,7 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
     });
   };
 
-  // 发送转�?
+  // 发送转发
   const handleForward = async () => {
     if (selectedTargets.length === 0) {
       Alert.alert('提示', '请选择转发目标');
@@ -111,7 +111,7 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
       );
 
       if (response.success) {
-        Alert.alert('成功', '消息已转�?, [
+        Alert.alert('成功', '消息已转发', [
           {
             text: '确定',
             onPress: () => onClose?.(),
@@ -131,7 +131,7 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
     loadData();
   }, [loadData]);
 
-  // 渲染会话�?
+  // 渲染会话项
   const renderConversationItem = (conversation: Conversation & { friend?: User }) => {
     const friend = conversation.friend;
     const displayName = conversation.name
@@ -181,7 +181,7 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
     );
   };
 
-  // 渲染好友�?
+  // 渲染好友项
   const renderFriendItem = (friend: Friend) => {
     const friendUser = friend.friend;
     if (!friendUser) return null;
@@ -238,7 +238,7 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
           disabled={selectedTargets.length === 0 || isForwarding}
         >
           <Text style={styles.confirmButtonText}>
-            {isForwarding ? '发送中...' : `发�?${selectedTargets.length})`}
+            {isForwarding ? '发送中...' : `发送(${selectedTargets.length})`}
           </Text>
         </TouchableOpacity>
       </View>
@@ -258,7 +258,7 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
         </View>
       </View>
 
-      {/* 标签�?*/}
+      {/* 标签栏 */}
       <View style={styles.tabsContainer}>
         {tabs.map((tab) => (
           <TouchableOpacity
@@ -284,7 +284,7 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
       {/* 内容 */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>加载�?..</Text>
+          <Text style={styles.loadingText}>加载中...</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>

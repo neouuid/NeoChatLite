@@ -40,7 +40,7 @@ export const NotificationSettingsWindow: React.FC<NotificationSettingsWindowProp
       </View>
 
       <ScrollView style={styles.scrollView}>
-        {/* 总开�?*/}
+        {/* 总开关 */}
         <View style={styles.section}>
           <View style={styles.settingsCard}>
             <View style={styles.settingItem}>
@@ -112,7 +112,7 @@ export const NotificationSettingsWindow: React.FC<NotificationSettingsWindowProp
                 <View style={styles.settingItem}>
                   <View style={styles.settingLeft}>
                     <Text style={styles.settingTitle}>群消息通知</Text>
-                    <Text style={styles.settingSubtitle}>接收群聊新消�?/Text>
+                    <Text style={styles.settingSubtitle}>接收群聊新消息</Text>
                   </View>
                   <Switch
                     value={groupNotifications}

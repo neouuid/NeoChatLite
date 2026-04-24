@@ -1,4 +1,4 @@
-// 桌面端收藏页�?
+// 桌面端收藏页面
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -64,7 +64,7 @@ export const FavoritesWindow: React.FC<FavoritesWindowProps> = ({
   const handleRemoveFavorite = useCallback(async (favoriteId: string) => {
     Alert.alert(
       '取消收藏',
-      '确定要取消收藏这条消息吗�?,
+      '确定要取消收藏这条消息吗？',
       [
         { text: '取消', style: 'cancel' },
         {
@@ -83,15 +83,15 @@ export const FavoritesWindow: React.FC<FavoritesWindowProps> = ({
     );
   }, []);
 
-  // 跳转到消�?
+  // 跳转到消息
   const handleGoToMessage = useCallback(async (favorite: FavoriteMessage) => {
     if (!favorite.message) return;
 
     // 设置高亮消息 ID
     setHighlightedMessageId(favorite.message.id);
-    // 确保消息已加�?
+    // 确保消息已加载
     await ensureMessageLoaded(favorite.message.conversation_id, favorite.message.id);
-    // 跳转到聊天页�?
+    // 跳转到聊天页面
     onNavigate?.('Chat', { conversationId: favorite.message.conversation_id });
   }, [setHighlightedMessageId, ensureMessageLoaded, onNavigate]);
 
@@ -104,7 +104,7 @@ export const FavoritesWindow: React.FC<FavoritesWindowProps> = ({
     loadFavorites();
   }, [loadFavorites]);
 
-  // 渲染收藏�?
+  // 渲染收藏项
   const renderFavoriteItem = ({ item }: { item: FavoriteMessage }) => {
     const message = item.message;
     const sender = item.sender;
@@ -126,7 +126,7 @@ export const FavoritesWindow: React.FC<FavoritesWindowProps> = ({
           />
         )}
         <View style={styles.content}>
-          <View style={styles.header}>
+          <View style={styles.itemHeader}>
             <Text style={styles.name} numberOfLines={1}>
               {displayName}
             </Text>
@@ -172,13 +172,13 @@ export const FavoritesWindow: React.FC<FavoritesWindowProps> = ({
       {/* 内容 */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>加载�?..</Text>
+          <Text style={styles.loadingText}>加载中...</Text>
         </View>
       ) : favorites.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="bookmark-outline" size={64} color="#8080a0" />
-          <Text style={styles.emptyTitle}>还没有收�?/Text>
-          <Text style={styles.emptySubtext}>收藏的消息会显示在这�?/Text>
+          <Text style={styles.emptyTitle}>还没有收藏</Text>
+          <Text style={styles.emptySubtext}>收藏的消息会显示在这里</Text>
         </View>
       ) : (
         <FlatList
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  header: {
+  itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
