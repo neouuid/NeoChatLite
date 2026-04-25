@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   COLORS,
@@ -20,24 +21,15 @@ import {
   useChatStore,
   useWebRTC,
   type User,
+  type RootStackParamList,
 } from 'neochat-shared';
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
 
-type VoiceCallScreenRouteProp = {
-  params: {
-    conversationId?: string;
-    userId?: string;
-    userName?: string;
-    userAvatar?: string;
-    incoming?: boolean;
-  };
-};
-
 export const VoiceCallScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const route = useRoute<VoiceCallScreenRouteProp>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'VoiceCall'>>();
   const { user: currentUser } = useAuthStore();
   const { conversations } = useChatStore();
   const {
@@ -90,8 +82,8 @@ export const VoiceCallScreen: React.FC = () => {
 
   // 计时器 + 音频波浪动画
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    let animationTimer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
+    let animationTimer: ReturnType<typeof setTimeout>;
     if (callState.status === 'connected') {
       timer = setInterval(() => {
         setCallDuration((prev) => prev + 1);
@@ -210,7 +202,7 @@ export const VoiceCallScreen: React.FC = () => {
             <Avatar
               uri={remoteUser?.avatar}
               nickname={remoteUser?.nickname || remoteUser?.username || '用户'}
-              size="xxl"
+              size="2xl"
             />
           </View>
 
@@ -248,7 +240,7 @@ export const VoiceCallScreen: React.FC = () => {
           <Avatar
             uri={remoteUser?.avatar}
             nickname={remoteUser?.nickname || remoteUser?.username || '用户'}
-            size="xxl"
+            size="2xl"
           />
         </View>
 
@@ -271,7 +263,7 @@ export const VoiceCallScreen: React.FC = () => {
           onPress={toggleMute}
         >
           <Ionicons
-            name={callState.isMuted ? 'mic-off' : 'mic'}
+            name={(callState.isMuted ? 'mic-off' : 'mic') as any}
             size={28}
             color="#ffffff"
           />
@@ -285,7 +277,7 @@ export const VoiceCallScreen: React.FC = () => {
           onPress={toggleSpeaker}
         >
           <Ionicons
-            name={callState.isSpeakerOn ? 'volume-high' : 'volume-medium'}
+            name={(callState.isSpeakerOn ? 'volume-high' : 'volume-medium') as any}
             size={28}
             color="#ffffff"
           />

@@ -6,7 +6,7 @@ import { COLORS, BORDER_RADIUS, TYPOGRAPHY } from '../constants';
 import { getAvatarText, formatDisplayName } from '../utils';
 import { CachedImage } from './CachedImage';
 
-type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | number;
+type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'xxl' | number;
 
 interface AvatarProps {
   uri?: string;
@@ -53,6 +53,8 @@ export const Avatar: React.FC<AvatarProps> = ({
         return 80;
       case '2xl':
         return 100;
+      case 'xxl':
+        return 120;
       default:
         return 48;
     }
@@ -75,6 +77,8 @@ export const Avatar: React.FC<AvatarProps> = ({
         return 32;
       case '2xl':
         return 36;
+      case 'xxl':
+        return 42;
       default:
         return 20;
     }

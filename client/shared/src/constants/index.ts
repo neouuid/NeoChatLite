@@ -55,6 +55,8 @@ export const SPACING = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  '3xl': 64,
+  '4xl': 80,
 };
 
 // Typography
