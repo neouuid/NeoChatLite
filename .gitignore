@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+client/desktop/node_modules
+client/mobile/node_modules
+client/shared/node_modules
 vendor/
 
 # React Native
