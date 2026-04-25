@@ -27,16 +27,12 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-
-type GroupMembersScreenRouteProp = {
-  params: {
-    conversationId: string;
-  };
-};
+import type { RootStackParamList } from 'neochat-shared/src/types';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 
 export const GroupMembersScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const route = useRoute<GroupMembersScreenRouteProp>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'GroupMembers'>>();
   const { conversationId } = route.params;
   const { conversations, removeMemberFromConversation, updateMemberRoleInConversation } = useChatStore();
   const { user: currentUser } = useAuthStore();
@@ -205,7 +201,7 @@ export const GroupMembersScreen: React.FC = () => {
 
   // 查看用户资料
   const handleViewProfile = useCallback((user: User) => {
-    navigation.navigate('ViewProfile' as never, { userId: user.id } as never);
+    navigation.navigate('ViewProfile', { userId: user.id });
   }, [navigation]);
 
   // 设为管理员
@@ -280,7 +276,7 @@ export const GroupMembersScreen: React.FC = () => {
 
   // 添加成员
   const handleAddMembers = useCallback(() => {
-    navigation.navigate('AddGroupMembers' as never, { conversationId } as never);
+    navigation.navigate('AddGroupMembers', { conversationId });
   }, [navigation, conversationId]);
 
   // 渲染成员项
