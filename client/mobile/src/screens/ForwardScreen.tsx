@@ -24,18 +24,14 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-import type { User, Friend, Conversation } from 'neochat-shared/src/types';
+import type { User, Friend, Conversation, RootStackParamList } from 'neochat-shared/src/types';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 
 type ForwardType = 'recent' | 'friends' | 'groups';
-type ForwardScreenRouteProp = {
-  params: {
-    messageId: string;
-  };
-};
 
 export const ForwardScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const route = useRoute<ForwardScreenRouteProp>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'Forward'>>();
   const { user: currentUser } = useAuthStore();
   const { messageId } = route.params;
 
