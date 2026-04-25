@@ -163,17 +163,6 @@ export const deleteFile = async (uri: string): Promise<boolean> => {
 };
 
 /**
- * 格式化文件大小
- */
-export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
-/**
  * 根据文件名获取 MIME 类型
  */
 const getMimeType = (filename: string): string => {

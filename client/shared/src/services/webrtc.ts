@@ -1,5 +1,8 @@
 import { websocket } from './websocket';
 
+// 声明 global 类型（用于 React Native）
+declare const global: typeof globalThis;
+
 // 环境检测
 const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
 const isReactNative = !isWeb && typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
@@ -351,22 +354,23 @@ export class WebRTCService {
       throw new Error('RTCPeerConnection not available');
     }
 
-    this.peerConnection = new PeerConnection(ICE_CONFIG);
+    const peerConnection = new PeerConnection(ICE_CONFIG);
+    this.peerConnection = peerConnection;
 
     // Handle ICE candidates
-    this.peerConnection.onicecandidate = (event) => {
+    peerConnection.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
       if (event.candidate && this.state.peerId) {
         websocket.sendSignalIce(
           this.state.peerId,
           event.candidate.candidate,
-          event.candidate.sdpMid,
-          event.candidate.sdpMlineIndex
+          event.candidate.sdpMid ?? undefined,
+          event.candidate.sdpMLineIndex ?? undefined
         );
       }
     };
 
     // Handle incoming tracks
-    this.peerConnection.ontrack = (event) => {
+    peerConnection.ontrack = (event: RTCTrackEvent) => {
       if (event.streams && event.streams[0]) {
         this.remoteStream = event.streams[0];
         this.notifyRemoteStream();
@@ -374,10 +378,10 @@ export class WebRTCService {
     };
 
     // Handle connection state changes
-    this.peerConnection.onconnectionstatechange = () => {
-      if (this.peerConnection?.connectionState === 'disconnected' ||
-          this.peerConnection?.connectionState === 'failed' ||
-          this.peerConnection?.connectionState === 'closed') {
+    peerConnection.onconnectionstatechange = () => {
+      if (peerConnection.connectionState === 'disconnected' ||
+          peerConnection.connectionState === 'failed' ||
+          peerConnection.connectionState === 'closed') {
         this.endCall();
       }
     };
@@ -424,7 +428,7 @@ export class WebRTCService {
     const candidate = new IceCandidate({
       candidate: data.candidate,
       sdpMid: data.sdp_mid,
-      sdpMlineIndex: data.sdp_mline_index,
+      sdpMLineIndex: data.sdp_mline_index,
     });
     await this.peerConnection.addIceCandidate(candidate);
   }
@@ -531,7 +535,7 @@ export class WebRTCService {
       // Replace tracks in peer connection if active
       if (this.peerConnection) {
         const senders = this.peerConnection.getSenders();
-        newStream.getTracks().forEach((track) => {
+        newStream.getTracks().forEach((track: MediaStreamTrack) => {
           const sender = senders.find((s) => s.track?.kind === track.kind);
           if (sender) {
             sender.replaceTrack(track);

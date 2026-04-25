@@ -24,7 +24,9 @@
   },
   "peerDependencies": {
     "react": ">=18.0.0",
-    "react-native": ">=0.72.0"
+    "react-native": ">=0.72.0",
+    "react-native-image-picker": ">=7.0.0",
+    "react-native-document-picker": ">=9.0.0"
   },
   "peerDependenciesMeta": {
     "react-native-fs": {
@@ -37,6 +39,12 @@
       "optional": true
     },
     "@react-native-clipboard/clipboard": {
+      "optional": true
+    },
+    "react-native-image-picker": {
+      "optional": true
+    },
+    "react-native-document-picker": {
       "optional": true
     }
   }
