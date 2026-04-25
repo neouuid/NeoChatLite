@@ -6,7 +6,7 @@ import { COLORS, BORDER_RADIUS, TYPOGRAPHY } from '../constants';
 import { getAvatarText, formatDisplayName } from '../utils';
 import { CachedImage } from './CachedImage';
 
-type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | number;
 
 interface AvatarProps {
   uri?: string;
@@ -39,6 +39,9 @@ export const Avatar: React.FC<AvatarProps> = ({
 }) => {
   // Memoized 尺寸
   const avatarSize = useMemo((): number => {
+    if (typeof size === 'number') {
+      return size;
+    }
     switch (size) {
       case 'xs':
         return 32;
@@ -57,6 +60,10 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   // Memoized 字体大小
   const fontSize = useMemo((): number => {
+    if (typeof size === 'number') {
+      // 根据尺寸计算合适的字体大小
+      return Math.round(size * 0.4);
+    }
     switch (size) {
       case 'xs':
         return 14;
