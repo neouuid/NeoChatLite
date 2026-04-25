@@ -18,7 +18,7 @@ import { CachedImage } from './CachedImage';
 interface MessageListProps {
   messages: Message[];
   currentUserId?: string;
-  conversation?: Conversation;
+  conversation?: Conversation | null;
   onLoadMore?: () => void;
   onMessagePress?: (message: Message) => void;
   onMessageLongPress?: (message: Message) => void;

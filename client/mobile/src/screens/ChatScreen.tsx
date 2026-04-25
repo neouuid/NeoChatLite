@@ -29,7 +29,7 @@ import { MessageList } from 'neochat-shared/src/components/MessageList';
 import { ChatInput } from 'neochat-shared/src/components/ChatInput';
 import type { RootStackParamList } from 'neochat-shared';
 
-type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Chat'>;
+type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteParams = { conversationId: string };
 
 export const ChatScreen: React.FC = () => {
@@ -133,17 +133,17 @@ export const ChatScreen: React.FC = () => {
   // 处理图片点击
   const handleImagePress = useCallback((message: Message) => {
     if (message.media_url) {
-      navigation.navigate('ImageViewer' as never, { url: message.media_url } as never);
+      navigation.navigate('ImageViewer', { url: message.media_url });
     }
   }, [navigation]);
 
   // 处理文件点击
   const handleFilePress = useCallback((message: Message) => {
     if (message.media_url && message.file_name) {
-      navigation.navigate('FileViewer' as never, {
+      navigation.navigate('FileViewer', {
         url: message.media_url,
         name: message.file_name,
-      } as never);
+      });
     }
   }, [navigation]);
 
