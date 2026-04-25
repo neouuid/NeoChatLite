@@ -173,7 +173,7 @@ export type RootStackParamList = {
   AddGroupMembers: { conversationId: string };
   CreateGroup: undefined;
   ImageViewer: { url: string };
-  FileViewer: { url: string; name: string };
+  FileViewer: { url: string; name: string; size?: number; type?: string; sendTime?: string; sender?: string };
   Search: undefined;
   ChatSettings: { conversationId: string };
   Settings: undefined;
@@ -185,8 +185,8 @@ export type RootStackParamList = {
   About: undefined;
   Favorites: undefined;
   Forward: { messageId: string };
-  VideoCall: { conversationId: string; userId?: string };
-  VoiceCall: { conversationId: string; userId?: string };
+  VideoCall: { conversationId?: string; userId?: string; userName?: string; userAvatar?: string; incoming?: boolean };
+  VoiceCall: { conversationId?: string; userId?: string; userName?: string; userAvatar?: string; incoming?: boolean };
   AccountSecurity: undefined;
   EditProfile: undefined;
   Help: undefined;

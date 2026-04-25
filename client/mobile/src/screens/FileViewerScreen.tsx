@@ -21,17 +21,8 @@ import {
   deleteFile,
   formatFileSize,
 } from 'neochat-shared';
-
-type FileViewerScreenRouteProp = {
-  params: {
-    url: string;
-    name: string;
-    size?: number;
-    type?: string;
-    sendTime?: string;
-    sender?: string;
-  };
-};
+import type { RootStackParamList } from 'neochat-shared/src/types';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 
 const getFileIcon = (fileName: string) => {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
@@ -62,8 +53,8 @@ const getFileColor = (fileName: string) => {
 };
 
 export const FileViewerScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const route = useRoute<FileViewerScreenRouteProp>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'FileViewer'>>();
   const {
     url,
     name,
