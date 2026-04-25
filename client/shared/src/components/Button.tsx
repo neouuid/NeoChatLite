@@ -79,7 +79,7 @@ export const Button: React.FC<ButtonProps> = ({
       baseStyle.opacity = 0.5;
     }
 
-    return [baseStyle, style];
+    return [baseStyle, style || {}];
   };
 
   const getTextStyle = (): TextStyle[] => {
