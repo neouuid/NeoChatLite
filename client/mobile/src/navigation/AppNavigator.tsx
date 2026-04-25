@@ -61,7 +61,7 @@ const MainTabs = () => {
         component={MainChatScreen}
         options={{
           tabBarLabel: '消息',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="chatbubbles-outline" size={size} color={color} />
           ),
         }}
@@ -71,7 +71,7 @@ const MainTabs = () => {
         component={ContactsScreen}
         options={{
           tabBarLabel: '联系人',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="people-outline" size={size} color={color} />
           ),
         }}
@@ -81,7 +81,7 @@ const MainTabs = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: '我的',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
