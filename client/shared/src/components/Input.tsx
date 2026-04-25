@@ -88,13 +88,13 @@ export const Input: React.FC<InputProps> = ({
       baseStyle.marginRight = SPACING.sm;
     }
 
-    return [baseStyle, inputStyle];
+    return [baseStyle, inputStyle || {}];
   };
 
   return (
-    <View style={[styles.wrapper, containerStyle]}>
+    <View style={[styles.wrapper, containerStyle || {}]}>
       {label && (
-        <Text style={[styles.label, labelStyle]}>
+        <Text style={[styles.label, labelStyle || {}]}>
           {label}
         </Text>
       )}
@@ -121,7 +121,7 @@ export const Input: React.FC<InputProps> = ({
       </View>
 
       {error && (
-        <Text style={[styles.error, errorStyle]}>
+        <Text style={[styles.error, errorStyle || {}]}>
           {error}
         </Text>
       )}
