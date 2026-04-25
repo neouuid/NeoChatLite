@@ -253,7 +253,7 @@ export const ViewProfileScreen: React.FC = () => {
 
               {/* 拉黑按钮 */}
               <TouchableOpacity style={styles.actionButton} onPress={handleBlockUser}>
-                <Ionicons name="ban-outline" size={20} color={COLORS.error} style={styles.actionButtonIcon} />
+                <Ionicons name="close-circle-outline" size={20} color={COLORS.error} style={styles.actionButtonIcon} />
                 <Text style={styles.actionButtonDangerText}>拉黑</Text>
               </TouchableOpacity>
             </>
