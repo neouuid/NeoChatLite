@@ -1,18 +1,19 @@
 // Chat Store 测试
+/// <reference types="jest" />
 
 import { useChatStore } from './useChatStore';
 import type { Conversation, Message } from '../types';
 
-describe('useChatStore', () => {
-  beforeEach(() => {
-    // 每次测试前重置 store
-    useChatStore.setState({
-      conversations: [],
-      currentConversation: null,
-      messages: {},
-      isLoading: false,
-      isSending: false,
-    });
+  describe('useChatStore', () => {
+    beforeEach(() => {
+      // 每次测试前重置 store
+      useChatStore.setState({
+        conversations: [],
+        currentConversation: null,
+        messages: {},
+        isLoading: false,
+        isSending: false,
+      });
   });
 
   describe('conversations', () => {
@@ -121,6 +122,7 @@ describe('useChatStore', () => {
           sender_id: 'user1' as any,
           type: 'text',
           content: '测试消息',
+          is_edited: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -137,6 +139,7 @@ describe('useChatStore', () => {
         sender_id: 'user1' as any,
         type: 'text',
         content: '新消息',
+        is_edited: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -216,6 +219,7 @@ describe('useChatStore', () => {
           sender_id: 'user1' as any,
           type: 'text',
           content: `消息 ${i}`,
+          is_edited: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
