@@ -65,7 +65,7 @@ export const ContactsPanel: React.FC = () => {
     try {
       const response = await chatService.searchUsers(query);
       if (response.success && response.data) {
-        setSearchResults(response.data);
+        setSearchResults(response.data.items);
       }
     } catch (error) {
       console.error('Failed to search users:', error);
@@ -306,7 +306,7 @@ export const ContactsPanel: React.FC = () => {
             {activeTab === 'blocked' && (
               <View style={styles.contentSection}>
                 <View style={styles.emptyState}>
-                  <Ionicons name="ban-outline" size={48} color={COLORS.dark.text.tertiary} />
+                  <Ionicons name="close-circle-outline" size={48} color={COLORS.dark.text.tertiary} />
                   <Text style={styles.emptyTitle}>黑名单为空</Text>
                 </View>
               </View>
