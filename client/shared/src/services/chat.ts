@@ -320,4 +320,6 @@ export class ChatService {
   }
 }
 
+// Export as named instance for backward compatibility
+export const chatService = ChatService;
 export default ChatService;
