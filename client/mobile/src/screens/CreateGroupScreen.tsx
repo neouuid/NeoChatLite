@@ -25,7 +25,7 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-import type { User, Friend, RootStackParamList, Conversation } from 'neochat-shared/src/types';
+import type { User, Friend, RootStackParamList } from 'neochat-shared/src/types';
 import type { NavigationProp } from '@react-navigation/native';
 
 export const CreateGroupScreen: React.FC = () => {
@@ -87,13 +87,13 @@ export const CreateGroupScreen: React.FC = () => {
       });
 
       if (response.success && response.data) {
-        const conversation = response.data as Conversation;
+        const group = response.data;
         Alert.alert('成功', '群组创建成功', [
           {
             text: '确定',
             onPress: () => {
-              // 导航到群聊页面
-              navigation.navigate('GroupChat', { conversationId: conversation.id });
+              // 导航到群聊页面，使用群组 ID
+              navigation.navigate('GroupChat', { conversationId: group.id });
             },
           },
         ]);
