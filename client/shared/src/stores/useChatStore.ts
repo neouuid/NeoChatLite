@@ -42,7 +42,7 @@ interface ChatState {
   ensureMessageLoaded: (conversationId: string, messageId: string) => Promise<boolean>;
   // 群组成员管理 actions
   removeMemberFromConversation: (conversationId: string, userId: string) => void;
-  updateMemberRoleInConversation: (conversationId: string, userId: string, role: string) => void;
+  updateMemberRoleInConversation: (conversationId: string, userId: string, role: 'member' | 'admin' | 'owner') => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -283,7 +283,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // 群组成员管理：更新成员角色
-  updateMemberRoleInConversation: (conversationId: string, userId: string, role: string) => {
+  updateMemberRoleInConversation: (conversationId: string, userId: string, role: 'member' | 'admin' | 'owner') => {
     set((state) => ({
       conversations: state.conversations.map((conv) =>
         conv.id === conversationId

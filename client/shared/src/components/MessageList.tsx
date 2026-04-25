@@ -82,6 +82,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         showReadStatus={isOwn && isLastOwnMessage}
         isGroupChat={isGroupChat}
         isHighlighted={isHighlighted}
+        members={conversation?.members}
         onPress={onMessagePress}
         onLongPress={onMessageLongPress}
         onAvatarPress={onAvatarPress}
@@ -89,7 +90,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         onFilePress={onFilePress}
       />
     );
-  }, [currentUserId, messages, isGroupChat, highlightedMessageId, onMessagePress, onMessageLongPress, onAvatarPress, onImagePress, onFilePress]);
+  }, [currentUserId, messages, isGroupChat, conversation?.members, highlightedMessageId, onMessagePress, onMessageLongPress, onAvatarPress, onImagePress, onFilePress]);
 
   // 渲染加载更多指示器
   const renderFooter = useCallback(() => {
@@ -132,6 +133,7 @@ interface MessageBubbleProps {
   showReadStatus?: boolean;
   isGroupChat?: boolean;
   isHighlighted?: boolean;
+  members?: Conversation['members'];
   onPress?: (message: Message) => void;
   onLongPress?: (message: Message) => void;
   onAvatarPress?: (user: User) => void;
@@ -147,6 +149,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   showReadStatus = false,
   isGroupChat = false,
   isHighlighted = false,
+  members,
   onPress,
   onLongPress,
   onAvatarPress,
@@ -161,7 +164,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   // 渲染带提及的文本
   const renderMentionText = (text: string) => {
-    const members = isGroupChat ? message.conversation?.members : undefined;
     const parts = parseMessageText(text, members);
 
     return parts.map((part: ParsedMention, index: number) => {

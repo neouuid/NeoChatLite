@@ -1,6 +1,6 @@
 // 提及功能相关工具函数
 
-import { User } from '../types';
+import { User, ConversationMember } from '../types';
 
 export interface MentionMatch {
   original: string;
@@ -60,7 +60,10 @@ export function extractMentions(text: string): MentionMatch[] {
 /**
  * 将文本解析为带提及的分段
  */
-export function parseMessageText(text: string, members?: User[]): ParsedMention[] {
+export function parseMessageText(
+  text: string,
+  members?: (User | ConversationMember)[]
+): ParsedMention[] {
   const parts: ParsedMention[] = [];
   const mentions = extractMentions(text);
 
@@ -76,15 +79,30 @@ export function parseMessageText(text: string, members?: User[]): ParsedMention[
     }
 
     // 查找对应用户
-    const user = members?.find(
-      m => m.username === mention.username || m.id === mention.username
-    );
+    let matchedUser: { id: string; username?: string } | undefined;
+    members?.find(m => {
+      // 判断是 User 还是 ConversationMember 类型
+      if ('user' in m && m.user) {
+        // ConversationMember 类型，有嵌套的 user
+        if (m.user.username === mention.username || m.user.id === mention.username) {
+          matchedUser = m.user;
+          return true;
+        }
+      } else if ('username' in m) {
+        // User 类型
+        if (m.username === mention.username || m.id === mention.username) {
+          matchedUser = m;
+          return true;
+        }
+      }
+      return false;
+    });
 
     parts.push({
       type: 'mention',
       content: mention.original,
       username: mention.username,
-      userId: user?.id,
+      userId: matchedUser?.id,
     });
 
     lastIndex = mention.endIndex;

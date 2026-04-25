@@ -98,7 +98,7 @@ export const Button: React.FC<ButtonProps> = ({
         baseStyle.color = '#ffffff';
     }
 
-    return [baseStyle, textStyle];
+    return [baseStyle, textStyle || {}];
   };
 
   return (
