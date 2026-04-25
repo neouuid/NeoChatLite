@@ -140,4 +140,6 @@ export class AuthService {
   }
 }
 
+// Export as named instance for backward compatibility
+export const authService = AuthService;
 export default AuthService;

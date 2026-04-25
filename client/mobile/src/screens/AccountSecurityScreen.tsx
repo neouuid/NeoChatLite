@@ -101,12 +101,8 @@ export const AccountSecurityScreen: React.FC = () => {
 
     setIsProcessing('phone_code');
     try {
-      const res = await authService.sendPhoneVerification(newPhone);
-      if (res.success && res.data?.code) {
-        Alert.alert('验证码已发送', `验证码: ${res.data.code}`);
-      } else {
-        Alert.alert('提示', '验证码已发送');
-      }
+      const token = await authService.sendPhoneVerification(newPhone);
+      Alert.alert('验证码已发送', token ? `验证码: ${token}` : '验证码已发送');
     } catch (error) {
       Alert.alert('错误', (error as Error).message || '发送失败');
     } finally {
@@ -145,12 +141,8 @@ export const AccountSecurityScreen: React.FC = () => {
 
     setIsProcessing('email_code');
     try {
-      const res = await authService.sendEmailVerification();
-      if (res.success && res.data?.code) {
-        Alert.alert('验证码已发送', `验证码: ${res.data.code}`);
-      } else {
-        Alert.alert('提示', '验证码已发送');
-      }
+      const code = await authService.sendEmailVerification();
+      Alert.alert('验证码已发送', code ? `验证码: ${code}` : '验证码已发送');
     } catch (error) {
       Alert.alert('错误', (error as Error).message || '发送失败');
     } finally {

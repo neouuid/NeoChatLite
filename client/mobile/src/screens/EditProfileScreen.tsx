@@ -149,7 +149,7 @@ export const EditProfileScreen: React.FC = () => {
             <Avatar
               uri={user?.avatar}
               nickname={displayName}
-              size="xxl"
+              size="2xl"
               style={styles.avatar}
             />
             <View style={styles.avatarOverlay}>

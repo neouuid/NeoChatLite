@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   COLORS,
@@ -21,21 +22,16 @@ import {
   useChatStore,
   useAuthStore,
   ChatService,
+  type RootStackParamList,
 } from 'neochat-shared';
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
 import type { User, Conversation } from 'neochat-shared/src/types';
 
-type ChatSettingsScreenRouteProp = {
-  params: {
-    conversationId: string;
-  };
-};
-
 export const ChatSettingsScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const route = useRoute<ChatSettingsScreenRouteProp>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'ChatSettings'>>();
   const { conversationId } = route.params;
   const { conversations, removeConversation, setMessages } = useChatStore();
   const { user: currentUser } = useAuthStore();
@@ -107,7 +103,7 @@ export const ChatSettingsScreen: React.FC = () => {
               if (result.success) {
                 removeConversation(conversationId);
                 Alert.alert('成功', '已删除好友', [
-                  { text: '确定', onPress: () => navigation.popToTop() },
+                  { text: '确定', onPress: () => (navigation as any).popToTop() },
                 ]);
               } else {
                 Alert.alert('失败', result.message || '删除好友失败');

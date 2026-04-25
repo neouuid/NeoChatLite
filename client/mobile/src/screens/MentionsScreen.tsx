@@ -196,114 +196,114 @@ export const MentionsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1;
-    backgroundColor: COLORS.dark.background;
+    flex: 1,
+    backgroundColor: COLORS.dark.background,
   },
   header: {
-    flexDirection: 'row';
-    alignItems: 'center';
-    paddingHorizontal: SPACING.lg;
-    paddingVertical: SPACING.md;
-    borderBottomWidth: StyleSheet.hairlineWidth;
-    borderBottomColor: COLORS.dark.border;
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.dark.border,
   },
   backButton: {
-    padding: SPACING.xs;
-    marginRight: SPACING.sm;
+    padding: SPACING.xs,
+    marginRight: SPACING.sm,
   },
   headerTitle: {
-    flex: 1;
-    color: COLORS.dark.text.primary;
-    fontSize: TYPOGRAPHY.sizes.lg;
-    fontWeight: TYPOGRAPHY.weights.semibold;
-    textAlign: 'center';
+    flex: 1,
+    color: COLORS.dark.text.primary,
+    fontSize: TYPOGRAPHY.sizes.lg,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    textAlign: 'center',
   },
   markAllButton: {
-    padding: SPACING.xs;
+    padding: SPACING.xs,
   },
   markAllButtonText: {
-    color: COLORS.primary;
-    fontSize: TYPOGRAPHY.sizes.md;
+    color: COLORS.primary,
+    fontSize: TYPOGRAPHY.sizes.md,
   },
   list: {
-    flex: 1;
+    flex: 1,
   },
   emptyListContent: {
-    flexGrow: 1;
+    flexGrow: 1,
   },
   loadingContainer: {
-    flex: 1;
-    alignItems: 'center';
-    justifyContent: 'center';
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingText: {
-    color: COLORS.dark.text.secondary;
-    fontSize: TYPOGRAPHY.sizes.md;
+    color: COLORS.dark.text.secondary,
+    fontSize: TYPOGRAPHY.sizes.md,
   },
   mentionItem: {
-    flexDirection: 'row';
-    alignItems: 'center';
-    paddingHorizontal: SPACING.lg;
-    paddingVertical: SPACING.md;
-    position: 'relative';
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    position: 'relative',
   },
   mentionItemUnread: {
-    backgroundColor: `${COLORS.primary}08`;
+    backgroundColor: `${COLORS.primary}08`,
   },
   mentionAvatar: {
-    marginRight: SPACING.md;
+    marginRight: SPACING.md,
   },
   mentionContent: {
-    flex: 1;
+    flex: 1,
   },
   mentionHeader: {
-    flexDirection: 'row';
-    alignItems: 'center';
-    marginBottom: SPACING.xs;
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
   },
   mentionTitle: {
-    flex: 1;
-    color: COLORS.dark.text.primary;
-    fontSize: TYPOGRAPHY.sizes.md;
-    fontWeight: TYPOGRAPHY.weights.medium;
+    flex: 1,
+    color: COLORS.dark.text.primary,
+    fontSize: TYPOGRAPHY.sizes.md,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
   mentionTime: {
-    color: COLORS.dark.text.tertiary;
-    fontSize: TYPOGRAPHY.sizes.sm;
+    color: COLORS.dark.text.tertiary,
+    fontSize: TYPOGRAPHY.sizes.sm,
   },
   mentionMessage: {
-    color: COLORS.dark.text.secondary;
-    fontSize: TYPOGRAPHY.sizes.sm;
-    lineHeight: 18;
+    color: COLORS.dark.text.secondary,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    lineHeight: 18,
   },
   unreadDot: {
-    width: 8;
-    height: 8;
-    borderRadius: 4;
-    backgroundColor: COLORS.primary;
-    position: 'absolute';
-    right: SPACING.lg;
-    top: '50%';
-    marginTop: -4;
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+    position: 'absolute',
+    right: SPACING.lg,
+    top: '50%',
+    marginTop: -4,
   },
   emptyState: {
-    flex: 1;
-    alignItems: 'center';
-    justifyContent: 'center';
-    paddingVertical: SPACING.xxl * 2;
-    gap: SPACING.md;
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.xxl * 2,
+    gap: SPACING.md,
   },
   emptyTitle: {
-    color: COLORS.dark.text.primary;
-    fontSize: TYPOGRAPHY.sizes.lg;
-    fontWeight: TYPOGRAPHY.weights.medium;
+    color: COLORS.dark.text.primary,
+    fontSize: TYPOGRAPHY.sizes.lg,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
   emptySubtext: {
-    color: COLORS.dark.text.secondary;
-    fontSize: TYPOGRAPHY.sizes.md;
-    textAlign: 'center';
+    color: COLORS.dark.text.secondary,
+    fontSize: TYPOGRAPHY.sizes.md,
+    textAlign: 'center',
   },
   bottomSpacer: {
-    height: SPACING.xl;
+    height: SPACING.xl,
   },
 });

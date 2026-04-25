@@ -41,16 +41,16 @@ export const RegisterScreen: React.FC = () => {
     }
 
     // 验证用户名
-    const usernameError = validateUsername(username);
-    if (usernameError) {
-      Alert.alert('用户名错误', usernameError);
+    const usernameValidation = validateUsername(username);
+    if (!usernameValidation.valid) {
+      Alert.alert('用户名错误', usernameValidation.message || '用户名格式不正确');
       return;
     }
 
     // 验证密码
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      Alert.alert('密码错误', passwordError);
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      Alert.alert('密码错误', passwordValidation.message || '密码格式不正确');
       return;
     }
 
@@ -62,18 +62,18 @@ export const RegisterScreen: React.FC = () => {
 
     // 验证邮箱（如果提供）
     if (email) {
-      const emailError = validateEmail(email);
-      if (emailError) {
-        Alert.alert('邮箱错误', emailError);
+      const emailValidation = validateEmail(email);
+      if (!emailValidation.valid) {
+        Alert.alert('邮箱错误', emailValidation.message || '邮箱格式不正确');
         return;
       }
     }
 
     // 验证手机号（如果提供）
     if (phone) {
-      const phoneError = validatePhone(phone);
-      if (phoneError) {
-        Alert.alert('手机号错误', phoneError);
+      const phoneValidation = validatePhone(phone);
+      if (!phoneValidation.valid) {
+        Alert.alert('手机号错误', phoneValidation.message || '手机号格式不正确');
         return;
       }
     }

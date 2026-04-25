@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   COLORS,
@@ -20,22 +21,16 @@ import {
   BORDER_RADIUS,
   useChatStore,
   ChatService,
+  type RootStackParamList,
 } from 'neochat-shared';
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
 import type { User } from 'neochat-shared/src/types';
 
-type GroupInfoScreenRouteProp = {
-  params: {
-    groupId: string;
-    conversationId?: string;
-  };
-};
-
 export const GroupInfoScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const route = useRoute<GroupInfoScreenRouteProp>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'GroupInfo'>>();
   const { groupId, conversationId } = route.params;
   const { conversations, removeConversation } = useChatStore();
 
@@ -77,12 +72,12 @@ export const GroupInfoScreen: React.FC = () => {
 
   // 查看群组成员
   const handleViewAllMembers = () => {
-    navigation.navigate('GroupMembers' as never, { conversationId: conversationId || groupId } as never);
+    navigation.navigate('GroupMembers', { conversationId: conversationId || groupId });
   };
 
   // 添加成员
   const handleAddMembers = () => {
-    navigation.navigate('AddGroupMembers' as never, { conversationId: conversationId || groupId } as never);
+    navigation.navigate('AddGroupMembers', { conversationId: conversationId || groupId });
   };
 
   // 退出群组
@@ -100,7 +95,7 @@ export const GroupInfoScreen: React.FC = () => {
             if (result.success) {
               removeConversation(conversationId || groupId);
               Alert.alert('已退出', '您已退出该群组', [
-                { text: '确定', onPress: () => navigation.popToTop() },
+                { text: '确定', onPress: () => (navigation as any).popToTop() },
               ]);
             } else {
               Alert.alert('失败', result.message || '退出群组失败');
@@ -113,7 +108,7 @@ export const GroupInfoScreen: React.FC = () => {
 
   // 查看成员资料
   const handleViewMemberProfile = (member: User) => {
-    navigation.navigate('ViewProfile' as never, { userId: member.id } as never);
+    navigation.navigate('ViewProfile', { userId: member.id });
   };
 
   // 获取角色标签
@@ -209,7 +204,7 @@ export const GroupInfoScreen: React.FC = () => {
           </View>
           <View style={styles.groupInfo}>
             <Text style={styles.groupName}>{groupInfo.name}</Text>
-            {group.description && (
+            {groupInfo.description && (
               <Text style={styles.groupDescription} numberOfLines={2}>
                 {groupInfo.description}
               </Text>

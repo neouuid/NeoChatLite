@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   COLORS,
@@ -22,23 +23,14 @@ import {
   VideoView,
   Avatar,
   type User,
+  type RootStackParamList,
 } from 'neochat-shared';
 
 import { formatDisplayName } from 'neochat-shared/src/utils';
 
-type VideoCallScreenRouteProp = {
-  params: {
-    conversationId?: string;
-    userId?: string;
-    userName?: string;
-    userAvatar?: string;
-    incoming?: boolean;
-  };
-};
-
 export const VideoCallScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const route = useRoute<VideoCallScreenRouteProp>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'VideoCall'>>();
   const { user: currentUser } = useAuthStore();
   const { conversations } = useChatStore();
   const {
@@ -286,7 +278,7 @@ export const VideoCallScreen: React.FC = () => {
           onPress={toggleVideo}
         >
           <Ionicons
-            name={callState.isVideoEnabled !== false ? 'videocam' : 'videocam-off'}
+            name={(callState.isVideoEnabled !== false ? 'videocam' : 'videocam-off') as any}
             size={24}
             color="#ffffff"
           />

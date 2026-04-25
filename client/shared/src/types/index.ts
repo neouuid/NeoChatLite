@@ -168,7 +168,7 @@ export type RootStackParamList = {
   FriendManage: undefined;
   AddFriend: undefined;
   Blocklist: undefined;
-  GroupInfo: { groupId: string };
+  GroupInfo: { groupId: string; conversationId?: string };
   GroupMembers: { conversationId: string };
   AddGroupMembers: { conversationId: string };
   CreateGroup: undefined;

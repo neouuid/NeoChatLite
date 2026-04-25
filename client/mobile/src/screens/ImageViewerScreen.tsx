@@ -39,7 +39,8 @@ export const ImageViewerScreen: React.FC = () => {
 
   const [showControls, setShowControls] = useState(true);
 
-  // 切换控制栏显示  const toggleControls = () => {
+  // 切换控制栏显示
+  const toggleControls = () => {
     setShowControls(!showControls);
   };
 

@@ -83,7 +83,7 @@ export const SearchScreen: React.FC = () => {
 
   // 点击联系人
   const handleContactPress = (contact: User) => {
-    navigation.navigate('ViewProfile' as never, { userId: contact.id } as never);
+    navigation.navigate('ViewProfile', { userId: contact.id });
   };
 
   // 点击消息
