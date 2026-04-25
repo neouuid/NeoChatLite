@@ -134,7 +134,11 @@ export const GroupMembersScreen: React.FC = () => {
 
   // 显示成员操作菜单
   const showMemberActions = useCallback((member: typeof members[0]) => {
-    const actions = [];
+    const actions: Array<{
+      title: string;
+      onPress?: () => void;
+      style?: 'cancel' | 'destructive';
+    }> = [];
 
     // 查看资料
     actions.push({
@@ -176,8 +180,11 @@ export const GroupMembersScreen: React.FC = () => {
           destructiveButtonIndex: actions.findIndex((a) => a.style === 'destructive'),
         },
         (buttonIndex) => {
-          if (buttonIndex !== undefined && actions[buttonIndex]?.style !== 'cancel') {
-            actions[buttonIndex]?.onPress();
+          if (buttonIndex !== undefined) {
+            const action = actions[buttonIndex];
+            if (action?.style !== 'cancel' && action?.onPress) {
+              action.onPress();
+            }
           }
         }
       );
