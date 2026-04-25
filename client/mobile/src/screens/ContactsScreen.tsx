@@ -23,12 +23,15 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-import type { User, Friend } from 'neochat-shared/src/types';
+import type { User, Friend, RootStackParamList } from 'neochat-shared/src/types';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type TabType = 'friends' | 'requests' | 'blocked';
 
+type ContactsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export const ContactsScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ContactsScreenNavigationProp>();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('friends');
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +71,7 @@ export const ContactsScreen: React.FC = () => {
     try {
       const response = await chatService.searchUsers(query);
       if (response.success && response.data) {
-        setSearchResults(response.data);
+        setSearchResults(response.data.items);
       }
     } catch (error) {
       console.error('Failed to search users:', error);
@@ -188,7 +191,7 @@ export const ContactsScreen: React.FC = () => {
         key={friend.id}
         style={styles.contactItem}
         onPress={() => {
-          navigation.navigate('ViewProfile' as never, { userId: friendUser.id } as never);
+          navigation.navigate('ViewProfile', { userId: friendUser.id });
         }}
       >
         <Avatar
@@ -226,7 +229,7 @@ export const ContactsScreen: React.FC = () => {
         key={searchUser.id}
         style={styles.contactItem}
         onPress={() => {
-          navigation.navigate('ViewProfile' as never, { userId: searchUser.id } as never);
+          navigation.navigate('ViewProfile', { userId: searchUser.id });
         }}
       >
         <Avatar
@@ -351,7 +354,7 @@ export const ContactsScreen: React.FC = () => {
             {activeTab === 'blocked' && (
               <View style={styles.contentSection}>
                 <View style={styles.emptyState}>
-                  <Ionicons name="ban-outline" size={48} color={COLORS.dark.text.tertiary} />
+                  <Ionicons name="close-circle-outline" size={48} color={COLORS.dark.text.tertiary} />
                   <Text style={styles.emptyTitle}>黑名单为空</Text>
                 </View>
               </View>
