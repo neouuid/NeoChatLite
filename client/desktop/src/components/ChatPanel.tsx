@@ -170,7 +170,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       // 上传文件
       const uploadResult = await chatService.uploadFile(
         item.file!,
-        item.filename
+        mediaType
       );
 
       if (uploadResult.success && uploadResult.data) {
