@@ -54,10 +54,15 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
       const response = await ChatService.getGroupMembers(propConversationId);
       if (response.success && response.data) {
         // 将服务端数据转换为组件需要的格式
-        const processedMembers = response.data.map((member, index) => ({
-          ...member,
-          role: index === 0 ? 'owner' : index < 3 ? 'admin' : 'member' as const,
-        }));
+        const processedMembers = response.data
+          .filter((member): member is ConversationMember & { user: User } => member.user !== undefined)
+          .map((member, index) => {
+            const role: 'owner' | 'admin' | 'member' = index === 0 ? 'owner' : index < 3 ? 'admin' : 'member';
+            return {
+              ...member,
+              role,
+            };
+          });
         setMembers(processedMembers);
       }
     } catch (error) {
@@ -71,10 +76,15 @@ export const GroupMembersWindow: React.FC<GroupMembersWindowProps> = ({
   // 如果 store 中已有会话成员，优先使用 store 数据
   useEffect(() => {
     if (conversation?.members && conversation.members.length > 0) {
-      const processedMembers = conversation.members.map((member, index) => ({
-        ...member,
-        role: index === 0 ? 'owner' : index < 3 ? 'admin' : 'member' as const,
-      }));
+      const processedMembers = conversation.members
+        .filter((member): member is ConversationMember & { user: User } => member.user !== undefined)
+        .map((member, index) => {
+          const role: 'owner' | 'admin' | 'member' = index === 0 ? 'owner' : index < 3 ? 'admin' : 'member';
+          return {
+            ...member,
+            role,
+          };
+        });
       setMembers(processedMembers);
     } else {
       loadMembers();
