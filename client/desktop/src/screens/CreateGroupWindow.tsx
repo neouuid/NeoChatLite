@@ -12,6 +12,8 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
 import {
   useAuthStore,
   chatService,
@@ -23,17 +25,10 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-import type { User, Friend, Conversation } from 'neochat-shared/src/types';
+import type { User, Friend, RootStackParamList } from 'neochat-shared/src/types';
 
-interface CreateGroupWindowProps {
-  onBack?: () => void;
-  onNavigate?: (screen: string, params?: any) => void;
-}
-
-export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
-  onBack,
-  onNavigate,
-}) => {
+export const CreateGroupWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user: currentUser } = useAuthStore();
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
@@ -91,13 +86,13 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
       });
 
       if (response.success && response.data) {
-        const conversation = response.data as Conversation;
+        const group = response.data;
         Alert.alert('成功', '群组创建成功', [
           {
             text: '确定',
             onPress: () => {
               // 导航到群聊页面
-              onNavigate?.('Chat', { conversationId: conversation.id });
+              navigation.navigate('Chat', { conversationId: group.id });
             },
           },
         ]);
@@ -195,7 +190,7 @@ export const CreateGroupWindow: React.FC<CreateGroupWindowProps> = ({
     <View style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color="#1a1a2e" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>新建群组</Text>
