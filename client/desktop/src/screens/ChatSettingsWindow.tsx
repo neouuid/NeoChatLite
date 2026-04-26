@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
   Switch,
 } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   useAuthStore,
@@ -18,23 +20,17 @@ import {
   SPACING,
   TYPOGRAPHY,
   BORDER_RADIUS,
+  type RootStackParamList,
 } from 'neochat-shared';
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
 import type { User, Conversation } from 'neochat-shared/src/types';
 
-interface ChatSettingsWindowProps {
-  conversationId: string;
-  onBack?: () => void;
-  onNavigate?: (screen: string, params?: any) => void;
-}
-
-export const ChatSettingsWindow: React.FC<ChatSettingsWindowProps> = ({
-  conversationId,
-  onBack,
-  onNavigate,
-}) => {
+export const ChatSettingsWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'ChatSettings'>>();
+  const { conversationId } = route.params;
   const { user: currentUser } = useAuthStore();
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -69,7 +65,7 @@ export const ChatSettingsWindow: React.FC<ChatSettingsWindowProps> = ({
           onPress: async () => {
             try {
               Alert.alert('成功', '已删除好友');
-              onBack?.();
+              navigation.goBack();
             } catch (error) {
               Alert.alert('错误', error instanceof Error ? error.message : '删除失败');
             }
@@ -103,12 +99,12 @@ export const ChatSettingsWindow: React.FC<ChatSettingsWindowProps> = ({
 
   // 查看群组成员
   const handleViewMembers = () => {
-    onNavigate?.('GroupMembers', { conversationId });
+    navigation.navigate('GroupMembers', { conversationId });
   };
 
   // 查看用户资料
   const handleViewProfile = (userId: string) => {
-    onNavigate?.('ViewProfile', { userId });
+    navigation.navigate('ViewProfile', { userId });
   };
 
   return (
