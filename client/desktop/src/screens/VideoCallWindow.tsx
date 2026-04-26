@@ -371,6 +371,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
+  video: {
+    flex: 1,
+  },
   videoPlaceholder: {
     flex: 1,
     justifyContent: 'center',
