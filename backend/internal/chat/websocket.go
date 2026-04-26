@@ -353,28 +353,23 @@ func (c *Client) WritePump() {
 		c.Conn.Close()
 	}()
 
-	for {
-		select {
-		case message, ok := <-c.Send:
-			if !ok {
-				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
+	for message := range c.Send {
+		w, err := c.Conn.NextWriter(websocket.TextMessage)
+		if err != nil {
+			return
+		}
 
-			w, err := c.Conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
+		if err := json.NewEncoder(w).Encode(message); err != nil {
+			return
+		}
 
-			if err := json.NewEncoder(w).Encode(message); err != nil {
-				return
-			}
-
-			if err := w.Close(); err != nil {
-				return
-			}
+		if err := w.Close(); err != nil {
+			return
 		}
 	}
+
+	// Channel is closed, send close message
+	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
 
 func (c *Client) handleMessage(msg WSMessage) {
