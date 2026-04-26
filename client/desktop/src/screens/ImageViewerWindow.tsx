@@ -11,6 +11,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import {
   COLORS,
   SPACING,
@@ -19,24 +21,15 @@ import {
   chatService,
   downloadFile,
 } from 'neochat-shared';
+import type { RootStackParamList } from 'neochat-shared/src/types';
 
-interface ImageViewerWindowProps {
-  imageUrl: string;
-  fileName?: string;
-  sendTime?: string;
-  onClose?: () => void;
-  onForward?: (messageId: string) => void;
-  messageId?: string;
-}
-
-export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
-  imageUrl,
-  fileName = '图片',
-  sendTime,
-  onClose,
-  onForward,
-  messageId,
-}) => {
+export const ImageViewerWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'ImageViewer'>>();
+  const { url: imageUrl } = route.params;
+  const fileName = '图片';
+  const sendTime = undefined;
+  const messageId = undefined;
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -60,7 +53,7 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
             try {
               await chatService.deleteMessage(messageId);
               Alert.alert('成功', '图片已删除', [
-                { text: '确定', onPress: onClose },
+                { text: '确定', onPress: navigation.goBack },
               ]);
             } catch (error) {
               Alert.alert('错误', error instanceof Error ? error.message : '删除失败');
@@ -75,8 +68,8 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
 
   // 转发图片
   const handleForward = () => {
-    if (messageId && onForward) {
-      onForward(messageId);
+    if (messageId) {
+      navigation.navigate('Forward', { messageId });
     } else {
       Alert.alert('提示', '转发功能需要从消息列表进入');
     }
@@ -108,7 +101,7 @@ export const ImageViewerWindow: React.FC<ImageViewerWindowProps> = ({
       {/* 头部 */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <TouchableOpacity style={styles.closeButton} onPress={navigation.goBack}>
             <Ionicons name="close" size={20} color="#ffffff" />
           </TouchableOpacity>
           <View style={styles.titleContainer}>

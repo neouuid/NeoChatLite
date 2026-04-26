@@ -9,6 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import {
   COLORS,
   SPACING,
@@ -18,30 +20,16 @@ import {
   downloadFile,
   openFilePreview,
 } from 'neochat-shared';
+import type { RootStackParamList } from 'neochat-shared/src/types';
 
-interface FileViewerWindowProps {
-  fileUrl?: string;
-  fileName?: string;
-  fileSize?: string;
-  fileType?: string;
-  sendTime?: string;
-  senderName?: string;
-  onClose?: () => void;
-  onForward?: (messageId: string) => void;
-  messageId?: string;
-}
-
-export const FileViewerWindow: React.FC<FileViewerWindowProps> = ({
-  fileUrl,
-  fileName = '文件',
-  fileSize = '0 KB',
-  fileType = 'file',
-  sendTime,
-  senderName,
-  onClose,
-  onForward,
-  messageId,
-}) => {
+export const FileViewerWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'FileViewer'>>();
+  const { url: fileUrl, name: fileName = '文件', size: fileSize = '0 KB' } = route.params;
+  const fileType = fileName.split('.').pop() || 'file';
+  const sendTime = undefined;
+  const senderName = undefined;
+  const messageId = undefined;
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
@@ -97,7 +85,7 @@ export const FileViewerWindow: React.FC<FileViewerWindowProps> = ({
             try {
               await chatService.deleteMessage(messageId);
               Alert.alert('成功', '文件已删除', [
-                { text: '确定', onPress: onClose },
+                { text: '确定', onPress: navigation.goBack },
               ]);
             } catch (error) {
               Alert.alert('错误', error instanceof Error ? error.message : '删除失败');
@@ -112,8 +100,8 @@ export const FileViewerWindow: React.FC<FileViewerWindowProps> = ({
 
   // 转发文件
   const handleForward = () => {
-    if (messageId && onForward) {
-      onForward(messageId);
+    if (messageId) {
+      navigation.navigate('Forward', { messageId });
     } else {
       Alert.alert('提示', '转发功能需要从消息列表进入');
     }
@@ -170,7 +158,7 @@ export const FileViewerWindow: React.FC<FileViewerWindowProps> = ({
       {/* 头部 */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={20} color="#ffffff" />
           </TouchableOpacity>
           <View style={styles.titleContainer}>
