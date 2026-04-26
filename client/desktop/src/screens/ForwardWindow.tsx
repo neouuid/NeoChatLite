@@ -11,6 +11,8 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import {
   useAuthStore,
   chatService,
@@ -22,21 +24,14 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-import type { User, Friend, Conversation } from 'neochat-shared/src/types';
+import type { User, Friend, Conversation, RootStackParamList } from 'neochat-shared/src/types';
 
 type ForwardType = 'recent' | 'friends' | 'groups';
 
-interface ForwardWindowProps {
-  messageId: string;
-  onClose?: () => void;
-  onNavigate?: (screen: string, params?: any) => void;
-}
-
-export const ForwardWindow: React.FC<ForwardWindowProps> = ({
-  messageId,
-  onClose,
-  onNavigate,
-}) => {
+export const ForwardWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'Forward'>>();
+  const { messageId } = route.params;
   const { user: currentUser } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<ForwardType>('recent');
@@ -114,7 +109,7 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
         Alert.alert('成功', '消息已转发', [
           {
             text: '确定',
-            onPress: () => onClose?.(),
+            onPress: () => navigation.goBack(),
           },
         ]);
       } else {
@@ -295,9 +290,9 @@ export const ForwardWindow: React.FC<ForwardWindowProps> = ({
         <FlatList
           style={styles.list}
           data={
-            activeTab === 'recent'
+            (activeTab === 'recent'
               ? recentConversations
-              : friends
+              : friends) as any[]
           }
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
