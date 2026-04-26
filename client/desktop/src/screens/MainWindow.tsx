@@ -85,7 +85,7 @@ export const MainWindow: React.FC = () => {
 
       {/* 右侧聊天区域 - 仅在聊天面板时显示且不显示个人资料 */}
       {!showProfile && activePanel === 'chat' && (
-        <ChatPanel conversation={selectedConversation || currentConversation} />
+        <ChatPanel conversation={selectedConversation || currentConversation || undefined} />
       )}
     </View>
   );
