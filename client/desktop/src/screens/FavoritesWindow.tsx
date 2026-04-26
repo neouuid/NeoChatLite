@@ -25,7 +25,7 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-import type { Favorite, User, Message, RootStackParamList } from 'neochat-shared/src/types';
+import type { Favorite, RootStackParamList } from 'neochat-shared/src/types';
 
 export const FavoritesWindow: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -41,7 +41,7 @@ export const FavoritesWindow: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await chatService.getFavorites();
+      const response = await chatService.getUserFavorites();
       if (response.success && response.data) {
         setFavorites(response.data);
       }
