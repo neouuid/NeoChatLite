@@ -8,9 +8,8 @@
     "noEmit": true,
     "isolatedModules": true,
     "strict": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "baseUrl": "./src",
-    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["*"],
       "neochat-shared": ["../../shared/src"]
