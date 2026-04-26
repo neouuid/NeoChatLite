@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ViewStyle,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -240,7 +241,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
               {[...Array(5)].map((_, i) => (
                 <View
                   key={i}
-                  style={[styles.audioWave, styles[`wave${i + 1}` as keyof typeof styles]]}
+                  style={[styles.audioWave, styles[`wave${i + 1}` as keyof typeof styles] as ViewStyle]}
                 />
               ))}
             </View>
