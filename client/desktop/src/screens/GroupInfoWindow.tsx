@@ -11,6 +11,8 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import {
   COLORS,
   SPACING,
@@ -22,21 +24,12 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-import type { User } from 'neochat-shared/src/types';
+import type { User, RootStackParamList } from 'neochat-shared/src/types';
 
-interface GroupInfoWindowProps {
-  groupId: string;
-  conversationId?: string;
-  onBack?: () => void;
-  onNavigate?: (screen: string, params?: any) => void;
-}
-
-export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
-  groupId,
-  conversationId,
-  onBack,
-  onNavigate,
-}) => {
+export const GroupInfoWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'GroupInfo'>>();
+  const { groupId, conversationId } = route.params;
   const { conversations, removeConversation } = useChatStore();
 
   const [muted, setMuted] = useState(false);
@@ -77,12 +70,12 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
 
   // 查看群组成员
   const handleViewAllMembers = () => {
-    onNavigate?.('GroupMembers', { conversationId: conversationId || groupId });
+    navigation.navigate('GroupMembers', { conversationId: conversationId || groupId });
   };
 
   // 添加成员
   const handleAddMembers = () => {
-    onNavigate?.('AddGroupMembers', { conversationId: conversationId || groupId });
+    navigation.navigate('AddGroupMembers', { conversationId: conversationId || groupId });
   };
 
   // 退出群组
@@ -100,7 +93,7 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
             if (result.success) {
               removeConversation(conversationId || groupId);
               Alert.alert('已退出', '您已退出该群组', [
-                { text: '确定', onPress: onBack },
+                { text: '确定', onPress: navigation.goBack },
               ]);
             } else {
               Alert.alert('失败', result.message || '退出群组失败');
@@ -113,7 +106,7 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
 
   // 查看成员资料
   const handleViewMemberProfile = (member: User) => {
-    onNavigate?.('ViewProfile', { userId: member.id });
+    navigation.navigate('ViewProfile', { userId: member.id });
   };
 
   // 获取角色标签
@@ -194,12 +187,12 @@ export const GroupInfoWindow: React.FC<GroupInfoWindowProps> = ({
     <View style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-left" size={20} color="#1D2129" />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={20} color="#1D2129" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>群聊信息</Text>
         <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="more-vertical" size={20} color="#1D2129" />
+          <Ionicons name="ellipsis-vertical" size={20} color="#1D2129" />
         </TouchableOpacity>
       </View>
 
