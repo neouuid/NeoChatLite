@@ -11,6 +11,8 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
 import {
   useAuthStore,
   chatService,
@@ -23,23 +25,14 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-import type { FavoriteMessage, User, Message } from 'neochat-shared/src/types';
+import type { Favorite, User, Message, RootStackParamList } from 'neochat-shared/src/types';
 
-interface FavoritesWindowProps {
-  onBack?: () => void;
-  onNavigate?: (screen: string, params?: any) => void;
-  onForward?: (messageId: string) => void;
-}
-
-export const FavoritesWindow: React.FC<FavoritesWindowProps> = ({
-  onBack,
-  onNavigate,
-  onForward,
-}) => {
+export const FavoritesWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user: currentUser } = useAuthStore();
   const { setHighlightedMessageId, ensureMessageLoaded } = useChatStore();
 
-  const [favorites, setFavorites] = useState<FavoriteMessage[]>([]);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // 加载收藏列表
@@ -84,7 +77,7 @@ export const FavoritesWindow: React.FC<FavoritesWindowProps> = ({
   }, []);
 
   // 跳转到消息
-  const handleGoToMessage = useCallback(async (favorite: FavoriteMessage) => {
+  const handleGoToMessage = useCallback(async (favorite: Favorite) => {
     if (!favorite.message) return;
 
     // 设置高亮消息 ID
@@ -92,22 +85,22 @@ export const FavoritesWindow: React.FC<FavoritesWindowProps> = ({
     // 确保消息已加载
     await ensureMessageLoaded(favorite.message.conversation_id, favorite.message.id);
     // 跳转到聊天页面
-    onNavigate?.('Chat', { conversationId: favorite.message.conversation_id });
-  }, [setHighlightedMessageId, ensureMessageLoaded, onNavigate]);
+    navigation.goBack();
+  }, [setHighlightedMessageId, ensureMessageLoaded, navigation]);
 
   // 转发消息
   const handleForwardMessage = useCallback((messageId: string) => {
-    onForward?.(messageId);
-  }, [onForward]);
+    navigation.navigate('Forward', { messageId });
+  }, [navigation]);
 
   useEffect(() => {
     loadFavorites();
   }, [loadFavorites]);
 
   // 渲染收藏项
-  const renderFavoriteItem = ({ item }: { item: FavoriteMessage }) => {
+  const renderFavoriteItem = ({ item }: { item: Favorite }) => {
     const message = item.message;
-    const sender = item.sender;
+    const sender = message?.sender;
     const displayName = sender
       ? formatDisplayName(sender.nickname, sender.username)
       : '未知用户';
@@ -162,7 +155,7 @@ export const FavoritesWindow: React.FC<FavoritesWindowProps> = ({
     <View style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color="#1a1a2e" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>收藏</Text>
