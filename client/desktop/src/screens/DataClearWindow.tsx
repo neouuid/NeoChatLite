@@ -22,7 +22,7 @@ interface DataClearWindowProps {
 }
 
 export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
-  const { clearAllMessages, conversations } = useChatStore();
+  const { clearChat, conversations } = useChatStore();
   const [isClearingChat, setIsClearingChat] = useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
 
@@ -37,7 +37,7 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
 
   // 计算存储大小
   useEffect(() => {
-    const messageCount = Object.values(conversations).reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
+    const messageCount = Object.values(conversations).reduce((acc, conv) => acc + (conv.unread_count || 0), 0);
     const approxSizeMB = Math.min(messageCount * 0.1, 500); // 假设每条消息 0.1 MB
 
     setStorageInfo([
@@ -72,7 +72,7 @@ export const DataClearWindow: React.FC<DataClearWindowProps> = ({ onBack }) => {
           onPress: async () => {
             setIsClearingChat(true);
             try {
-              clearAllMessages();
+              clearChat();
               Alert.alert('成功', '聊天记录已清空');
             } catch (error) {
               Alert.alert('错误', '清除失败');
