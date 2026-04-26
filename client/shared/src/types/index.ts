@@ -29,6 +29,7 @@ export interface Conversation {
   type: 'single' | 'group';
   name?: string;
   avatar?: string;
+  description?: string;
   last_message?: string;
   last_msg_at?: string;
   created_by: string;
@@ -191,4 +192,5 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Help: undefined;
   Mentions: undefined;
+  Contacts: undefined;
 };
