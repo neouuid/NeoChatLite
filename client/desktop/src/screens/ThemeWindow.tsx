@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
 import {
   COLORS,
   SPACING,
@@ -16,14 +18,12 @@ import {
   BORDER_RADIUS,
   useUISettingsStore,
 } from 'neochat-shared';
-
-interface ThemeWindowProps {
-  onBack?: () => void;
-}
+import type { RootStackParamList } from 'neochat-shared/src/types';
 
 type ThemeType = 'light' | 'dark' | 'system';
 
-export const ThemeWindow: React.FC<ThemeWindowProps> = ({ onBack }) => {
+export const ThemeWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { theme, setTheme } = useUISettingsStore();
   const [currentTheme, setCurrentTheme] = useState<ThemeType>((theme as ThemeType) || 'light');
 
@@ -42,7 +42,7 @@ export const ThemeWindow: React.FC<ThemeWindowProps> = ({ onBack }) => {
     <View style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color="#1a1a2e" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>主题设置</Text>
@@ -79,7 +79,7 @@ export const ThemeWindow: React.FC<ThemeWindowProps> = ({ onBack }) => {
                 >
                   <View style={styles.themeItemLeft}>
                     <View style={[styles.themeIconContainer, { backgroundColor: themeOption.color + '20' }]}>
-                      <Ionicons name={themeOption.icon} size={20} color={themeOption.color} />
+                      <Ionicons name={themeOption.icon as any} size={20} color={themeOption.color} />
                     </View>
                     <Text style={styles.themeTitle}>{themeOption.title}</Text>
                   </View>
