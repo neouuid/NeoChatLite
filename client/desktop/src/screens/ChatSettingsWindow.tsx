@@ -111,7 +111,7 @@ export const ChatSettingsWindow: React.FC = () => {
     <View style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color="#1a1a2e" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>聊天设置</Text>
