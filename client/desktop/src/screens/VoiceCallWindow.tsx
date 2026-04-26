@@ -197,7 +197,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             <Avatar
               uri={remoteUser.avatar}
               nickname={displayName}
-              size="3xl"
+              size="xxl"
               style={styles.avatar}
             />
           ) : (

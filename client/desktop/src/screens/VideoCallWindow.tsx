@@ -224,7 +224,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
               <Avatar
                 uri={remoteUser.avatar}
                 nickname={displayName}
-                size="3xl"
+                size="xxl"
                 style={styles.voiceAvatar}
               />
             ) : (
@@ -304,7 +304,7 @@ export const VideoCallWindow: React.FC<VideoCallWindowProps> = ({
                 onPress={toggleVideo}
               >
                 <Ionicons
-                  name={callState.isVideoEnabled !== false ? 'videocam-outline' : 'videocam-off-outline'}
+                  name={(callState.isVideoEnabled !== false ? 'videocam-outline' : 'videocam-off') as any}
                   size={24}
                   color={callState.isVideoEnabled !== false ? '#ffffff' : '#6366f1'}
                 />
