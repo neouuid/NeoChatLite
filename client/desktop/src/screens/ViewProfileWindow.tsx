@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import {
   useAuthStore,
   chatService,
@@ -21,19 +23,12 @@ import {
 
 import { Avatar } from 'neochat-shared/src/components/Avatar';
 import { formatDisplayName } from 'neochat-shared/src/utils';
-import type { User, Friend } from 'neochat-shared/src/types';
+import type { User, Friend, RootStackParamList } from 'neochat-shared/src/types';
 
-interface ViewProfileWindowProps {
-  userId: string;
-  onBack?: () => void;
-  onNavigate?: (screen: string, params?: any) => void;
-}
-
-export const ViewProfileWindow: React.FC<ViewProfileWindowProps> = ({
-  userId,
-  onBack,
-  onNavigate,
-}) => {
+export const ViewProfileWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'ViewProfile'>>();
+  const { userId } = route.params;
   const { user: currentUser } = useAuthStore();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -130,12 +125,12 @@ export const ViewProfileWindow: React.FC<ViewProfileWindowProps> = ({
     try {
       const response = await chatService.createSingleConversation(user.id);
       if (response.success && response.data) {
-        onNavigate?.('Chat', { conversationId: response.data.id });
+        navigation.navigate('Chat', { conversationId: response.data.id });
       }
     } catch (error) {
       Alert.alert('错误', error instanceof Error ? error.message : '创建聊天失败');
     }
-  }, [user, currentUser, onNavigate]);
+  }, [user, currentUser, navigation]);
 
   useEffect(() => {
     loadUserProfile();
@@ -161,12 +156,12 @@ export const ViewProfileWindow: React.FC<ViewProfileWindowProps> = ({
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* 头部 */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-left" size={20} color="#1D2129" />
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={20} color="#1D2129" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>个人资料</Text>
           <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="more-vertical" size={20} color="#1D2129" />
+            <Ionicons name="ellipsis-vertical" size={20} color="#1D2129" />
           </TouchableOpacity>
         </View>
 

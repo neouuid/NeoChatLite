@@ -106,9 +106,9 @@ export const AccountSecurityWindow: React.FC<AccountSecurityWindowProps> = ({
 
 		setIsProcessing('phone_code');
 		try {
-			const res = await authService.sendPhoneVerification(newPhone);
-			if (res.success && res.data?.code) {
-				Alert.alert('验证码已发送', `验证码: ${res.data.code}`);
+			const code = await authService.sendPhoneVerification(newPhone);
+			if (code) {
+				Alert.alert('验证码已发送', `验证码: ${code}`);
 			} else {
 				Alert.alert('提示', '验证码已发送');
 			}
@@ -150,9 +150,9 @@ export const AccountSecurityWindow: React.FC<AccountSecurityWindowProps> = ({
 
 		setIsProcessing('email_code');
 		try {
-			const res = await authService.sendEmailVerification();
-			if (res.success && res.data?.code) {
-				Alert.alert('验证码已发送', `验证码: ${res.data.code}`);
+			const code = await authService.sendEmailVerification();
+			if (code) {
+				Alert.alert('验证码已发送', `验证码: ${code}`);
 			} else {
 				Alert.alert('提示', '验证码已发送');
 			}
@@ -444,7 +444,7 @@ export const AccountSecurityWindow: React.FC<AccountSecurityWindowProps> = ({
 								>
 									<View style={styles.securityLeft}>
 										<View style={styles.securityIconContainer}>
-											<Ionicons name={item.icon} size={20} color="#ffffff" />
+											<Ionicons name={item.icon as any} size={20} color="#ffffff" />
 										</View>
 										<View style={styles.securityText}>
 											<Text style={styles.securityTitle}>{item.title}</Text>
