@@ -9,6 +9,8 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import {
   SPACING,
   TYPOGRAPHY,
@@ -20,18 +22,12 @@ import {
   useChatStore,
   ChatService,
 } from 'neochat-shared';
+import type { RootStackParamList } from 'neochat-shared/src/types';
 
-interface AddGroupMembersWindowProps {
-  onBack?: () => void;
-  onNavigate?: (screen: string, params?: any) => void;
-  conversationId?: string;
-}
-
-export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
-  onBack,
-  onNavigate,
-  conversationId: propConversationId,
-}) => {
+export const AddGroupMembersWindow: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'AddGroupMembers'>>();
+  const { conversationId: propConversationId } = route.params;
   const { user: currentUser } = useAuthStore();
   const { conversations } = useChatStore();
 
@@ -39,7 +35,7 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [friends, setFriends] = useState<(Friend & { friend: User })[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const [existingMemberIds, setExistingMemberIds] = useState<Set<string>>(new Set());
 
   // 加载数据
@@ -87,7 +83,8 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
   }, [loadData, propConversationId, conversations]);
 
   // 过滤好友列表
-  const filteredFriends = friends.filter((f) => {
+  const filteredFriends = friends.filter((f): f is Friend & { friend: User } => {
+    if (!f.friend) return false;
     const matchesSearch = searchText.trim()
       ? f.friend.nickname.toLowerCase().includes(searchText.toLowerCase()) ||
         f.friend.username.toLowerCase().includes(searchText.toLowerCase())
@@ -153,7 +150,7 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
 
               if (successCount > 0) {
                 Alert.alert('添加成功', `已添加 ${successCount} 位成员`, [
-                  { text: '确定', onPress: () => onBack?.() },
+                  { text: '确定', onPress: () => navigation.goBack() },
                 ]);
               } else {
                 Alert.alert('添加失败', '添加成员时出错');
@@ -167,7 +164,7 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
         },
       ]
     );
-  }, [selectedIds, propConversationId, onBack]);
+  }, [selectedIds, propConversationId, () => navigation.goBack()]);
 
   const availableCount = filteredFriends.filter((f) => !existingMemberIds.has(f.friend.id)).length;
   const canSelectAll = availableCount > 0;
@@ -177,7 +174,7 @@ export const AddGroupMembersWindow: React.FC<AddGroupMembersWindowProps> = ({
     <View style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color="#1D2129" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>添加成员</Text>
