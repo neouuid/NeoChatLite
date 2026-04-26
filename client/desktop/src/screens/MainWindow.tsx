@@ -14,7 +14,7 @@ import { FavoritesPanel } from '../components/FavoritesPanel';
 type ActivePanel = 'chat' | 'contacts' | 'favorites' | 'profile';
 
 export const MainWindow: React.FC = () => {
-  const { currentConversation, setHighlightedMessageId, ensureMessageLoaded, setCurrentConversation } = useChatStore();
+  const { currentConversation, setHighlightedMessageId, ensureMessageLoaded, setCurrentConversation, conversations } = useChatStore();
   const { user: currentUser } = useAuthStore();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | undefined>();
   const [activePanel, setActivePanel] = useState<ActivePanel>('chat');
@@ -43,12 +43,15 @@ export const MainWindow: React.FC = () => {
       // 切换到聊天面板
       setActivePanel('chat');
       // 设置当前会话
-      setCurrentConversation(message.conversation_id);
+      const conversation = conversations.find(c => c.id === message.conversation_id);
+      if (conversation) {
+        setCurrentConversation(conversation);
+      }
       setSelectedConversation(undefined);
     } else {
       Alert.alert('提示', '无法定位到消息位置');
     }
-  }, [setHighlightedMessageId, ensureMessageLoaded, setCurrentConversation]);
+  }, [setHighlightedMessageId, ensureMessageLoaded, setCurrentConversation, conversations]);
 
   return (
     <View style={styles.container}>
