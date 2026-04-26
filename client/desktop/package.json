@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^13.0.0",
+    "expo-font": "^55.0.6",
     "neochat-shared": "*",
     "react": "18.2.0",
     "react-native": "0.73.0",
