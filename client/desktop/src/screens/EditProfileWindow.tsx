@@ -13,7 +13,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import {
   useAuthStore,
-  useUserStore,
   chatService,
   COLORS,
   SPACING,
@@ -30,8 +29,7 @@ interface EditProfileWindowProps {
 }
 
 export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) => {
-  const { user, updateUser } = useAuthStore();
-  const { updateUser: updateUserInStore } = useUserStore();
+  const { user, setUser } = useAuthStore();
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -55,8 +53,7 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
 
       if (response.success && response.data) {
         const updatedUser = response.data;
-        updateUser(updatedUser);
-        updateUserInStore(updatedUser);
+        setUser(updatedUser);
         setTempAvatar(null);
         Alert.alert('成功', '资料已更新', [
           { text: '确定', onPress: onBack },
@@ -67,7 +64,7 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
     } finally {
       setIsSaving(false);
     }
-  }, [nickname, bio, tempAvatar, user, updateUser, updateUserInStore, onBack]);
+  }, [nickname, bio, tempAvatar, user, setUser, onBack]);
 
   // 更换头像
   const handleChangeAvatar = useCallback(async () => {
@@ -79,7 +76,7 @@ export const EditProfileWindow: React.FC<EditProfileWindowProps> = ({ onBack }) 
           // 先上传图片
           const uploadResponse = await chatService.uploadFile(
             result.file!,
-            `avatar_${Date.now()}.jpg`
+            'image'
           );
 
           if (uploadResponse.success && uploadResponse.data) {
