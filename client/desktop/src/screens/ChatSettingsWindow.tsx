@@ -124,7 +124,7 @@ export const ChatSettingsWindow: React.FC = () => {
           <View style={styles.infoCard}>
             <View style={styles.avatarContainer}>
               <Avatar
-                uri={null}
+                uri={undefined}
                 nickname="用户"
                 size="xl"
               />
