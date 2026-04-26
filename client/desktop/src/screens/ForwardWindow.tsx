@@ -220,7 +220,7 @@ export const ForwardWindow: React.FC = () => {
     <View style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onClose}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={20} color="#1a1a2e" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>转发消息</Text>
