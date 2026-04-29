@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/widgets/common/common.dart';
 import 'package:neochat/widgets/chat/conversation_item.dart';
 import 'package:neochat/widgets/chat/message_bubble.dart';
 import 'package:neochat/core/theme/app_theme.dart';
+import 'package:neochat/screens/chat/main_chat_desktop.dart';
+import 'package:neochat/layouts/responsive_layout.dart';
 
-class MainChatScreen extends StatefulWidget {
+class MainChatScreen extends ConsumerStatefulWidget {
   const MainChatScreen({super.key});
 
   @override
-  State<MainChatScreen> createState() => _MainChatScreenState();
+  ConsumerState<MainChatScreen> createState() => _MainChatScreenState();
 }
 
-class _MainChatScreenState extends State<MainChatScreen> {
+class _MainChatScreenState extends ConsumerState<MainChatScreen> {
   int _selectedNavIndex = 0;
   int? _selectedConversationIndex;
   final TextEditingController _messageController = TextEditingController();
@@ -76,23 +79,20 @@ class _MainChatScreenState extends State<MainChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isMobile = MediaQuery.of(context).size.width < 768;
-
-    if (isMobile) {
-      return _buildMobileLayout(isDark);
-    }
-
-    return _buildDesktopLayout(isDark);
+    return ResponsiveLayout(
+      mobileLayout: _buildMobileLayout(),
+      desktopLayout: const MainChatDesktop(),
+    );
   }
 
-  Widget _buildMobileLayout(bool isDark) {
+  Widget _buildMobileLayout() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
-            // 顶部导航
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -120,7 +120,6 @@ class _MainChatScreenState extends State<MainChatScreen> {
                 ],
               ),
             ),
-            // 底部导航栏
             Expanded(
               child: _selectedConversationIndex == null
                   ? _buildConversationList(isDark)
@@ -133,147 +132,11 @@ class _MainChatScreenState extends State<MainChatScreen> {
     );
   }
 
-  Widget _buildDesktopLayout(bool isDark) {
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: SafeArea(
-        child: Row(
-          children: [
-            _buildIconSidebar(isDark),
-            _buildSidebar(isDark),
-            Expanded(child: _buildChatArea(isDark)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIconSidebar(bool isDark) {
-    return Container(
-      width: 72,
-      color: AppColors.backgroundDark,
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                // 用户头像
-                AppAvatar(
-                  name: '我',
-                  size: AvatarSize.medium,
-                  backgroundColor: AppColors.warning,
-                ),
-                const SizedBox(height: 16),
-                // 聊天图标
-                _buildNavIcon(Icons.message, 0, isDark),
-                const SizedBox(height: 16),
-                // 群组图标
-                _buildNavIcon(Icons.group, 1, isDark),
-                const SizedBox(height: 16),
-                // 好友图标
-                _buildNavIcon(Icons.person_add, 2, isDark),
-              ],
-            ),
-          ),
-          // 设置图标
-          _buildNavIcon(Icons.settings, 3, isDark, isBottom: true),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavIcon(IconData icon, int index, bool isDark, {bool isBottom = false}) {
-    final isSelected = _selectedNavIndex == index;
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : AppColors.inputBackgroundDark,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: IconButton(
-        icon: Icon(icon),
-        color: isSelected ? Colors.white : AppColors.textSecondaryDark,
-        onPressed: () {
-          setState(() {
-            _selectedNavIndex = index;
-          });
-          if (index == 3) {
-            context.go('/settings');
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildSidebar(bool isDark) {
-    return Container(
-      width: 320,
-      color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // 搜索栏
-          Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: AppColors.inputBackgroundDark,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.search, color: AppColors.textSecondaryDark, size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '搜索联系人...',
-                    style: TextStyle(
-                      color: AppColors.textSecondaryDark,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          // 会话列表
-          Expanded(
-            child: ListView.separated(
-              padding: EdgeInsets.zero,
-              itemBuilder: (context, index) {
-                final conversation = _conversations[index];
-                return ConversationItem(
-                  name: conversation['name'],
-                  lastMessage: conversation['lastMessage'],
-                  time: conversation['time'],
-                  isSelected: _selectedConversationIndex == index,
-                  hasUnread: conversation['unread'] > 0,
-                  unreadCount: conversation['unread'],
-                  onTap: () {
-                    setState(() {
-                      _selectedConversationIndex = index;
-                    });
-                  },
-                );
-              },
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemCount: _conversations.length,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildConversationList(bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          // 搜索栏
           Container(
             height: 44,
             padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -298,7 +161,6 @@ class _MainChatScreenState extends State<MainChatScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // 会话列表
           Expanded(
             child: ListView.separated(
               padding: EdgeInsets.zero,
@@ -336,9 +198,7 @@ class _MainChatScreenState extends State<MainChatScreen> {
       color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       child: Column(
         children: [
-          // 聊天标题栏
           _buildChatHeader(isDark, conversation),
-          // 消息列表
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -369,7 +229,6 @@ class _MainChatScreenState extends State<MainChatScreen> {
               itemCount: _messages.length,
             ),
           ),
-          // 输入区域
           _buildInputArea(isDark),
         ],
       ),
@@ -391,18 +250,17 @@ class _MainChatScreenState extends State<MainChatScreen> {
       ),
       child: Row(
         children: [
-          if (MediaQuery.of(context).size.width < 768)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _selectedConversationIndex = null;
-                  });
-                },
-              ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                setState(() {
+                  _selectedConversationIndex = null;
+                });
+              },
             ),
+          ),
           if (conversation != null)
             AppAvatar(
               name: conversation['name'],
