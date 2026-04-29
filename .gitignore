@@ -71,14 +71,36 @@ coverage.html
 # Claude
 .claude/
 
+# Flutter/Dart/Pub
+client_flutter/.dart_tool/
+client_flutter/.packages
+client_flutter/.flutter-plugins
+client_flutter/.flutter-plugins-dependencies
+client_flutter/pubspec.lock
+client_flutter/build/
+client_flutter/.pub-cache/
+client_flutter/.pub/
+
+# Flutter IDE
+client_flutter/.idea/
+client_flutter/.vscode/
+client_flutter/*.iml
+client_flutter/android/.gradle
+client_flutter/android/local.properties
+client_flutter/ios/.xcodeproj.xcuserstate
+client_flutter/ios/Runner.xcworkspace/xcuserdata/
+client_flutter/macos/Runner.xcworkspace/xcuserdata/
+client_flutter/linux/flutter/ephemeral/
+client_flutter/windows/flutter/ephemeral/
+
 # Temporary files
 *.tmp
 *.temp
 .cache/
 github_downloads/
-build_android.ps1
-build_windows_debug.ps1
-build_windows_release.ps1
+build_rn_android.ps1
+build_rn_windows_debug.ps1
+build_rn_windows_release.ps1
 
 # MSBuild
 *.binlog
