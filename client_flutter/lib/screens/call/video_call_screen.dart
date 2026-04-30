@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:neochat/core/theme/app_theme.dart';
-import 'package:neochat/data/models/chat.dart';
 import 'package:neochat/data/models/user.dart';
 import 'package:neochat/providers/auth_provider.dart';
 import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/data/services/chat_service.dart';
-import 'package:neochat/data/services/websocket_service.dart';
 import 'package:neochat/widgets/common/common.dart';
 
 enum CallState {
@@ -90,7 +87,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           }
           break;
         case 'call_hangup':
-          if (_callState == CallState.connected || _callState == CallState.connecting) {
+          if (_callState == CallState.connected ||
+              _callState == CallState.connecting) {
             _onRemoteHangup();
           }
           break;
@@ -124,7 +122,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       if (!response.success || response.data == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to initiate call: ${response.message}')),
+            SnackBar(
+                content: Text('Failed to initiate call: ${response.message}')),
           );
         }
         return;
@@ -395,7 +394,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authStateProvider);
     final remoteUser = widget.remoteUser;
 
     return Scaffold(

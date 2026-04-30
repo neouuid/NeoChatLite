@@ -50,7 +50,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final messagesState = ref.watch(messagesProvider(widget.conversationId));
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -75,7 +76,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         border: Border(
           bottom: BorderSide(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             width: 1,
           ),
         ),
@@ -102,11 +105,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                const Text(
                   '在线',
                   style: TextStyle(
                     fontSize: 13,
@@ -135,7 +140,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             color: AppColors.textSecondaryDark,
             onPressed: () {
               if (widget.conversationId.startsWith('group-')) {
-                final groupId = widget.conversationId.replaceFirst('group-', '');
+                final groupId =
+                    widget.conversationId.replaceFirst('group-', '');
                 context.push('/group/$groupId');
               } else {
                 context.push('/settings/chat/${widget.conversationId}');
@@ -149,7 +155,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Widget _buildMessageList(bool isDark, List<Message> messages) {
     if (messages.isEmpty) {
-      return Center(
+      return const Center(
         child: Text(
           '暂无消息',
           style: TextStyle(
@@ -214,7 +220,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         border: Border(
           top: BorderSide(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             width: 1,
           ),
         ),
@@ -242,7 +250,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+                color: isDark
+                    ? AppColors.inputBackgroundDark
+                    : AppColors.backgroundLight,
                 borderRadius: BorderRadius.circular(22),
               ),
               child: TextField(
@@ -253,7 +263,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   contentPadding: EdgeInsets.symmetric(vertical: 10),
                 ),
                 style: TextStyle(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                   fontSize: 15,
                 ),
               ),
@@ -294,7 +306,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _sendMessage() {
     if (_messageController.text.trim().isNotEmpty) {
-      final notifier = ref.read(messagesProvider(widget.conversationId).notifier);
+      final notifier =
+          ref.read(messagesProvider(widget.conversationId).notifier);
       notifier.sendMessage(_messageController.text.trim());
       _messageController.clear();
     }
@@ -313,7 +326,73 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             crossAxisSpacing: 8,
           ),
           itemBuilder: (context, index) {
-            final emojis = ['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😰', '😱'];
+            final emojis = [
+              '😀',
+              '😁',
+              '😂',
+              '🤣',
+              '😃',
+              '😄',
+              '😅',
+              '😆',
+              '😉',
+              '😊',
+              '😋',
+              '😎',
+              '😍',
+              '🥰',
+              '😘',
+              '😗',
+              '😙',
+              '😚',
+              '🙂',
+              '🤗',
+              '🤩',
+              '🤔',
+              '🤨',
+              '😐',
+              '😑',
+              '😶',
+              '🙄',
+              '😏',
+              '😣',
+              '😥',
+              '😮',
+              '🤐',
+              '😯',
+              '😪',
+              '😫',
+              '🥱',
+              '😴',
+              '😌',
+              '😛',
+              '😜',
+              '😝',
+              '🤤',
+              '😒',
+              '😓',
+              '😔',
+              '😕',
+              '🙃',
+              '🤑',
+              '😲',
+              '☹️',
+              '🙁',
+              '😖',
+              '😞',
+              '😟',
+              '😤',
+              '😢',
+              '😭',
+              '😦',
+              '😧',
+              '😨',
+              '😩',
+              '🤯',
+              '😬',
+              '😰',
+              '😱'
+            ];
             if (index >= emojis.length) return null;
             return GestureDetector(
               onTap: () {
@@ -325,7 +404,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
-                  child: Text(emojis[index], style: const TextStyle(fontSize: 28)),
+                  child:
+                      Text(emojis[index], style: const TextStyle(fontSize: 28)),
                 ),
               ),
             );
@@ -369,7 +449,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         final fileName = data['file_name'] as String?;
         final fileSize = data['file_size'] as int?;
 
-        final notifier = ref.read(messagesProvider(widget.conversationId).notifier);
+        final notifier =
+            ref.read(messagesProvider(widget.conversationId).notifier);
         notifier.sendMediaMessage(
           type == 'image' ? MessageType.image : MessageType.file,
           url,
@@ -379,7 +460,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('上传失败'), backgroundColor: AppColors.error),
+            const SnackBar(
+                content: Text('上传失败'), backgroundColor: AppColors.error),
           );
         }
       }

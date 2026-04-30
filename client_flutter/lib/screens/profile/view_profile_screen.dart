@@ -38,9 +38,11 @@ class _ViewProfileScreenState extends ConsumerState<ViewProfileScreen> {
     final isFriend = friend.status == FriendStatus.accepted;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -69,7 +71,8 @@ class _ViewProfileScreenState extends ConsumerState<ViewProfileScreen> {
                   value: 'delete',
                   child: ListTile(
                     leading: Icon(Icons.delete_outline, color: AppColors.error),
-                    title: Text('删除好友', style: TextStyle(color: AppColors.error)),
+                    title:
+                        Text('删除好友', style: TextStyle(color: AppColors.error)),
                   ),
                 ),
               ],
@@ -102,7 +105,8 @@ class _ViewProfileScreenState extends ConsumerState<ViewProfileScreen> {
                 Expanded(
                   child: AppButton(
                     text: '语音通话',
-                    onPressed: () => context.push(Uri(path: '/voice-call', queryParameters: {
+                    onPressed: () =>
+                        context.push(Uri(path: '/voice-call', queryParameters: {
                       'userId': widget.userId,
                     }).toString()),
                     type: AppButtonType.secondary,
@@ -134,14 +138,15 @@ class _ViewProfileScreenState extends ConsumerState<ViewProfileScreen> {
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         ),
         if (user?.username != null) ...[
           const SizedBox(height: 4),
           Text(
             '@${user!.username}',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondaryDark,
             ),
@@ -151,7 +156,7 @@ class _ViewProfileScreenState extends ConsumerState<ViewProfileScreen> {
           const SizedBox(height: 8),
           Text(
             user!.bio!,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondaryDark,
             ),

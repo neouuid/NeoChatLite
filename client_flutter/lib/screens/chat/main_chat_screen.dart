@@ -48,7 +48,8 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
     }
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -69,7 +70,9 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                       ),
                     ),
                   ),
@@ -92,7 +95,8 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
     );
   }
 
-  Widget _buildConversationList(bool isDark, ConversationListState chatState, AuthState authState) {
+  Widget _buildConversationList(
+      bool isDark, ConversationListState chatState, AuthState authState) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -103,13 +107,16 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
               height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+                color: isDark
+                    ? AppColors.inputBackgroundDark
+                    : AppColors.backgroundLight,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  Icon(Icons.search, color: AppColors.textSecondaryDark, size: 18),
-                  const SizedBox(width: 10),
+                  Icon(Icons.search,
+                      color: AppColors.textSecondaryDark, size: 18),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       '搜索联系人...',
@@ -129,7 +136,7 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
               child: Center(child: CircularProgressIndicator()),
             )
           else if (chatState.conversations.isEmpty)
-            Expanded(
+            const Expanded(
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -139,7 +146,7 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                       size: 64,
                       color: AppColors.textSecondaryDark,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       '还没有会话',
                       style: TextStyle(
@@ -157,18 +164,25 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                 padding: EdgeInsets.zero,
                 itemBuilder: (context, index) {
                   final conversation = chatState.conversations[index];
-                  final isSelected = conversation.id == ref.read(currentConversationProvider)?.id;
+                  final isSelected = conversation.id ==
+                      ref.read(currentConversationProvider)?.id;
                   return ConversationItem(
                     name: conversation.name ?? '聊天',
                     avatar: conversation.avatar,
                     lastMessage: conversation.lastMessage,
-                    time: conversation.lastMsgAt != null ? _formatTime(conversation.lastMsgAt!) : null,
+                    time: conversation.lastMsgAt != null
+                        ? _formatTime(conversation.lastMsgAt!)
+                        : null,
                     isSelected: isSelected,
-                    hasUnread: conversation.unreadCount != null && conversation.unreadCount! > 0,
+                    hasUnread: conversation.unreadCount != null &&
+                        conversation.unreadCount! > 0,
                     unreadCount: conversation.unreadCount,
                     onTap: () {
-                      ref.read(currentConversationProvider.notifier).state = conversation;
-                      ref.read(messagesProvider(conversation.id).notifier).loadMessages();
+                      ref.read(currentConversationProvider.notifier).state =
+                          conversation;
+                      ref
+                          .read(messagesProvider(conversation.id).notifier)
+                          .loadMessages();
                     },
                   );
                 },
@@ -181,7 +195,8 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
     );
   }
 
-  Widget _buildChatArea(bool isDark, Conversation conversation, AuthState authState) {
+  Widget _buildChatArea(
+      bool isDark, Conversation conversation, AuthState authState) {
     final messagesState = ref.watch(messagesProvider(conversation.id));
 
     return Container(
@@ -193,7 +208,7 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
             child: messagesState.isLoading && messagesState.messages.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : messagesState.messages.isEmpty
-                    ? Center(
+                    ? const Center(
                         child: Text(
                           '开始聊天吧',
                           style: TextStyle(color: AppColors.textSecondaryDark),
@@ -201,7 +216,8 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                       )
                     : ListView.separated(
                         reverse: true,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 16),
                         itemBuilder: (context, index) {
                           final message = messagesState.messages[index];
                           final isSent = message.senderId == authState.user?.id;
@@ -220,12 +236,14 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                             fileName: message.fileName,
                             fileSize: message.fileSize,
                             time: _formatTime(message.createdAt),
-                            isRead: message.readCount != null && message.readCount! > 0,
+                            isRead: message.readCount != null &&
+                                message.readCount! > 0,
                             senderName: senderName,
                             senderAvatar: senderAvatar,
                           );
                         },
-                        separatorBuilder: (context, index) => const SizedBox(height: 16),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 16),
                         itemCount: messagesState.messages.length,
                       ),
           ),
@@ -243,7 +261,9 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         border: Border(
           bottom: BorderSide(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             width: 1,
           ),
         ),
@@ -275,11 +295,13 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                const Text(
                   '在线',
                   style: TextStyle(
                     fontSize: 13,
@@ -317,7 +339,9 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         border: Border(
           top: BorderSide(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             width: 1,
           ),
         ),
@@ -355,7 +379,9 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: TextField(
@@ -366,7 +392,9 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                       contentPadding: EdgeInsets.symmetric(vertical: 12),
                     ),
                     style: TextStyle(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                       fontSize: 15,
                     ),
                     maxLines: null,
@@ -385,7 +413,8 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                   icon: const Icon(Icons.send, color: Colors.white, size: 20),
                   onPressed: () {
                     if (_messageController.text.trim().isNotEmpty) {
-                      ref.read(messagesProvider(conversation.id).notifier)
+                      ref
+                          .read(messagesProvider(conversation.id).notifier)
                           .sendMessage(_messageController.text.trim());
                       _messageController.clear();
                     }
@@ -405,7 +434,9 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         border: Border(
           top: BorderSide(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             width: 1,
           ),
         ),
@@ -422,7 +453,8 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
     );
   }
 
-  Widget _buildBottomNavItem(IconData icon, String label, int index, bool isDark) {
+  Widget _buildBottomNavItem(
+      IconData icon, String label, int index, bool isDark) {
     final isSelected = _selectedNavIndex == index;
     return InkWell(
       onTap: () {
@@ -445,7 +477,8 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: isSelected ? AppColors.primary : AppColors.textSecondaryDark,
+              color:
+                  isSelected ? AppColors.primary : AppColors.textSecondaryDark,
             ),
           ),
         ],

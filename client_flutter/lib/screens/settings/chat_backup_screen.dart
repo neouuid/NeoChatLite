@@ -36,7 +36,7 @@ class _ChatBackupScreenState extends ConsumerState<ChatBackupScreen> {
       final messages = ref.read(messagesProvider(conv.id)).messages;
       for (final msg in messages) {
         // Estimate size: text is small, media files are larger
-        totalSize += (msg.content?.length ?? 0) * 2; // UTF-16
+        totalSize += msg.content.length * 2; // UTF-16
         if (msg.mediaUrl != null && _includeImages) {
           totalSize += 500 * 1024; // Estimate 500KB per image
         }

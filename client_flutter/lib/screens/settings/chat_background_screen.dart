@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,10 +9,12 @@ class ChatBackgroundScreen extends ConsumerStatefulWidget {
   const ChatBackgroundScreen({super.key});
 
   @override
-  ConsumerState<ChatBackgroundScreen> createState() => _ChatBackgroundScreenState();
+  ConsumerState<ChatBackgroundScreen> createState() =>
+      _ChatBackgroundScreenState();
 }
 
 class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
+  // ignore: unused_field
   String? _selectedBackground;
   int _selectedPresetIndex = 0;
   bool _isLoading = false;
@@ -57,7 +58,8 @@ class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('选择图片失败: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+              content: Text('选择图片失败: $e'), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -102,9 +104,11 @@ class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: const Text('聊天背景'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -118,7 +122,8 @@ class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                  color:
+                      isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -131,13 +136,18 @@ class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.image, color: AppColors.primary),
+                        child:
+                            const Icon(Icons.image, color: AppColors.primary),
                       ),
                       title: const Text('从相册选择'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: _isLoading ? null : _pickFromGallery,
                     ),
-                    Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                    Divider(
+                        height: 1,
+                        color: isDark
+                            ? AppColors.inputBackgroundDark
+                            : AppColors.backgroundLight),
                     ListTile(
                       leading: Container(
                         width: 48,
@@ -146,7 +156,8 @@ class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.color_lens, color: AppColors.primary),
+                        child: const Icon(Icons.color_lens,
+                            color: AppColors.primary),
                       ),
                       title: const Text('选择纯色背景'),
                       trailing: const Icon(Icons.chevron_right),
@@ -158,7 +169,7 @@ class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
+              const Text(
                 '预设背景',
                 style: TextStyle(
                   fontSize: 14,
@@ -187,7 +198,9 @@ class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
                         color: _getBackgroundColor(option, isDark),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? AppColors.primary : Colors.transparent,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.transparent,
                           width: 2,
                         ),
                       ),
@@ -208,7 +221,7 @@ class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
                               right: 4,
                               child: Container(
                                 padding: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: AppColors.primary,
                                   shape: BoxShape.circle,
                                 ),

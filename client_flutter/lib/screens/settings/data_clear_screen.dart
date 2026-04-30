@@ -6,7 +6,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/providers/chat_provider.dart';
 import 'package:neochat/providers/user_provider.dart';
-import 'package:neochat/data/services/storage_service.dart';
 import 'package:neochat/providers/services_provider.dart';
 
 class DataClearScreen extends ConsumerStatefulWidget {
@@ -27,7 +26,8 @@ class _DataClearScreenState extends ConsumerState<DataClearScreen> {
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
@@ -62,8 +62,10 @@ class _DataClearScreenState extends ConsumerState<DataClearScreen> {
       // Add other cache directories as needed
 
       int chatFilesSize = 0;
-      chatFilesSize += await _calculateDirectorySize(Directory('${appDocDir.path}/chat_files'));
-      chatFilesSize += await _calculateDirectorySize(Directory('${appSupportDir.path}/chat_files'));
+      chatFilesSize += await _calculateDirectorySize(
+          Directory('${appDocDir.path}/chat_files'));
+      chatFilesSize += await _calculateDirectorySize(
+          Directory('${appSupportDir.path}/chat_files'));
 
       // Also calculate from messages with media
       final conversations = ref.read(conversationListProvider).conversations;
@@ -175,8 +177,12 @@ class _DataClearScreenState extends ConsumerState<DataClearScreen> {
         title: const Text('确认清空'),
         content: const Text('此操作将删除所有聊天记录，无法恢复，确定继续吗？'),
         actions: [
-          TextButton(onPressed: () => context.pop(false), child: const Text('取消')),
-          TextButton(onPressed: () => context.pop(true), child: const Text('确定', style: TextStyle(color: AppColors.error))),
+          TextButton(
+              onPressed: () => context.pop(false), child: const Text('取消')),
+          TextButton(
+              onPressed: () => context.pop(true),
+              child:
+                  const Text('确定', style: TextStyle(color: AppColors.error))),
         ],
       ),
     );
@@ -226,9 +232,11 @@ class _DataClearScreenState extends ConsumerState<DataClearScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: const Text('数据清理'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -242,33 +250,60 @@ class _DataClearScreenState extends ConsumerState<DataClearScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                  color:
+                      isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   children: [
                     ListTile(
                       title: const Text('缓存大小'),
-                      subtitle: Text(_isCalculating ? '计算中...' : _formatSize(_cacheSize)),
+                      subtitle: Text(
+                          _isCalculating ? '计算中...' : _formatSize(_cacheSize)),
                       trailing: _isCalculating
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2))
                           : TextButton(
-                              onPressed: _cacheSize == 0 || _isClearingCache ? null : _clearCache,
+                              onPressed: _cacheSize == 0 || _isClearingCache
+                                  ? null
+                                  : _clearCache,
                               child: _isClearingCache
-                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2))
                                   : const Text('清理'),
                             ),
                     ),
-                    Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                    Divider(
+                        height: 1,
+                        color: isDark
+                            ? AppColors.inputBackgroundDark
+                            : AppColors.backgroundLight),
                     ListTile(
                       title: const Text('聊天文件'),
-                      subtitle: Text(_isCalculating ? '计算中...' : _formatSize(_chatFilesSize)),
+                      subtitle: Text(_isCalculating
+                          ? '计算中...'
+                          : _formatSize(_chatFilesSize)),
                       trailing: _isCalculating
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2))
                           : TextButton(
-                              onPressed: _chatFilesSize == 0 || _isClearingChatFiles ? null : _clearChatFiles,
+                              onPressed:
+                                  _chatFilesSize == 0 || _isClearingChatFiles
+                                      ? null
+                                      : _clearChatFiles,
                               child: _isClearingChatFiles
-                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2))
                                   : const Text('清理'),
                             ),
                     ),
@@ -278,7 +313,8 @@ class _DataClearScreenState extends ConsumerState<DataClearScreen> {
               const SizedBox(height: 24),
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                  color:
+                      isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(

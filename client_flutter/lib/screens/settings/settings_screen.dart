@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:neochat/providers/theme_provider.dart';
 import 'package:neochat/providers/auth_provider.dart';
 import 'package:neochat/providers/settings_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
@@ -18,7 +17,8 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: isMobile
           ? AppBar(
               title: const Text('系统设置'),
@@ -33,7 +33,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context, bool isDark, AuthState authState, WidgetRef ref) {
+  Widget _buildMobileLayout(
+      BuildContext context, bool isDark, AuthState authState, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -52,7 +53,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context, bool isDark, AuthState authState, WidgetRef ref) {
+  Widget _buildDesktopLayout(
+      BuildContext context, bool isDark, AuthState authState, WidgetRef ref) {
     return Row(
       children: [
         _buildIconSidebar(context, isDark),
@@ -89,20 +91,22 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               children: [
                 // 用户头像
-                AppAvatar(
+                const AppAvatar(
                   name: '我',
                   size: AvatarSize.medium,
                   backgroundColor: AppColors.warning,
                 ),
                 const SizedBox(height: 16),
                 // 聊天图标
-                _buildNavIcon(Icons.message, () => context.go('/'), isDark, false),
+                _buildNavIcon(
+                    Icons.message, () => context.go('/'), isDark, false),
                 const SizedBox(height: 16),
                 // 群组图标
                 _buildNavIcon(Icons.group, () {}, isDark, false),
                 const SizedBox(height: 16),
                 // 好友图标
-                _buildNavIcon(Icons.person_add, () => context.go('/friends'), isDark, false),
+                _buildNavIcon(Icons.person_add, () => context.go('/friends'),
+                    isDark, false),
               ],
             ),
           ),
@@ -113,7 +117,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNavIcon(IconData icon, VoidCallback onTap, bool isDark, bool selected) {
+  Widget _buildNavIcon(
+      IconData icon, VoidCallback onTap, bool isDark, bool selected) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -140,11 +145,12 @@ class SettingsScreen extends ConsumerWidget {
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         ),
         const SizedBox(height: 8),
-        Text(
+        const Text(
           '管理您的账户和应用偏好设置',
           style: TextStyle(
             fontSize: 14,
@@ -184,7 +190,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotificationSection(BuildContext context, bool isDark, WidgetRef ref) {
+  Widget _buildNotificationSection(
+      BuildContext context, bool isDark, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     return Container(
       padding: const EdgeInsets.all(24),
@@ -241,7 +248,8 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           _buildSectionHeader(isDark, Icons.shield_outlined, '隐私设置'),
           const SizedBox(height: 16),
-          _buildSwitchItem(isDark, Icons.visibility_outlined, '在线状态', true, (value) {}),
+          _buildSwitchItem(
+              isDark, Icons.visibility_outlined, '在线状态', true, (value) {}),
           _buildMenuItem(
             isDark,
             Icons.block_outlined,
@@ -318,10 +326,13 @@ class SettingsScreen extends ConsumerWidget {
                 title: const Text('退出登录'),
                 content: const Text('确定要退出登录吗？'),
                 actions: [
-                  TextButton(onPressed: () => context.pop(false), child: const Text('取消')),
+                  TextButton(
+                      onPressed: () => context.pop(false),
+                      child: const Text('取消')),
                   TextButton(
                     onPressed: () => context.pop(true),
-                    child: const Text('确定', style: TextStyle(color: AppColors.error)),
+                    child: const Text('确定',
+                        style: TextStyle(color: AppColors.error)),
                   ),
                 ],
               ),
@@ -331,13 +342,13 @@ class SettingsScreen extends ConsumerWidget {
               await ref.read(authStateProvider.notifier).logout();
             }
           },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20, horizontal: 24),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.logout, color: AppColors.error, size: 24),
-                const SizedBox(width: 12),
+                Icon(Icons.logout, color: AppColors.error, size: 24),
+                SizedBox(width: 12),
                 Text(
                   '退出登录',
                   style: TextStyle(
@@ -376,14 +387,16 @@ class SettingsScreen extends ConsumerWidget {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMenuItem(bool isDark, IconData icon, String title, {VoidCallback? onTap}) {
+  Widget _buildMenuItem(bool isDark, IconData icon, String title,
+      {VoidCallback? onTap}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -404,11 +417,13 @@ class SettingsScreen extends ConsumerWidget {
                   title,
                   style: TextStyle(
                     fontSize: 15,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.chevron_right,
                 color: AppColors.textSecondaryDark,
               ),
@@ -419,7 +434,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSwitchItem(bool isDark, IconData icon, String title, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSwitchItem(bool isDark, IconData icon, String title, bool value,
+      ValueChanged<bool> onChanged) {
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -436,7 +452,9 @@ class SettingsScreen extends ConsumerWidget {
               title,
               style: TextStyle(
                 fontSize: 15,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
             ),
           ),

@@ -42,9 +42,11 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
       body: Row(
         children: [
           _buildIconSidebar(isDark),
-          _buildConversationSidebar(isDark, chatState, selectedConversation?.id),
+          _buildConversationSidebar(
+              isDark, chatState, selectedConversation?.id),
           Expanded(
-            child: _selectedConversationId != null && selectedConversation != null
+            child: _selectedConversationId != null &&
+                    selectedConversation != null
                 ? _buildChatArea(isDark, selectedConversation, messagesState)
                 : _buildEmptyState(isDark),
           ),
@@ -84,7 +86,9 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
       height: 48,
       decoration: BoxDecoration(
         color: isSelected
-            ? (isDark ? AppColors.primary : AppColors.primary.withValues(alpha: 0.1))
+            ? (isDark
+                ? AppColors.primary
+                : AppColors.primary.withValues(alpha: 0.1))
             : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
       ),
@@ -110,7 +114,8 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
     );
   }
 
-  Widget _buildConversationSidebar(bool isDark, ConversationListState chatState, String? selectedId) {
+  Widget _buildConversationSidebar(
+      bool isDark, ConversationListState chatState, String? selectedId) {
     return Container(
       width: 320,
       color: isDark ? const Color(0xFF1a1a2e) : Colors.white,
@@ -127,7 +132,9 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
                       prefixIcon: Icon(Icons.search,
                           color: isDark ? Colors.white54 : Colors.black54),
                       filled: true,
-                      fillColor: isDark ? AppColors.inputBackgroundDark : const Color(0xFFF0F2F5),
+                      fillColor: isDark
+                          ? AppColors.inputBackgroundDark
+                          : const Color(0xFFF0F2F5),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -148,20 +155,23 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemBuilder: (context, index) {
                 final conversation = chatState.conversations[index];
-                final isSelected =
-                    conversation.id == _selectedConversationId;
+                final isSelected = conversation.id == _selectedConversationId;
 
                 return ConversationItem(
                   name: conversation.name ?? 'Chat',
                   avatar: conversation.avatar,
                   lastMessage: conversation.lastMessage,
-                  time: conversation.lastMsgAt != null ? _formatTime(conversation.lastMsgAt!) : null,
+                  time: conversation.lastMsgAt != null
+                      ? _formatTime(conversation.lastMsgAt!)
+                      : null,
                   isSelected: isSelected,
-                  hasUnread: conversation.unreadCount != null && conversation.unreadCount! > 0,
+                  hasUnread: conversation.unreadCount != null &&
+                      conversation.unreadCount! > 0,
                   unreadCount: conversation.unreadCount,
                   onTap: () {
                     setState(() => _selectedConversationId = conversation.id);
-                    ref.read(currentConversationProvider.notifier).state = conversation;
+                    ref.read(currentConversationProvider.notifier).state =
+                        conversation;
                   },
                 );
               },
@@ -200,7 +210,8 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
     );
   }
 
-  Widget _buildChatArea(bool isDark, Conversation conversation, MessagesState? messagesState) {
+  Widget _buildChatArea(
+      bool isDark, Conversation conversation, MessagesState? messagesState) {
     final authState = ref.watch(authStateProvider);
     final currentUserId = authState.user?.id;
 
@@ -217,7 +228,8 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
                     : ListView.separated(
                         reverse: true,
                         controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 16),
                         itemBuilder: (context, index) {
                           final message = messagesState.messages[index];
                           final isSent = message.senderId == currentUserId;
@@ -231,12 +243,14 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
                             fileName: message.fileName,
                             fileSize: message.fileSize,
                             time: _formatTime(message.createdAt),
-                            isRead: message.readCount != null && message.readCount! > 0,
+                            isRead: message.readCount != null &&
+                                message.readCount! > 0,
                             senderName: message.sender?.nickname,
                             senderAvatar: message.sender?.avatar,
                           );
                         },
-                        separatorBuilder: (context, index) => const SizedBox(height: 16),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 16),
                         itemCount: messagesState.messages.length,
                       ),
           ),
@@ -254,7 +268,9 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         border: Border(
           bottom: BorderSide(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             width: 1,
           ),
         ),
@@ -278,11 +294,13 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                const Text(
                   'Online',
                   style: TextStyle(
                     fontSize: 13,
@@ -323,7 +341,9 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         border: Border(
           top: BorderSide(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             width: 1,
           ),
         ),
@@ -356,7 +376,9 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: TextField(
@@ -367,7 +389,9 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
                       contentPadding: EdgeInsets.symmetric(vertical: 12),
                     ),
                     style: TextStyle(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                       fontSize: 15,
                     ),
                     maxLines: null,
@@ -385,8 +409,11 @@ class _MainChatDesktopState extends ConsumerState<MainChatDesktop> {
                 child: IconButton(
                   icon: const Icon(Icons.send, color: Colors.white, size: 20),
                   onPressed: () {
-                    if (_messageController.text.trim().isNotEmpty && _selectedConversationId != null) {
-                      ref.read(messagesProvider(_selectedConversationId!).notifier)
+                    if (_messageController.text.trim().isNotEmpty &&
+                        _selectedConversationId != null) {
+                      ref
+                          .read(messagesProvider(_selectedConversationId!)
+                              .notifier)
                           .sendMessage(_messageController.text.trim());
                       _messageController.clear();
                     }

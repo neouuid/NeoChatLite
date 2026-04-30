@@ -6,7 +6,6 @@ import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/data/models/user.dart';
 import 'package:neochat/providers/auth_provider.dart';
 import 'package:neochat/providers/services_provider.dart';
-import 'package:neochat/data/services/chat_service.dart';
 import 'package:neochat/widgets/common/common.dart';
 
 enum VoiceCallState {
@@ -79,7 +78,8 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
           }
           break;
         case 'call_hangup':
-          if (_callState == VoiceCallState.connected || _callState == VoiceCallState.connecting) {
+          if (_callState == VoiceCallState.connected ||
+              _callState == VoiceCallState.connecting) {
             _onRemoteHangup();
           }
           break;
@@ -113,7 +113,8 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
       if (!response.success || response.data == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to initiate call: ${response.message}')),
+            SnackBar(
+                content: Text('Failed to initiate call: ${response.message}')),
           );
         }
         return;
@@ -381,7 +382,8 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
     final remoteUser = widget.remoteUser;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -407,7 +409,7 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
                       size: AvatarSize.large,
                       avatarUrl: remoteUser.avatar,
                     )
-                  : Icon(
+                  : const Icon(
                       Icons.person_outline,
                       size: 64,
                       color: AppColors.primary,
@@ -419,13 +421,15 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _getStatusText(),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondaryDark,
               ),
@@ -438,7 +442,9 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
               ),
@@ -534,14 +540,17 @@ class _CallButton extends StatelessWidget {
         width: 64,
         height: 64,
         decoration: BoxDecoration(
-          color: backgroundColor ?? (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
+          color: backgroundColor ??
+              (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
           shape: BoxShape.circle,
         ),
         child: Icon(
           icon,
           color: backgroundColor != null
               ? Colors.white
-              : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+              : (isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight),
           size: 28,
         ),
       ),

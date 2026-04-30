@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/data/models/user.dart';
-import 'package:neochat/data/services/user_service.dart';
 import 'package:neochat/providers/user_provider.dart';
 import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
@@ -84,7 +83,9 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message ?? '发送失败'), backgroundColor: AppColors.error),
+          SnackBar(
+              content: Text(response.message ?? '发送失败'),
+              backgroundColor: AppColors.error),
         );
       }
     } catch (e) {
@@ -108,9 +109,11 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
     final friendState = ref.watch(friendListProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: const Text('添加好友'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -125,7 +128,8 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
               child: AppInput(
                 controller: _searchController,
                 hint: '搜索用户名/手机号',
-                prefixIcon: Icon(Icons.search, color: AppColors.textSecondaryDark),
+                prefixIcon: const Icon(Icons.search,
+                    color: AppColors.textSecondaryDark),
                 onSubmitted: (_) => _search(),
               ),
             ),
@@ -146,12 +150,13 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
     }
 
     if (_searchResults.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off_outlined, size: 64, color: AppColors.textSecondaryDark),
-            const SizedBox(height: 16),
+            Icon(Icons.search_off_outlined,
+                size: 64, color: AppColors.textSecondaryDark),
+            SizedBox(height: 16),
             Text(
               '未找到用户',
               style: TextStyle(color: AppColors.textSecondaryDark),
@@ -161,7 +166,8 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
       );
     }
 
-    final friendIds = ref.read(friendListProvider).friends.map((f) => f.friendId).toSet();
+    final friendIds =
+        ref.read(friendListProvider).friends.map((f) => f.friendId).toSet();
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -188,24 +194,27 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
             ),
             subtitle: Text(
               '@${user.username}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondaryDark,
               ),
             ),
             trailing: isAlreadyFriend
                 ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
+                    child: const Text(
                       '已添加',
                       style: TextStyle(
                         fontSize: 13,
@@ -218,7 +227,8 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
                     height: 36,
                     child: AppButton(
                       text: '添加',
-                      onPressed: isPending ? null : () => _sendFriendRequest(user),
+                      onPressed:
+                          isPending ? null : () => _sendFriendRequest(user),
                       loading: isPending,
                       width: 80,
                     ),
@@ -230,7 +240,9 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
   }
 
   Widget _buildDefaultContent(bool isDark, FriendListState friendState) {
-    final pendingRequests = friendState.friends.where((f) => f.status == FriendStatus.pending).toList();
+    final pendingRequests = friendState.friends
+        .where((f) => f.status == FriendStatus.pending)
+        .toList();
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -305,17 +317,19 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 13,
             color: AppColors.textSecondaryDark,
           ),
         ),
-        trailing: Icon(Icons.chevron_right, color: AppColors.textSecondaryDark),
+        trailing:
+            const Icon(Icons.chevron_right, color: AppColors.textSecondaryDark),
         onTap: onTap,
       ),
     );
@@ -339,10 +353,11 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         ),
-        subtitle: Text(
+        subtitle: const Text(
           '请求添加你为好友',
           style: TextStyle(
             fontSize: 13,

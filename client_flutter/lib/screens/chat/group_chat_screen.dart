@@ -45,7 +45,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
     final messagesState = ref.watch(messagesProvider(widget.conversationId));
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -70,7 +71,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         border: Border(
           bottom: BorderSide(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             width: 1,
           ),
         ),
@@ -96,13 +99,15 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${conversation.members?.length ?? 0} 名成员',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondaryDark,
                   ),
@@ -113,14 +118,16 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
           IconButton(
             icon: const Icon(Icons.phone),
             color: AppColors.textSecondaryDark,
-            onPressed: () => context.push(Uri(path: '/voice-call', queryParameters: {
+            onPressed: () =>
+                context.push(Uri(path: '/voice-call', queryParameters: {
               'conversationId': widget.conversationId,
             }).toString()),
           ),
           IconButton(
             icon: const Icon(Icons.videocam),
             color: AppColors.textSecondaryDark,
-            onPressed: () => context.push(Uri(path: '/video-call', queryParameters: {
+            onPressed: () =>
+                context.push(Uri(path: '/video-call', queryParameters: {
               'conversationId': widget.conversationId,
             }).toString()),
           ),
@@ -136,7 +143,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
 
   Widget _buildMessageList(bool isDark, List<Message> messages) {
     if (messages.isEmpty) {
-      return Center(
+      return const Center(
         child: Text(
           '暂无消息',
           style: TextStyle(
@@ -166,14 +173,15 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
             messages[index + 1].senderId != message.senderId;
 
         return Column(
-          crossAxisAlignment: isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             if (!isSent && showHeader) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: 8, left: 52),
                 child: Text(
                   senderName ?? '群成员',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondaryDark,
                   ),
@@ -210,7 +218,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         border: Border(
           top: BorderSide(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             width: 1,
           ),
         ),
@@ -249,7 +259,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
                   height: 44,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight,
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: TextField(
@@ -260,7 +272,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
                       contentPadding: EdgeInsets.symmetric(vertical: 10),
                     ),
                     style: TextStyle(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                       fontSize: 15,
                     ),
                   ),
@@ -288,7 +302,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
 
   void _sendMessage() {
     if (_messageController.text.trim().isNotEmpty) {
-      final notifier = ref.read(messagesProvider(widget.conversationId).notifier);
+      final notifier =
+          ref.read(messagesProvider(widget.conversationId).notifier);
       notifier.sendMessage(_messageController.text.trim());
       _messageController.clear();
     }

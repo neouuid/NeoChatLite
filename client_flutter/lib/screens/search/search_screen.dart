@@ -4,9 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/data/models/user.dart';
 import 'package:neochat/providers/user_provider.dart';
-import 'package:neochat/providers/chat_provider.dart';
 import 'package:neochat/providers/auth_provider.dart';
-import 'package:neochat/data/services/user_service.dart';
 import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
 
@@ -103,9 +101,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final showFriends = _query.isEmpty;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         titleSpacing: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -132,7 +132,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildEmptyState(bool isDark) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -141,7 +141,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             size: 64,
             color: AppColors.textSecondaryDark,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             '搜索用户或群聊',
             style: TextStyle(
@@ -156,7 +156,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _buildFriendsList(bool isDark, List<Friend> friends) {
     if (friends.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -165,7 +165,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               size: 64,
               color: AppColors.textSecondaryDark,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               '还没有好友',
               style: TextStyle(
@@ -201,7 +201,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
 
     if (_searchResults.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -210,7 +210,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               size: 64,
               color: AppColors.textSecondaryDark,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               '未找到相关用户',
               style: TextStyle(
@@ -288,13 +288,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '@${user.username}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondaryDark,
                         ),
@@ -311,7 +313,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ),
                   )
                 else if (hasArrow)
-                  Icon(
+                  const Icon(
                     Icons.chevron_right,
                     color: AppColors.textSecondaryDark,
                   ),

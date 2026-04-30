@@ -29,9 +29,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final success = await ref.read(authStateProvider.notifier).login(
-        _usernameController.text.trim(),
-        _passwordController.text,
-      );
+            _usernameController.text.trim(),
+            _passwordController.text,
+          );
 
       if (success && mounted) {
         context.go('/');
@@ -77,10 +77,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Center(
-          child: isMobile ? _buildMobileLayout(isDark) : _buildDesktopLayout(isDark),
+          child: isMobile
+              ? _buildMobileLayout(isDark)
+              : _buildDesktopLayout(isDark),
         ),
       ),
     );
@@ -160,7 +163,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             fontFamily: 'Inter',
             fontSize: 28,
             fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         ),
         const SizedBox(height: 8),
@@ -170,7 +174,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             fontFamily: 'Inter',
             fontSize: 14,
             fontWeight: FontWeight.normal,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
       ],
@@ -236,7 +242,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 side: BorderSide(
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                   width: 1.5,
                 ),
               ),
@@ -246,7 +254,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               '记住我',
               style: TextStyle(
                 fontSize: 13,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
             ),
           ],
@@ -258,7 +268,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Text(
+          child: const Text(
             '忘记密码？',
             style: TextStyle(
               fontSize: 13,
@@ -276,7 +286,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         Expanded(
           child: Container(
             height: 1,
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
           ),
         ),
         Padding(
@@ -285,14 +297,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             '或者',
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
             ),
           ),
         ),
         Expanded(
           child: Container(
             height: 1,
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
           ),
         ),
       ],
@@ -307,7 +323,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           '还没有账号？',
           style: TextStyle(
             fontSize: 14,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
         const SizedBox(width: 6),
@@ -318,7 +336,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Text(
+          child: const Text(
             '注册新账号',
             style: TextStyle(
               fontSize: 14,

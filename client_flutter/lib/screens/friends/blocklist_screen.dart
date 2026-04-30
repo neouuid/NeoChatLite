@@ -19,12 +19,16 @@ class _BlocklistScreenState extends ConsumerState<BlocklistScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final friendState = ref.watch(friendListProvider);
 
-    final blockedUsers = friendState.friends.where((f) => f.status == FriendStatus.blocked).toList();
+    final blockedUsers = friendState.friends
+        .where((f) => f.status == FriendStatus.blocked)
+        .toList();
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: const Text('黑名单'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -34,7 +38,7 @@ class _BlocklistScreenState extends ConsumerState<BlocklistScreen> {
       body: friendState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : blockedUsers.isEmpty
-              ? Center(
+              ? const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -43,7 +47,7 @@ class _BlocklistScreenState extends ConsumerState<BlocklistScreen> {
                         size: 64,
                         color: AppColors.textSecondaryDark,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Text(
                         '黑名单为空',
                         style: TextStyle(
@@ -61,7 +65,9 @@ class _BlocklistScreenState extends ConsumerState<BlocklistScreen> {
                     final user = friend.friend;
                     return Container(
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                        color: isDark
+                            ? AppColors.surfaceDark
+                            : AppColors.surfaceLight,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: ListTile(
@@ -75,10 +81,12 @@ class _BlocklistScreenState extends ConsumerState<BlocklistScreen> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight,
                           ),
                         ),
-                        subtitle: Text(
+                        subtitle: const Text(
                           '已拉黑',
                           style: TextStyle(
                             fontSize: 13,
@@ -87,13 +95,15 @@ class _BlocklistScreenState extends ConsumerState<BlocklistScreen> {
                         ),
                         trailing: TextButton(
                           onPressed: () => _showUnblockDialog(friend),
-                          child: const Text('移除', style: TextStyle(color: AppColors.primary)),
+                          child: const Text('移除',
+                              style: TextStyle(color: AppColors.primary)),
                         ),
                         onTap: () {},
                       ),
                     );
                   },
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemCount: blockedUsers.length,
                 ),
     );

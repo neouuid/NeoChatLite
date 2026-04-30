@@ -37,7 +37,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       await launchUrl(uri);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('无法打开链接'), backgroundColor: AppColors.error),
+        const SnackBar(
+            content: Text('无法打开链接'), backgroundColor: AppColors.error),
       );
     }
   }
@@ -79,9 +80,11 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: const Text('关于'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -106,7 +109,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Icon(Icons.chat_bubble, size: 40, color: Colors.white),
+                  child: const Icon(Icons.chat_bubble,
+                      size: 40, color: Colors.white),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -114,13 +118,15 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Version ${_packageInfo?.version ?? '1.0.0'}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondaryDark,
                   ),
@@ -142,24 +148,39 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _launchUrl('https://neochat.app/terms'),
                 ),
-                Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                Divider(
+                    height: 1,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('隐私政策'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _launchUrl('https://neochat.app/privacy'),
                 ),
-                Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                Divider(
+                    height: 1,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('开源许可'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _showLicensePage,
                 ),
-                Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                Divider(
+                    height: 1,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('检查更新'),
                   subtitle: const Text('已是最新版本'),
                   trailing: _isCheckingUpdate
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.chevron_right),
                   onTap: _isCheckingUpdate ? null : _checkUpdate,
                 ),

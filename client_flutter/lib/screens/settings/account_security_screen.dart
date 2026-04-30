@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/providers/auth_provider.dart';
-import 'package:neochat/data/services/auth_service.dart';
 import 'package:neochat/data/models/auth.dart';
 import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
@@ -12,7 +11,8 @@ class AccountSecurityScreen extends ConsumerStatefulWidget {
   const AccountSecurityScreen({super.key});
 
   @override
-  ConsumerState<AccountSecurityScreen> createState() => _AccountSecurityScreenState();
+  ConsumerState<AccountSecurityScreen> createState() =>
+      _AccountSecurityScreenState();
 }
 
 class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
@@ -40,7 +40,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                   controller: oldPasswordController,
                   label: '当前密码',
                   obscureText: true,
-                  validator: (value) => value?.isEmpty ?? true ? '请输入当前密码' : null,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? '请输入当前密码' : null,
                 ),
                 const SizedBox(height: 12),
                 AppInput(
@@ -96,7 +97,9 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('修改失败: $e'), backgroundColor: AppColors.error),
+                            SnackBar(
+                                content: Text('修改失败: $e'),
+                                backgroundColor: AppColors.error),
                           );
                         }
                       } finally {
@@ -108,7 +111,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                       }
                     },
               child: _isChangingPassword
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('确定'),
             ),
           ],
@@ -254,7 +260,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
 
                       try {
                         final authService = ref.read(authServiceProvider);
-                        await authService.deleteAccount(passwordController.text);
+                        await authService
+                            .deleteAccount(passwordController.text);
 
                         if (context.mounted) {
                           await ref.read(authStateProvider.notifier).logout();
@@ -263,7 +270,9 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('注销失败: $e'), backgroundColor: AppColors.error),
+                            SnackBar(
+                                content: Text('注销失败: $e'),
+                                backgroundColor: AppColors.error),
                           );
                         }
                       } finally {
@@ -276,7 +285,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                     },
               style: TextButton.styleFrom(foregroundColor: AppColors.error),
               child: _isDeletingAccount
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('确认注销'),
             ),
           ],
@@ -292,9 +304,11 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     final user = authState.user;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: const Text('账号安全'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -316,14 +330,22 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _showChangePasswordDialog,
                 ),
-                Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                Divider(
+                    height: 1,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('绑定手机号'),
                   subtitle: Text(user?.phone != null ? user!.phone! : '未绑定'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _showBindPhoneDialog,
                 ),
-                Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                Divider(
+                    height: 1,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('绑定邮箱'),
                   subtitle: Text(user?.email != null ? user!.email! : '未绑定'),

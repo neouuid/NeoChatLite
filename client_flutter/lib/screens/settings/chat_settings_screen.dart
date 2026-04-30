@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/providers/services_provider.dart';
-import 'package:neochat/data/services/chat_service.dart';
-import 'package:neochat/widgets/common/common.dart';
 
 class ChatSettingsScreen extends ConsumerStatefulWidget {
   const ChatSettingsScreen({super.key, required this.conversationId});
@@ -28,7 +26,8 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
         title: const Text('确定清空聊天记录？'),
         content: const Text('清空后将无法恢复'),
         actions: [
-          TextButton(onPressed: () => context.pop(false), child: const Text('取消')),
+          TextButton(
+              onPressed: () => context.pop(false), child: const Text('取消')),
           TextButton(
             onPressed: () => context.pop(true),
             child: const Text('确定', style: TextStyle(color: AppColors.error)),
@@ -52,7 +51,8 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('清空失败: $e'), backgroundColor: AppColors.error),
+            SnackBar(
+                content: Text('清空失败: $e'), backgroundColor: AppColors.error),
           );
         }
       } finally {
@@ -70,9 +70,11 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: const Text('聊天设置'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -98,7 +100,11 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
                     });
                   },
                 ),
-                Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                Divider(
+                    height: 1,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight),
                 SwitchListTile(
                   title: const Text('置顶聊天'),
                   value: _isPinned,
@@ -108,7 +114,11 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
                     });
                   },
                 ),
-                Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                Divider(
+                    height: 1,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight),
                 SwitchListTile(
                   title: const Text('强提醒'),
                   value: _isStrongNotification,
@@ -138,11 +148,18 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
                     );
                   },
                 ),
-                Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+                Divider(
+                    height: 1,
+                    color: isDark
+                        ? AppColors.inputBackgroundDark
+                        : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('清空聊天记录'),
                   trailing: _isClearing
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.chevron_right),
                   textColor: AppColors.error,
                   onTap: _isClearing ? null : _clearChatHistory,

@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:neochat/core/constants/app_constants.dart';
 import 'package:neochat/core/utils/logger.dart';
-import 'package:neochat/data/models/common.dart';
 
 class ApiService {
   final Dio _dio;

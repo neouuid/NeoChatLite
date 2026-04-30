@@ -20,7 +20,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(favoritesProvider.notifier).loadFavorites());
+    Future.microtask(
+        () => ref.read(favoritesProvider.notifier).loadFavorites());
   }
 
   Future<void> _removeFavorite(String favoriteId) async {
@@ -30,14 +31,17 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         title: const Text('确认取消收藏'),
         content: const Text('确定要取消收藏这条消息吗？'),
         actions: [
-          TextButton(onPressed: () => context.pop(false), child: const Text('取消')),
-          TextButton(onPressed: () => context.pop(true), child: const Text('确定')),
+          TextButton(
+              onPressed: () => context.pop(false), child: const Text('取消')),
+          TextButton(
+              onPressed: () => context.pop(true), child: const Text('确定')),
         ],
       ),
     );
 
     if (confirmed == true) {
-      final success = await ref.read(favoritesProvider.notifier).removeFavorite(favoriteId);
+      final success =
+          await ref.read(favoritesProvider.notifier).removeFavorite(favoriteId);
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -45,7 +49,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('操作失败'), backgroundColor: AppColors.error),
+            const SnackBar(
+                content: Text('操作失败'), backgroundColor: AppColors.error),
           );
         }
       }
@@ -57,7 +62,9 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     if (message == null) return;
 
     // Find or create conversation for this message
-    ref.read(conversationListProvider.notifier).createConversation([message.senderId]).then((conversation) {
+    ref
+        .read(conversationListProvider.notifier)
+        .createConversation([message.senderId]).then((conversation) {
       if (conversation != null && mounted) {
         ref.read(currentConversationProvider.notifier).state = conversation;
         ref.read(messagesProvider(conversation.id).notifier).loadMessages();
@@ -72,9 +79,11 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     final favoritesState = ref.watch(favoritesProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: const Text('收藏'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -100,12 +109,13 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
           children: [
             Text(
               state.error!,
-              style: TextStyle(color: AppColors.textSecondaryDark),
+              style: const TextStyle(color: AppColors.textSecondaryDark),
             ),
             const SizedBox(height: 16),
             AppButton(
               text: '重试',
-              onPressed: () => ref.read(favoritesProvider.notifier).loadFavorites(),
+              onPressed: () =>
+                  ref.read(favoritesProvider.notifier).loadFavorites(),
             ),
           ],
         ),
@@ -113,7 +123,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     }
 
     if (state.favorites.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -122,7 +132,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               size: 64,
               color: AppColors.textSecondaryDark,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               '暂无收藏',
               style: TextStyle(
@@ -177,12 +187,14 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
                         ),
                       ),
                       Text(
                         dateStr,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondaryDark,
                         ),
@@ -209,13 +221,14 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                         ],
                       ),
                     ),
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: 'remove',
                       child: Row(
                         children: [
-                          const Icon(Icons.bookmark_remove_outlined, size: 18),
-                          const SizedBox(width: 12),
-                          Text('取消收藏', style: TextStyle(color: AppColors.error)),
+                          Icon(Icons.bookmark_remove_outlined, size: 18),
+                          SizedBox(width: 12),
+                          Text('取消收藏',
+                              style: TextStyle(color: AppColors.error)),
                         ],
                       ),
                     ),
@@ -224,10 +237,13 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+                      color: isDark
+                          ? AppColors.inputBackgroundDark
+                          : AppColors.backgroundLight,
                       borderRadius: BorderRadius.circular(18),
                     ),
-                    child: const Icon(Icons.more_vert, size: 18, color: AppColors.textSecondaryDark),
+                    child: const Icon(Icons.more_vert,
+                        size: 18, color: AppColors.textSecondaryDark),
                   ),
                 ),
               ],
@@ -251,7 +267,9 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                   favorite.note!,
                   style: TextStyle(
                     fontSize: 14,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
               ),
@@ -265,10 +283,11 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     switch (message.type) {
       case MessageType.text:
         return Text(
-          message.content ?? '',
+          message.content,
           style: TextStyle(
             fontSize: 15,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         );
       case MessageType.image:
@@ -284,7 +303,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       height: 120,
                       color: AppColors.inputBackgroundDark,
                       child: const Center(
-                        child: Icon(Icons.broken_image_outlined, color: AppColors.textSecondaryDark),
+                        child: Icon(Icons.broken_image_outlined,
+                            color: AppColors.textSecondaryDark),
                       ),
                     ),
                   )
@@ -292,7 +312,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     height: 120,
                     color: AppColors.inputBackgroundDark,
                     child: const Center(
-                      child: Icon(Icons.image_outlined, color: AppColors.textSecondaryDark),
+                      child: Icon(Icons.image_outlined,
+                          color: AppColors.textSecondaryDark),
                     ),
                   ),
           ),
@@ -301,19 +322,24 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            color: isDark
+                ? AppColors.inputBackgroundDark
+                : AppColors.backgroundLight,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             children: [
-              const Icon(Icons.insert_drive_file_outlined, color: AppColors.primary),
+              const Icon(Icons.insert_drive_file_outlined,
+                  color: AppColors.primary),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   message.fileName ?? '文件',
                   style: TextStyle(
                     fontSize: 14,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
               ),
@@ -322,10 +348,11 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         );
       default:
         return Text(
-          message.content ?? '',
+          message.content,
           style: TextStyle(
             fontSize: 15,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         );
     }

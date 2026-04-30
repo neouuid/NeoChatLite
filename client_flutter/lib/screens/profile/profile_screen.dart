@@ -54,16 +54,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final authService = ref.read(authServiceProvider);
       final data = <String, dynamic>{};
 
-      if (_nicknameController.text.isNotEmpty && _nicknameController.text != user.nickname) {
+      if (_nicknameController.text.isNotEmpty &&
+          _nicknameController.text != user.nickname) {
         data['nickname'] = _nicknameController.text;
       }
-      if (_signatureController.text.isNotEmpty && _signatureController.text != user.bio) {
+      if (_signatureController.text.isNotEmpty &&
+          _signatureController.text != user.bio) {
         data['bio'] = _signatureController.text;
       }
-      if (_phoneController.text.isNotEmpty && _phoneController.text != user.phone) {
+      if (_phoneController.text.isNotEmpty &&
+          _phoneController.text != user.phone) {
         data['phone'] = _phoneController.text;
       }
-      if (_emailController.text.isNotEmpty && _emailController.text != user.email) {
+      if (_emailController.text.isNotEmpty &&
+          _emailController.text != user.email) {
         data['email'] = _emailController.text;
       }
 
@@ -94,7 +98,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = authState.user;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
         title: const Text('个人资料'),
         centerTitle: true,
@@ -191,7 +196,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                          color: isDark
+                              ? AppColors.surfaceDark
+                              : AppColors.surfaceLight,
                           width: 3,
                         ),
                       ),
@@ -218,11 +225,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
             ),
-          if (!_isEditing && user?.username != null)
-            const SizedBox(height: 4),
+          if (!_isEditing && user?.username != null) const SizedBox(height: 4),
           if (!_isEditing && user?.username != null)
             Text(
               '@${user!.username}',
@@ -237,6 +245,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildInfoSection(BuildContext context, bool isDark, User? user) {
+    final phone = user?.phone;
+    final phoneDisplay = phone != null
+        ? '${phone.substring(0, 3)}****${phone.substring(7)}'
+        : '未设置';
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -251,7 +264,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
             ),
           ),
           const SizedBox(height: 16),
@@ -267,7 +282,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _buildInfoItem(
             isDark,
             '手机号',
-            user?.phone != null ? '${user!.phone!.substring(0, 3)}****${user!.phone!.substring(7)}' : '未设置',
+            phoneDisplay,
             isEditing: _isEditing,
             controller: _phoneController,
             hint: '请输入手机号',
@@ -346,14 +361,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   fontSize: 15,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ),
               ),
             ),
+          if (showArrow) const SizedBox(width: 8),
           if (showArrow)
-            const SizedBox(width: 8),
-          if (showArrow)
-            Icon(
+            const Icon(
               Icons.chevron_right,
               color: AppColors.textSecondaryDark,
             ),

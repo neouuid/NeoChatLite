@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
-import 'package:neochat/data/models/user.dart';
-import 'package:neochat/data/services/chat_service.dart';
 import 'package:neochat/providers/user_provider.dart';
 import 'package:neochat/providers/chat_provider.dart';
 import 'package:neochat/providers/services_provider.dart';
@@ -41,7 +39,9 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
       // First, create conversations for selected friends if needed
       final List<String> conversationIds = [];
       for (final friendId in _selectedConversations) {
-        final conversation = await ref.read(conversationListProvider.notifier).createConversation([friendId]);
+        final conversation = await ref
+            .read(conversationListProvider.notifier)
+            .createConversation([friendId]);
         if (conversation != null) {
           conversationIds.add(conversation.id);
         }
@@ -50,14 +50,16 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
       if (conversationIds.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('转发失败'), backgroundColor: AppColors.error),
+            const SnackBar(
+                content: Text('转发失败'), backgroundColor: AppColors.error),
           );
         }
         return;
       }
 
       final chatService = ref.read(chatServiceProvider);
-      final response = await chatService.forwardMessage(widget.messageId, conversationIds);
+      final response =
+          await chatService.forwardMessage(widget.messageId, conversationIds);
 
       if (response.success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -66,7 +68,9 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
         context.pop();
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message ?? '转发失败'), backgroundColor: AppColors.error),
+          SnackBar(
+              content: Text(response.message ?? '转发失败'),
+              backgroundColor: AppColors.error),
         );
       }
     } catch (e) {
@@ -98,9 +102,11 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor:
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: const Text('转发'),
         leading: IconButton(
           icon: const Icon(Icons.close),
@@ -112,7 +118,10 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
                 ? null
                 : _handleForward,
             child: _isForwarding
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))
                 : Text(
                     '发送${_selectedConversations.isEmpty ? '' : '(${_selectedConversations.length})'}',
                   ),
@@ -139,11 +148,13 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
               itemBuilder: (context, index) {
                 final friend = filteredFriends[index];
                 final user = friend.friend;
-                final isSelected = _selectedConversations.contains(friend.friendId);
+                final isSelected =
+                    _selectedConversations.contains(friend.friendId);
 
                 return Container(
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                    color:
+                        isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ListTile(
@@ -163,11 +174,14 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                                  color: isDark
+                                      ? AppColors.surfaceDark
+                                      : AppColors.surfaceLight,
                                   width: 2,
                                 ),
                               ),
-                              child: const Icon(Icons.check, size: 14, color: Colors.white),
+                              child: const Icon(Icons.check,
+                                  size: 14, color: Colors.white),
                             ),
                           ),
                       ],
@@ -177,7 +191,9 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                       ),
                     ),
                     onTap: _isForwarding

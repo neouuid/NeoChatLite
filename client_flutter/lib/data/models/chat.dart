@@ -312,8 +312,9 @@ enum CallType {
 enum CallStatus {
   @HiveField(0)
   calling,
+  @JsonValue('in_progress')
   @HiveField(1)
-  in_progress,
+  inProgress,
   @HiveField(2)
   completed,
   @HiveField(3)

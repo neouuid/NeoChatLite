@@ -32,13 +32,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     try {
       final success = await ref.read(authStateProvider.notifier).register(
-        username: _usernameController.text.trim(),
-        nickname: _nicknameController.text.trim(),
-        password: _passwordController.text,
-        confirmPassword: _confirmPasswordController.text,
-        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-      );
+            username: _usernameController.text.trim(),
+            nickname: _nicknameController.text.trim(),
+            password: _passwordController.text,
+            confirmPassword: _confirmPasswordController.text,
+            email: _emailController.text.trim().isEmpty
+                ? null
+                : _emailController.text.trim(),
+            phone: _phoneController.text.trim().isEmpty
+                ? null
+                : _phoneController.text.trim(),
+          );
 
       if (success && mounted) {
         context.go('/');
@@ -88,10 +92,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Center(
-          child: isMobile ? _buildMobileLayout(isDark) : _buildDesktopLayout(isDark),
+          child: isMobile
+              ? _buildMobileLayout(isDark)
+              : _buildDesktopLayout(isDark),
         ),
       ),
     );
@@ -169,7 +176,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             fontFamily: 'Inter',
             fontSize: 28,
             fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         ),
         const SizedBox(height: 8),
@@ -179,7 +187,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             fontFamily: 'Inter',
             fontSize: 14,
             fontWeight: FontWeight.normal,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
       ],
@@ -236,7 +246,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           hint: '请再次输入密码',
           controller: _confirmPasswordController,
           obscureText: true,
-          validator: (value) => Validators.confirmPassword(value, _passwordController.text),
+          validator: (value) =>
+              Validators.confirmPassword(value, _passwordController.text),
           enabled: !_isLoading,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _handleRegister(),
@@ -260,7 +271,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           '已有账号？',
           style: TextStyle(
             fontSize: 14,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
         const SizedBox(width: 6),
@@ -271,7 +284,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Text(
+          child: const Text(
             '立即登录',
             style: TextStyle(
               fontSize: 14,

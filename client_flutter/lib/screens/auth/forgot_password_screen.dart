@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/core/utils/validators.dart';
 import 'package:neochat/data/models/auth.dart';
-import 'package:neochat/data/services/auth_service.dart';
 import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
 
@@ -12,7 +11,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
@@ -45,7 +45,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
     try {
       final authService = ref.read(authServiceProvider);
-      final request = ForgotPasswordRequest(email: _emailController.text.trim());
+      final request =
+          ForgotPasswordRequest(email: _emailController.text.trim());
       final response = await authService.forgotPassword(request);
 
       if (response.success) {
@@ -166,10 +167,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Center(
-          child: isMobile ? _buildMobileLayout(isDark) : _buildDesktopLayout(isDark),
+          child: isMobile
+              ? _buildMobileLayout(isDark)
+              : _buildDesktopLayout(isDark),
         ),
       ),
     );
@@ -244,20 +248,21 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             fontFamily: 'Inter',
             fontSize: 24,
             fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          _emailSent
-              ? '请输入收到的验证码和新密码'
-              : '请输入您的邮箱地址以重置密码',
+          _emailSent ? '请输入收到的验证码和新密码' : '请输入您的邮箱地址以重置密码',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 14,
             fontWeight: FontWeight.normal,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
       ],
@@ -308,7 +313,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       '验证码已发送',
                       style: TextStyle(
                         color: AppColors.success,
@@ -318,7 +323,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '请查收邮件 ${_emailController.text} 并输入验证码',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textSecondaryDark,
                         fontSize: 13,
                       ),
@@ -354,7 +359,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           label: '确认新密码',
           hint: '请再次输入新密码',
           obscureText: true,
-          validator: (value) => Validators.confirmPassword(value, _newPasswordController.text),
+          validator: (value) =>
+              Validators.confirmPassword(value, _newPasswordController.text),
           enabled: !_isLoading,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _handleResetPassword(),
@@ -383,7 +389,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           '想起密码了？',
           style: TextStyle(
             fontSize: 14,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
         const SizedBox(width: 6),
@@ -394,7 +402,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Text(
+          child: const Text(
             '返回登录',
             style: TextStyle(
               fontSize: 14,
