@@ -187,4 +187,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void clearError() {
     state = state.copyWith(error: null);
   }
+
+  Future<void> loadUser() async {
+    try {
+      final response = await _authService.getCurrentUser();
+      if (response.success && response.data != null) {
+        await _storageService.setCurrentUser(response.data!);
+        state = state.copyWith(
+          user: response.data,
+        );
+      }
+    } catch (e, stackTrace) {
+      Logger.error('Failed to load user', error: e, stackTrace: stackTrace);
+    }
+  }
 }

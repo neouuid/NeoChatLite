@@ -79,4 +79,12 @@ class AuthService {
       (json) => null,
     );
   }
+
+  Future<ApiResponse<void>> deleteAccount(String password) async {
+    final response = await _api.post('/auth/delete-account', data: {'password': password});
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => null,
+    );
+  }
 }

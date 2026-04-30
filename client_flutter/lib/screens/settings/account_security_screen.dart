@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/providers/auth_provider.dart';
 import 'package:neochat/data/services/auth_service.dart';
+import 'package:neochat/data/models/auth.dart';
 import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
 
@@ -79,8 +80,12 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
 
                       try {
                         final authService = ref.read(authServiceProvider);
-                        // TODO: Implement change password API
-                        await Future.delayed(const Duration(seconds: 1));
+                        await authService.changePassword(
+                          ChangePasswordRequest(
+                            oldPassword: oldPasswordController.text,
+                            newPassword: newPasswordController.text,
+                          ),
+                        );
 
                         if (context.mounted) {
                           context.pop();
@@ -249,8 +254,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
 
                       try {
                         final authService = ref.read(authServiceProvider);
-                        // TODO: Implement delete account API
-                        await Future.delayed(const Duration(seconds: 1));
+                        await authService.deleteAccount(passwordController.text);
 
                         if (context.mounted) {
                           await ref.read(authStateProvider.notifier).logout();

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
-import 'package:neochat/data/models/chat.dart';
-import 'package:neochat/providers/chat_provider.dart';
+import 'package:neochat/providers/services_provider.dart';
+import 'package:neochat/data/services/chat_service.dart';
 import 'package:neochat/widgets/common/common.dart';
 
 class ChatSettingsScreen extends ConsumerStatefulWidget {
@@ -19,6 +19,7 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
   bool _muteNotifications = false;
   bool _isPinned = false;
   bool _isStrongNotification = false;
+  bool _isClearing = false;
 
   Future<void> _clearChatHistory() async {
     final confirmed = await showDialog<bool>(
@@ -37,10 +38,30 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
     );
 
     if (confirmed == true && mounted) {
-      // TODO: 调用清空聊天记录API
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('聊天记录已清空')),
-      );
+      setState(() {
+        _isClearing = true;
+      });
+      try {
+        final chatService = ref.read(chatServiceProvider);
+        await chatService.clearChatHistory(widget.conversationId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('聊天记录已清空')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('清空失败: $e'), backgroundColor: AppColors.error),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isClearing = false;
+          });
+        }
+      }
     }
   }
 
@@ -76,7 +97,6 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
                       _muteNotifications = value;
                     });
                   },
-                  activeColor: AppColors.primary,
                 ),
                 Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
                 SwitchListTile(
@@ -87,7 +107,6 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
                       _isPinned = value;
                     });
                   },
-                  activeColor: AppColors.primary,
                 ),
                 Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
                 SwitchListTile(
@@ -98,7 +117,6 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
                       _isStrongNotification = value;
                     });
                   },
-                  activeColor: AppColors.primary,
                 ),
               ],
             ),
@@ -115,15 +133,19 @@ class _ChatSettingsScreenState extends ConsumerState<ChatSettingsScreen> {
                   title: const Text('查找聊天记录'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // TODO: 打开搜索聊天记录
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('搜索功能开发中')),
+                    );
                   },
                 ),
                 Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('清空聊天记录'),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: _isClearing
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.chevron_right),
                   textColor: AppColors.error,
-                  onTap: _clearChatHistory,
+                  onTap: _isClearing ? null : _clearChatHistory,
                 ),
               ],
             ),

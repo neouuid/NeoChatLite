@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:neochat/widgets/common/common.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/providers/auth_provider.dart';
+import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/data/models/user.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -51,14 +51,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (user == null) return;
 
     try {
-      // TODO: 调用更新用户API
-      if (context.mounted) {
+      final authService = ref.read(authServiceProvider);
+      final data = <String, dynamic>{};
+
+      if (_nicknameController.text.isNotEmpty && _nicknameController.text != user.nickname) {
+        data['nickname'] = _nicknameController.text;
+      }
+      if (_signatureController.text.isNotEmpty && _signatureController.text != user.bio) {
+        data['bio'] = _signatureController.text;
+      }
+      if (_phoneController.text.isNotEmpty && _phoneController.text != user.phone) {
+        data['phone'] = _phoneController.text;
+      }
+      if (_emailController.text.isNotEmpty && _emailController.text != user.email) {
+        data['email'] = _emailController.text;
+      }
+
+      if (data.isNotEmpty) {
+        await authService.updateProfile(data);
+        await ref.read(authStateProvider.notifier).loadUser();
+      }
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('保存成功')),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('保存失败: $e'), backgroundColor: AppColors.error),
         );
@@ -206,7 +226,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           if (!_isEditing && user?.username != null)
             Text(
               '@${user!.username}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondaryDark,
               ),
@@ -302,7 +322,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 15,
                 color: AppColors.textSecondaryDark,
               ),

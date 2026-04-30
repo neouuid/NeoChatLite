@@ -172,4 +172,12 @@ class ChatService {
       (json) => null,
     );
   }
+
+  Future<ApiResponse<void>> clearChatHistory(String conversationId) async {
+    final response = await _api.delete('/chat/conversations/$conversationId/messages');
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => null,
+    );
+  }
 }
