@@ -5,7 +5,6 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:neochat/data/models/user.dart';
 import 'package:neochat/providers/auth_provider.dart';
 import 'package:neochat/providers/services_provider.dart';
-import 'package:neochat/data/services/chat_service.dart';
 import 'package:neochat/widgets/common/common.dart';
 
 enum CallState {

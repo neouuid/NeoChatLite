@@ -14,7 +14,6 @@ class SettingsScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isMobile = MediaQuery.of(context).size.width < 768;
     final authState = ref.watch(authStateProvider);
-    final settings = ref.watch(settingsProvider);
 
     return Scaffold(
       backgroundColor:
