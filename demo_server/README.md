@@ -14,7 +14,7 @@
 ## 运行服务器
 
 ```bash
-cd demo-server
+cd demo_server
 go run main.go
 ```
 
