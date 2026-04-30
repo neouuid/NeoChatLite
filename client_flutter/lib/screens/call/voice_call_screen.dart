@@ -311,7 +311,7 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
       final chatService = ref.read(chatServiceProvider);
       await chatService.rejectCall(_callId!);
     }
-    context.pop();
+    if (mounted) context.pop();
   }
 
   Future<void> _endCall() async {
