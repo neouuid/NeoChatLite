@@ -1,5 +1,6 @@
 import 'package:neochat/data/models/chat.dart';
 import 'package:neochat/data/models/common.dart';
+import 'package:neochat/data/models/favorite.dart';
 import 'package:neochat/data/services/api_service.dart';
 
 class ChatService {
@@ -134,6 +135,38 @@ class ChatService {
         'conversation_ids': conversationIds,
       },
     );
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => null,
+    );
+  }
+
+  Future<ApiResponse<List<Favorite>>> getFavorites() async {
+    final response = await _api.get('/chat/favorites');
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => (json as List<dynamic>)
+          .map((item) => Favorite.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  Future<ApiResponse<Favorite>> addFavorite(String messageId, {String? note}) async {
+    final response = await _api.post(
+      '/chat/favorites',
+      data: {
+        'message_id': messageId,
+        if (note != null) 'note': note,
+      },
+    );
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => Favorite.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<ApiResponse<void>> removeFavorite(String favoriteId) async {
+    final response = await _api.delete('/chat/favorites/$favoriteId');
     return ApiResponse.fromJson(
       response.data,
       (json) => null,

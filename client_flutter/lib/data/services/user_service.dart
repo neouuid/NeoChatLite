@@ -208,6 +208,16 @@ class UserService {
     );
   }
 
+  Future<ApiResponse<List<User>>> getGroupMembers(String groupId) async {
+    final response = await _api.get('/groups/$groupId/members');
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => (json as List<dynamic>)
+          .map((item) => User.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
   Future<ApiResponse<PaginatedResponse<Favorite>>> getFavorites({
     int page = 1,
     int pageSize = 20,

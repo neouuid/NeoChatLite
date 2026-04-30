@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/data/models/user.dart';
+import 'package:neochat/data/services/chat_service.dart';
 import 'package:neochat/providers/user_provider.dart';
+import 'package:neochat/providers/chat_provider.dart';
+import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
 
 class ForwardScreen extends ConsumerStatefulWidget {
@@ -19,11 +22,66 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
   final List<String> _selectedConversations = [];
+  bool _isForwarding = false;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleForward() async {
+    if (_selectedConversations.isEmpty) return;
+
+    setState(() {
+      _isForwarding = true;
+    });
+
+    try {
+      // First, create conversations for selected friends if needed
+      final List<String> conversationIds = [];
+      for (final friendId in _selectedConversations) {
+        final conversation = await ref.read(conversationListProvider.notifier).createConversation([friendId]);
+        if (conversation != null) {
+          conversationIds.add(conversation.id);
+        }
+      }
+
+      if (conversationIds.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('转发失败'), backgroundColor: AppColors.error),
+          );
+        }
+        return;
+      }
+
+      final chatService = ref.read(chatServiceProvider);
+      final response = await chatService.forwardMessage(widget.messageId, conversationIds);
+
+      if (response.success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('转发成功')),
+        );
+        context.pop();
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.message ?? '转发失败'), backgroundColor: AppColors.error),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('转发失败: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isForwarding = false;
+        });
+      }
+    }
   }
 
   @override
@@ -46,18 +104,18 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
         title: const Text('转发'),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => context.pop(),
+          onPressed: _isForwarding ? null : () => context.pop(),
         ),
         actions: [
           TextButton(
-            onPressed: _selectedConversations.isEmpty
+            onPressed: _selectedConversations.isEmpty || _isForwarding
                 ? null
-                : () {
-                    context.pop();
-                  },
-            child: Text(
-              '发送${_selectedConversations.isEmpty ? '' : '(${_selectedConversations.length})'}',
-            ),
+                : _handleForward,
+            child: _isForwarding
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(
+                    '发送${_selectedConversations.isEmpty ? '' : '(${_selectedConversations.length})'}',
+                  ),
           ),
         ],
       ),
@@ -122,15 +180,17 @@ class _ForwardScreenState extends ConsumerState<ForwardScreen> {
                         color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                       ),
                     ),
-                    onTap: () {
-                      setState(() {
-                        if (isSelected) {
-                          _selectedConversations.remove(friend.friendId);
-                        } else {
-                          _selectedConversations.add(friend.friendId);
-                        }
-                      });
-                    },
+                    onTap: _isForwarding
+                        ? null
+                        : () {
+                            setState(() {
+                              if (isSelected) {
+                                _selectedConversations.remove(friend.friendId);
+                              } else {
+                                _selectedConversations.add(friend.friendId);
+                              }
+                            });
+                          },
                   ),
                 );
               },

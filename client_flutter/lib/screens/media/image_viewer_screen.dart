@@ -5,14 +5,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_view/photo_view.dart';
 
 class ImageViewerScreen extends StatelessWidget {
-  const ImageViewerScreen({super.key, required this.url});
+  const ImageViewerScreen({super.key, required this.url, this.messageId});
 
   final String url;
+  final String? messageId;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -25,19 +24,31 @@ class ImageViewerScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
-            onPressed: () {},
+            onPressed: () => _saveImage(context),
           ),
           IconButton(
             icon: const Icon(Icons.share),
-            onPressed: () {},
+            onPressed: () => _shareImage(context),
           ),
         ],
       ),
       body: PhotoView(
         imageProvider: CachedNetworkImageProvider(url),
         backgroundDecoration: const BoxDecoration(color: Colors.black),
-        heroAttributes: const PhotoViewHeroAttributes(tag: 'image-view'),
+        heroAttributes: PhotoViewHeroAttributes(tag: messageId ?? 'image-view'),
       ),
+    );
+  }
+
+  Future<void> _saveImage(BuildContext context) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('图片保存功能待实现')),
+    );
+  }
+
+  Future<void> _shareImage(BuildContext context) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('图片分享功能待实现')),
     );
   }
 }

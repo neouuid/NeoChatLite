@@ -92,6 +92,74 @@ class StorageService {
     await _prefs.setString(AppConstants.storageKeyLanguage, language);
   }
 
+  // Notification Settings
+  bool getNotificationEnabled() {
+    return _prefs.getBool(AppConstants.storageKeyNotificationEnabled) ?? true;
+  }
+
+  Future<void> setNotificationEnabled(bool value) async {
+    await _prefs.setBool(AppConstants.storageKeyNotificationEnabled, value);
+  }
+
+  bool getNotificationShowDetail() {
+    return _prefs.getBool(AppConstants.storageKeyNotificationShowDetail) ?? true;
+  }
+
+  Future<void> setNotificationShowDetail(bool value) async {
+    await _prefs.setBool(AppConstants.storageKeyNotificationShowDetail, value);
+  }
+
+  bool getNotificationSound() {
+    return _prefs.getBool(AppConstants.storageKeyNotificationSound) ?? true;
+  }
+
+  Future<void> setNotificationSound(bool value) async {
+    await _prefs.setBool(AppConstants.storageKeyNotificationSound, value);
+  }
+
+  bool getNotificationVibration() {
+    return _prefs.getBool(AppConstants.storageKeyNotificationVibration) ?? true;
+  }
+
+  Future<void> setNotificationVibration(bool value) async {
+    await _prefs.setBool(AppConstants.storageKeyNotificationVibration, value);
+  }
+
+  // Chat Settings
+  String? getChatBackground() {
+    return _prefs.getString(AppConstants.storageKeyChatBackground);
+  }
+
+  Future<void> setChatBackground(String? path) async {
+    if (path == null) {
+      await _prefs.remove(AppConstants.storageKeyChatBackground);
+    } else {
+      await _prefs.setString(AppConstants.storageKeyChatBackground, path);
+    }
+  }
+
+  // Backup Settings
+  bool getAutoBackup() {
+    return _prefs.getBool(AppConstants.storageKeyAutoBackup) ?? false;
+  }
+
+  Future<void> setAutoBackup(bool value) async {
+    await _prefs.setBool(AppConstants.storageKeyAutoBackup, value);
+  }
+
+  DateTime? getLastBackupTime() {
+    final timestamp = _prefs.getInt(AppConstants.storageKeyLastBackupTime);
+    return timestamp != null ? DateTime.fromMillisecondsSinceEpoch(timestamp) : null;
+  }
+
+  Future<void> setLastBackupTime(DateTime? time) async {
+    if (time == null) {
+      await _prefs.remove(AppConstants.storageKeyLastBackupTime);
+    } else {
+      await _prefs.setInt(AppConstants.storageKeyLastBackupTime, time.millisecondsSinceEpoch);
+    }
+  }
+
   // Conversations
   List<Conversation> getConversations() {
     final box = Hive.box<Conversation>(_boxConversations);

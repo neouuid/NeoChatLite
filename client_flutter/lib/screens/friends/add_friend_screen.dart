@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/data/models/user.dart';
+import 'package:neochat/data/services/user_service.dart';
 import 'package:neochat/providers/user_provider.dart';
+import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
 
 class AddFriendScreen extends ConsumerStatefulWidget {
@@ -15,11 +17,89 @@ class AddFriendScreen extends ConsumerStatefulWidget {
 
 class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
   final TextEditingController _searchController = TextEditingController();
+  List<User> _searchResults = [];
+  bool _isSearching = false;
+  bool _hasSearched = false;
+  final Set<String> _pendingRequests = {};
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _search() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _hasSearched = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _hasSearched = true;
+    });
+
+    try {
+      final userService = ref.read(userServiceProvider);
+      final response = await userService.searchUsers(query);
+
+      if (mounted) {
+        setState(() {
+          _searchResults = response.data?.items ?? [];
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('搜索失败: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _sendFriendRequest(User user) async {
+    if (_pendingRequests.contains(user.id)) return;
+
+    setState(() {
+      _pendingRequests.add(user.id);
+    });
+
+    try {
+      final userService = ref.read(userServiceProvider);
+      final response = await userService.sendFriendRequest(user.id);
+
+      if (response.success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('好友请求已发送')),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.message ?? '发送失败'), backgroundColor: AppColors.error),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('发送失败: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _pendingRequests.remove(user.id);
+        });
+      }
+    }
   }
 
   @override
@@ -43,57 +123,147 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: AppInput(
-              controller: _searchController,
-              hint: '搜索用户名/手机号',
-              prefixIcon: Icon(Icons.search, color: AppColors.textSecondaryDark),
-              onSubmitted: (_) => _search(),
-            ),
+                controller: _searchController,
+                hint: '搜索用户名/手机号',
+                prefixIcon: Icon(Icons.search, color: AppColors.textSecondaryDark),
+                onSubmitted: (_) => _search(),
+              ),
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _buildSectionTitle('添加方式', isDark),
-                  const SizedBox(height: 12),
-                  _buildAddMethod(
-                    Icons.person_add,
-                    '扫码添加',
-                    '扫描二维码添加好友',
-                    () {},
-                    isDark,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildAddMethod(
-                    Icons.qr_code,
-                    '我的二维码',
-                    '让朋友扫描添加我',
-                    () {},
-                    isDark,
-                  ),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle('好友请求', isDark),
-                  const SizedBox(height: 12),
-                  if (friendState.isLoading)
-                    const Center(child: CircularProgressIndicator())
-                  else if (friendState.friends.isEmpty)
-                    Center(
-                      child: Text(
-                        '暂无好友请求',
-                        style: TextStyle(
-                          color: AppColors.textSecondaryDark,
-                        ),
-                      ),
-                    )
-                  else ...[
-                    for (final friend in friendState.friends.where((f) => f.status == FriendStatus.pending))
-                      _buildFriendRequestItem(friend, isDark),
-                  ],
-                ],
-              ),
+              child: _hasSearched
+                  ? _buildSearchResults(isDark)
+                  : _buildDefaultContent(isDark, friendState),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSearchResults(bool isDark) {
+    if (_isSearching) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off_outlined, size: 64, color: AppColors.textSecondaryDark),
+            const SizedBox(height: 16),
+            Text(
+              '未找到用户',
+              style: TextStyle(color: AppColors.textSecondaryDark),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final friendIds = ref.read(friendListProvider).friends.map((f) => f.friendId).toSet();
+
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _searchResults.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final user = _searchResults[index];
+        final isAlreadyFriend = friendIds.contains(user.id);
+        final isPending = _pendingRequests.contains(user.id);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            leading: AppAvatar(
+              name: user.nickname,
+              avatarUrl: user.avatar,
+              size: AvatarSize.medium,
+            ),
+            title: Text(
+              user.nickname,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              ),
+            ),
+            subtitle: Text(
+              '@${user.username}',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondaryDark,
+              ),
+            ),
+            trailing: isAlreadyFriend
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '已添加',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                : SizedBox(
+                    height: 36,
+                    child: AppButton(
+                      text: '添加',
+                      onPressed: isPending ? null : () => _sendFriendRequest(user),
+                      loading: isPending,
+                      width: 80,
+                    ),
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDefaultContent(bool isDark, FriendListState friendState) {
+    final pendingRequests = friendState.friends.where((f) => f.status == FriendStatus.pending).toList();
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        _buildSectionTitle('添加方式', isDark),
+        const SizedBox(height: 12),
+        _buildAddMethod(
+          Icons.person_add,
+          '扫码添加',
+          '扫描二维码添加好友',
+          () {},
+          isDark,
+        ),
+        const SizedBox(height: 8),
+        _buildAddMethod(
+          Icons.qr_code,
+          '我的二维码',
+          '让朋友扫描添加我',
+          () {},
+          isDark,
+        ),
+        if (pendingRequests.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          _buildSectionTitle('好友请求', isDark),
+          const SizedBox(height: 12),
+          if (friendState.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else ...[
+            for (final friend in pendingRequests)
+              _buildFriendRequestItem(friend, isDark),
+          ],
+        ],
+      ],
     );
   }
 
@@ -203,9 +373,6 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
         ),
       ),
     );
-  }
-
-  void _search() {
   }
 
   void _acceptRequest(String requestId) async {

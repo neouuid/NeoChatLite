@@ -1,9 +1,78 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends ConsumerStatefulWidget {
   const AboutScreen({super.key});
+
+  @override
+  ConsumerState<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends ConsumerState<AboutScreen> {
+  PackageInfo? _packageInfo;
+  bool _isCheckingUpdate = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPackageInfo();
+  }
+
+  Future<void> _loadPackageInfo() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _packageInfo = info;
+      });
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('无法打开链接'), backgroundColor: AppColors.error),
+      );
+    }
+  }
+
+  Future<void> _checkUpdate() async {
+    setState(() {
+      _isCheckingUpdate = true;
+    });
+
+    try {
+      // Simulate checking for updates
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已是最新版本')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingUpdate = false;
+        });
+      }
+    }
+  }
+
+  void _showLicensePage() {
+    showLicensePage(
+      context: context,
+      applicationName: _packageInfo?.appName ?? 'NeoChat',
+      applicationVersion: _packageInfo?.version ?? '1.0.0',
+      applicationLegalese: '© 2024 NeoChat',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +110,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'NeoChat',
+                  _packageInfo?.appName ?? 'NeoChat',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -50,7 +119,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Version 1.0.0',
+                  'Version ${_packageInfo?.version ?? '1.0.0'}',
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondaryDark,
@@ -71,26 +140,28 @@ class AboutScreen extends StatelessWidget {
                 ListTile(
                   title: const Text('用户协议'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () => _launchUrl('https://neochat.app/terms'),
                 ),
                 Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('隐私政策'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () => _launchUrl('https://neochat.app/privacy'),
                 ),
                 Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('开源许可'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: _showLicensePage,
                 ),
                 Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
                 ListTile(
                   title: const Text('检查更新'),
                   subtitle: const Text('已是最新版本'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  trailing: _isCheckingUpdate
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.chevron_right),
+                  onTap: _isCheckingUpdate ? null : _checkUpdate,
                 ),
               ],
             ),

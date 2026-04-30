@@ -18,6 +18,13 @@ class AppConstants {
   static const String storageKeyConversations = 'conversations';
   static const String storageKeyMessages = 'messages';
   static const String storageKeyFriends = 'friends';
+  static const String storageKeyNotificationEnabled = 'notification_enabled';
+  static const String storageKeyNotificationShowDetail = 'notification_show_detail';
+  static const String storageKeyNotificationSound = 'notification_sound';
+  static const String storageKeyNotificationVibration = 'notification_vibration';
+  static const String storageKeyChatBackground = 'chat_background';
+  static const String storageKeyAutoBackup = 'auto_backup';
+  static const String storageKeyLastBackupTime = 'last_backup_time';
 
   // WebSocket
   static const String wsPath = '/ws';
