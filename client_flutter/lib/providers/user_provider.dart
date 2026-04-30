@@ -162,6 +162,22 @@ class FriendListNotifier extends StateNotifier<FriendListState> {
     }
   }
 
+  Future<bool> unblockUser(String userId) async {
+    try {
+      final response = await _userService.unblockUser(userId);
+      if (response.success) {
+        await loadFriends();
+        return true;
+      }
+      state = state.copyWith(error: response.message ?? 'Failed to unblock user');
+      return false;
+    } catch (e, stackTrace) {
+      Logger.error('Unblock user failed', error: e, stackTrace: stackTrace);
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+
   void clearError() {
     state = state.copyWith(error: null);
   }

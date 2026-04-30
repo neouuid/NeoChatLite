@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
+import 'package:neochat/data/models/user.dart';
 import 'package:neochat/providers/user_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
 
