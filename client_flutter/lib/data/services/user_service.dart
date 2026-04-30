@@ -65,7 +65,7 @@ class UserService {
     });
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -73,7 +73,7 @@ class UserService {
     final response = await _api.post('/friends/requests/$requestId/accept');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -81,7 +81,7 @@ class UserService {
     final response = await _api.post('/friends/requests/$requestId/reject');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -89,7 +89,7 @@ class UserService {
     final response = await _api.delete('/friends/$friendId');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -102,7 +102,7 @@ class UserService {
     });
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -123,7 +123,7 @@ class UserService {
     });
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -131,7 +131,7 @@ class UserService {
     final response = await _api.delete('/blocklist/$userId');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -171,7 +171,7 @@ class UserService {
     });
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -182,7 +182,7 @@ class UserService {
     final response = await _api.delete('/groups/$groupId/members/$userId');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -191,12 +191,13 @@ class UserService {
     String userId,
     String role,
   ) async {
-    final response = await _api.put('/groups/$groupId/members/$userId/role', data: {
+    final response =
+        await _api.put('/groups/$groupId/members/$userId/role', data: {
       'role': role,
     });
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -204,7 +205,7 @@ class UserService {
     final response = await _api.post('/groups/$groupId/leave');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -256,7 +257,7 @@ class UserService {
     final response = await _api.delete('/favorites/$favoriteId');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 }

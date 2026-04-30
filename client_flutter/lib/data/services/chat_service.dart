@@ -49,7 +49,7 @@ class ChatService {
     final response = await _api.delete('/chat/conversations/$conversationId');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -57,7 +57,7 @@ class ChatService {
     final response = await _api.post('/chat/conversations/$conversationId/read');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -120,7 +120,7 @@ class ChatService {
     );
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -137,7 +137,7 @@ class ChatService {
     );
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -169,7 +169,7 @@ class ChatService {
     final response = await _api.delete('/chat/favorites/$favoriteId');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -177,7 +177,7 @@ class ChatService {
     final response = await _api.delete('/chat/conversations/$conversationId/messages');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -206,7 +206,7 @@ class ChatService {
     final response = await _api.post('/call/$callId/reject');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -214,7 +214,7 @@ class ChatService {
     final response = await _api.post('/call/$callId/end');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 

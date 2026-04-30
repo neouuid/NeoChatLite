@@ -52,7 +52,7 @@ class AuthService {
     final response = await _api.post('/auth/change-password', data: request.toJson());
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -60,7 +60,7 @@ class AuthService {
     final response = await _api.post('/auth/forgot-password', data: request.toJson());
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -68,7 +68,7 @@ class AuthService {
     final response = await _api.post('/auth/reset-password', data: request.toJson());
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -76,7 +76,7 @@ class AuthService {
     final response = await _api.post('/auth/logout');
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 
@@ -84,7 +84,7 @@ class AuthService {
     final response = await _api.post('/auth/delete-account', data: {'password': password});
     return ApiResponse.fromJson(
       response.data,
-      (json) => null,
+      (_) {},
     );
   }
 }

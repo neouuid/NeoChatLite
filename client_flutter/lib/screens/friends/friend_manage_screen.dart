@@ -567,14 +567,16 @@ class _FriendManageScreenState extends ConsumerState<FriendManageScreen> {
     final success = await ref
         .read(friendListProvider.notifier)
         .acceptFriendRequest(requestId);
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已添加好友')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('操作失败'), backgroundColor: AppColors.error),
-      );
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已添加好友')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('操作失败'), backgroundColor: AppColors.error),
+        );
+      }
     }
   }
 
@@ -582,14 +584,16 @@ class _FriendManageScreenState extends ConsumerState<FriendManageScreen> {
     final success = await ref
         .read(friendListProvider.notifier)
         .rejectFriendRequest(requestId);
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已拒绝')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('操作失败'), backgroundColor: AppColors.error),
-      );
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已拒绝')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('操作失败'), backgroundColor: AppColors.error),
+        );
+      }
     }
   }
 
