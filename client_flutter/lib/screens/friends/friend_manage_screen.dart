@@ -1,15 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/widgets/common/common.dart';
 import 'package:neochat/core/theme/app_theme.dart';
+import 'package:neochat/providers/user_provider.dart';
+import 'package:neochat/providers/chat_provider.dart';
+import 'package:neochat/data/models/user.dart';
 
-class FriendManageScreen extends StatelessWidget {
+class FriendManageScreen extends ConsumerStatefulWidget {
   const FriendManageScreen({super.key});
+
+  @override
+  ConsumerState<FriendManageScreen> createState() => _FriendManageScreenState();
+}
+
+class _FriendManageScreenState extends ConsumerState<FriendManageScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  int _selectedFilter = 0;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isMobile = MediaQuery.of(context).size.width < 768;
+    final friendState = ref.watch(friendListProvider);
+
+    final pendingRequests = friendState.friends.where((f) => f.status == FriendStatus.pending).toList();
+    final acceptedFriends = friendState.friends.where((f) => f.status == FriendStatus.accepted).toList();
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -21,13 +43,13 @@ class FriendManageScreen extends StatelessWidget {
           : null,
       body: SafeArea(
         child: isMobile
-            ? _buildMobileLayout(isDark)
-            : _buildDesktopLayout(isDark),
+            ? _buildMobileLayout(isDark, pendingRequests, acceptedFriends, friendState)
+            : _buildDesktopLayout(isDark, pendingRequests, acceptedFriends, friendState),
       ),
     );
   }
 
-  Widget _buildMobileLayout(bool isDark) {
+  Widget _buildMobileLayout(bool isDark, List<Friend> pendingRequests, List<Friend> acceptedFriends, FriendListState friendState) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -35,15 +57,15 @@ class FriendManageScreen extends StatelessWidget {
         children: [
           _buildSearchAndAdd(isDark),
           const SizedBox(height: 16),
-          _buildFriendRequests(isDark),
+          _buildFriendRequests(isDark, pendingRequests, friendState),
           const SizedBox(height: 16),
-          _buildFriendsList(isDark),
+          _buildFriendsList(isDark, acceptedFriends, friendState),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopLayout(bool isDark) {
+  Widget _buildDesktopLayout(bool isDark, List<Friend> pendingRequests, List<Friend> acceptedFriends, FriendListState friendState) {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 880),
@@ -62,9 +84,9 @@ class FriendManageScreen extends StatelessWidget {
               const SizedBox(height: 16),
               _buildSearchAndAdd(isDark),
               const SizedBox(height: 16),
-              _buildFriendRequests(isDark),
+              _buildFriendRequests(isDark, pendingRequests, friendState),
               const SizedBox(height: 16),
-              _buildFriendsList(isDark),
+              _buildFriendsList(isDark, acceptedFriends, friendState),
             ],
           ),
         ),
@@ -82,27 +104,30 @@ class FriendManageScreen extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.search, color: AppColors.textSecondaryDark, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '搜索用户名或手机号添加好友...',
-                      style: TextStyle(
-                        color: AppColors.textSecondaryDark,
-                        fontSize: 14,
+            child: GestureDetector(
+              onTap: () => context.go('/add-friend'),
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: AppColors.textSecondaryDark, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '搜索用户名或手机号添加好友...',
+                        style: TextStyle(
+                          color: AppColors.textSecondaryDark,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -111,7 +136,7 @@ class FriendManageScreen extends StatelessWidget {
             height: 44,
             child: AppButton(
               text: '添加',
-              onPressed: () {},
+              onPressed: () => context.go('/add-friend'),
               width: 100,
             ),
           ),
@@ -120,7 +145,7 @@ class FriendManageScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFriendRequests(bool isDark) {
+  Widget _buildFriendRequests(bool isDark, List<Friend> pendingRequests, FriendListState friendState) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -141,37 +166,60 @@ class FriendManageScreen extends StatelessWidget {
                   color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  '2',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+              if (pendingRequests.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    pendingRequests.length.toString(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
-          _buildRequestItem(isDark, '赵小云', '我是产品部的小赵，想加你好友', AppColors.primaryLight),
+          if (friendState.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (pendingRequests.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  '暂无好友请求',
+                  style: TextStyle(color: AppColors.textSecondaryDark),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemBuilder: (context, index) {
+                final request = pendingRequests[index];
+                return _buildRequestItem(isDark, request);
+              },
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
+              itemCount: pendingRequests.length,
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildRequestItem(bool isDark, String name, String message, Color avatarColor) {
+  Widget _buildRequestItem(bool isDark, Friend request) {
     return Row(
       children: [
         AppAvatar(
-          name: name,
+          name: request.friend?.nickname ?? '用户',
+          avatarUrl: request.friend?.avatar,
           size: AvatarSize.large,
-          backgroundColor: avatarColor,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -179,7 +227,7 @@ class FriendManageScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                name,
+                request.friend?.nickname ?? '用户',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -188,7 +236,7 @@ class FriendManageScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                message,
+                '想加你好友',
                 style: TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondaryDark,
@@ -204,7 +252,7 @@ class FriendManageScreen extends StatelessWidget {
               height: 36,
               child: AppButton(
                 text: '拒绝',
-                onPressed: () {},
+                onPressed: () => _handleRejectRequest(request.id),
                 type: AppButtonType.secondary,
                 width: 80,
               ),
@@ -214,7 +262,7 @@ class FriendManageScreen extends StatelessWidget {
               height: 36,
               child: AppButton(
                 text: '接受',
-                onPressed: () {},
+                onPressed: () => _handleAcceptRequest(request.id),
                 width: 80,
               ),
             ),
@@ -224,27 +272,8 @@ class FriendManageScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFriendsList(bool isDark) {
-    final friends = [
-      {
-        'name': '张伟',
-        'status': '在线 · 正在聊天',
-        'avatarColor': AppColors.success,
-        'isOnline': true,
-      },
-      {
-        'name': '李明',
-        'status': '3小时前在线',
-        'avatarColor': AppColors.primary,
-        'isOnline': false,
-      },
-      {
-        'name': '王芳',
-        'status': '在线',
-        'avatarColor': AppColors.secondary,
-        'isOnline': true,
-      },
-    ];
+  Widget _buildFriendsList(bool isDark, List<Friend> acceptedFriends, FriendListState friendState) {
+    final filteredFriends = _filterFriends(acceptedFriends);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -267,78 +296,91 @@ class FriendManageScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                '${friends.length} 位',
+                '${acceptedFriends.length} 位',
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondaryDark,
                 ),
               ),
+              TextButton(
+                onPressed: () => context.go('/blocklist'),
+                child: const Text('黑名单'),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          // 筛选器
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterChip('全部', true, isDark),
+                _buildFilterChip('全部', 0, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('在线', false, isDark),
-                const SizedBox(width: 8),
-                _buildFilterChip('群组', false, isDark),
+                _buildFilterChip('在线', 1, isDark),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          // 好友列表
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemBuilder: (context, index) {
-              final friend = friends[index];
-              return _buildFriendItem(
-                context,
-                isDark,
-                friend['name'] as String,
-                friend['status'] as String,
-                friend['avatarColor'] as Color,
-                friend['isOnline'] as bool,
-              );
-            },
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemCount: friends.length,
-          ),
+          if (friendState.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (filteredFriends.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Column(
+                  children: [
+                    Icon(Icons.people_outline, size: 64, color: AppColors.textSecondaryDark),
+                    const SizedBox(height: 16),
+                    Text(
+                      '还没有好友',
+                      style: TextStyle(color: AppColors.textSecondaryDark),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemBuilder: (context, index) {
+                final friend = filteredFriends[index];
+                return _buildFriendItem(context, isDark, friend);
+              },
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemCount: filteredFriends.length,
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, bool selected, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: selected ? AppColors.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: selected ? Colors.white : AppColors.textSecondaryDark,
+  Widget _buildFilterChip(String label, int index, bool isDark) {
+    final selected = _selectedFilter == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFilter = index;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: selected ? Colors.white : AppColors.textSecondaryDark,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFriendItem(
-    BuildContext context,
-    bool isDark,
-    String name,
-    String status,
-    Color avatarColor,
-    bool isOnline,
-  ) {
+  Widget _buildFriendItem(BuildContext context, bool isDark, Friend friend) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -348,11 +390,13 @@ class FriendManageScreen extends StatelessWidget {
       child: Row(
         children: [
           AppAvatar(
-            name: name,
+            name: friend.friend?.nickname ?? '用户',
+            avatarUrl: friend.friend?.avatar,
             size: AvatarSize.medium,
-            backgroundColor: avatarColor,
             showStatus: true,
-            statusColor: isOnline ? AppColors.statusOnline : AppColors.statusOffline,
+            statusColor: friend.friend?.status == UserStatus.online
+                ? AppColors.statusOnline
+                : AppColors.statusOffline,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -362,7 +406,7 @@ class FriendManageScreen extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      name,
+                      friend.alias ?? friend.friend?.nickname ?? '用户',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -373,7 +417,7 @@ class FriendManageScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  status,
+                  _getUserStatusText(friend.friend?.status),
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondaryDark,
@@ -394,27 +438,177 @@ class FriendManageScreen extends StatelessWidget {
                 child: IconButton(
                   icon: const Icon(Icons.chat_bubble_outline, size: 18),
                   color: AppColors.textSecondaryDark,
-                  onPressed: () => context.go('/'),
+                  onPressed: () => _startConversation(friend),
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  color: AppColors.textSecondaryDark,
-                  onPressed: () {},
-                ),
-              ),
+              _buildMoreMenu(context, isDark, friend),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildMoreMenu(BuildContext context, bool isDark, Friend friend) {
+    return PopupMenuButton(
+      onSelected: (value) {
+        if (value == 'delete') {
+          _handleDeleteFriend(friend);
+        } else if (value == 'block') {
+          _handleBlockFriend(friend);
+        } else if (value == 'view') {
+          if (friend.friend?.id != null) {
+            context.go('/profile/${friend.friend!.id}');
+          }
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'view',
+          child: Row(
+            children: [
+              const Icon(Icons.person_outline, size: 18),
+              const SizedBox(width: 12),
+              const Text('查看资料'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.person_remove_outlined, size: 18),
+              const SizedBox(width: 12),
+              Text('删除好友', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'block',
+          child: Row(
+            children: [
+              const Icon(Icons.block_outlined, size: 18),
+              const SizedBox(width: 12),
+              Text('加入黑名单', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Icon(Icons.more_vert, size: 18, color: AppColors.textSecondaryDark),
+      ),
+    );
+  }
+
+  List<Friend> _filterFriends(List<Friend> friends) {
+    if (_selectedFilter == 1) {
+      return friends.where((f) => f.friend?.status == UserStatus.online).toList();
+    }
+    return friends;
+  }
+
+  String _getUserStatusText(UserStatus? status) {
+    switch (status) {
+      case UserStatus.online:
+        return '在线';
+      case UserStatus.offline:
+        return '离线';
+      case UserStatus.away:
+        return '离开';
+      case UserStatus.busy:
+        return '忙碌';
+      case UserStatus.dnd:
+        return '请勿打扰';
+      default:
+        return '离线';
+    }
+  }
+
+  Future<void> _handleAcceptRequest(String requestId) async {
+    final success = await ref.read(friendListProvider.notifier).acceptFriendRequest(requestId);
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已添加好友')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('操作失败'), backgroundColor: AppColors.error),
+      );
+    }
+  }
+
+  Future<void> _handleRejectRequest(String requestId) async {
+    final success = await ref.read(friendListProvider.notifier).rejectFriendRequest(requestId);
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已拒绝')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('操作失败'), backgroundColor: AppColors.error),
+      );
+    }
+  }
+
+  Future<void> _handleDeleteFriend(Friend friend) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认删除好友'),
+        content: Text('确定要删除 ${friend.alias ?? friend.friend?.nickname ?? '该好友'} 吗？'),
+        actions: [
+          TextButton(onPressed: () => context.pop(false), child: const Text('取消')),
+          TextButton(onPressed: () => context.pop(true), child: const Text('删除', style: TextStyle(color: AppColors.error))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await ref.read(friendListProvider.notifier).removeFriend(friend.friendId);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已删除好友')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleBlockFriend(Friend friend) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认拉黑'),
+        content: Text('确定要将 ${friend.alias ?? friend.friend?.nickname ?? '该好友'} 加入黑名单吗？'),
+        actions: [
+          TextButton(onPressed: () => context.pop(false), child: const Text('取消')),
+          TextButton(onPressed: () => context.pop(true), child: const Text('拉黑', style: TextStyle(color: AppColors.error))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await ref.read(friendListProvider.notifier).blockUser(friend.friendId);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已加入黑名单')),
+        );
+      }
+    }
+  }
+
+  Future<void> _startConversation(Friend friend) async {
+    final conversation = await ref.read(conversationListProvider.notifier).createConversation([friend.friendId]);
+    if (conversation != null && mounted) {
+      ref.read(currentConversationProvider.notifier).state = conversation;
+      ref.read(messagesProvider(conversation.id).notifier).loadMessages();
+      context.go('/');
+    }
   }
 }

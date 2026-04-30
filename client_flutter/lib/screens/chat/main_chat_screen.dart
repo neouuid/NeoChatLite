@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/widgets/common/common.dart';
 import 'package:neochat/widgets/chat/conversation_item.dart';
-import 'package:neochat/widgets/chat/message_bubble.dart';
+import 'package:neochat/widgets/chat/message_bubble.dart' as bubble;
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/screens/chat/main_chat_desktop.dart';
 import 'package:neochat/layouts/responsive_layout.dart';
+import 'package:neochat/providers/chat_provider.dart';
+import 'package:neochat/providers/auth_provider.dart';
+import 'package:neochat/data/models/chat.dart';
 
 class MainChatScreen extends ConsumerStatefulWidget {
   const MainChatScreen({super.key});
@@ -17,59 +20,7 @@ class MainChatScreen extends ConsumerStatefulWidget {
 
 class _MainChatScreenState extends ConsumerState<MainChatScreen> {
   int _selectedNavIndex = 0;
-  int? _selectedConversationIndex;
   final TextEditingController _messageController = TextEditingController();
-
-  final List<Map<String, dynamic>> _conversations = [
-    {
-      'name': '李明',
-      'lastMessage': '好的，明天见！',
-      'time': '12:34',
-      'unread': 0,
-      'avatarColor': AppColors.primary,
-    },
-    {
-      'name': '王芳',
-      'lastMessage': '那个项目进展怎么样了？',
-      'time': '昨天',
-      'unread': 0,
-      'avatarColor': AppColors.secondary,
-    },
-    {
-      'name': '张伟',
-      'lastMessage': '周末一起打球吗？',
-      'time': '周一',
-      'unread': 2,
-      'avatarColor': AppColors.success,
-    },
-  ];
-
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'isSent': false,
-      'text': '你好！今天的项目进展怎么样了？',
-      'time': '09:30',
-    },
-    {
-      'isSent': true,
-      'text': '进展不错！我刚完成了UI设计稿，正想发给你看看。',
-      'time': '09:32',
-      'isRead': true,
-    },
-    {
-      'isSent': false,
-      'type': 'image',
-      'time': '09:35',
-    },
-    {
-      'isSent': true,
-      'type': 'file',
-      'fileName': 'UI设计稿.sketch',
-      'fileSize': 1024 * 1024 * 8,
-      'time': '09:38',
-      'isRead': true,
-    },
-  ];
 
   @override
   void dispose() {
@@ -87,6 +38,14 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
 
   Widget _buildMobileLayout() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final authState = ref.watch(authStateProvider);
+    final chatState = ref.watch(conversationListProvider);
+    final selectedConversation = ref.watch(currentConversationProvider);
+
+    if (!authState.isAuthenticated) {
+      Future.microtask(() => context.go('/login'));
+      return const SizedBox.shrink();
+    }
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -98,7 +57,8 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
               child: Row(
                 children: [
                   AppAvatar(
-                    name: '我',
+                    name: authState.user?.nickname ?? '我',
+                    avatarUrl: authState.user?.avatar,
                     size: AvatarSize.medium,
                     backgroundColor: AppColors.warning,
                   ),
@@ -121,78 +81,108 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
               ),
             ),
             Expanded(
-              child: _selectedConversationIndex == null
-                  ? _buildConversationList(isDark)
-                  : _buildChatArea(isDark),
+              child: selectedConversation == null
+                  ? _buildConversationList(isDark, chatState, authState)
+                  : _buildChatArea(isDark, selectedConversation, authState),
             ),
-            if (_selectedConversationIndex == null) _buildBottomNavBar(isDark),
+            if (selectedConversation == null) _buildBottomNavBar(isDark),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildConversationList(bool isDark) {
+  Widget _buildConversationList(bool isDark, ConversationListState chatState, AuthState authState) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.search, color: AppColors.textSecondaryDark, size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '搜索联系人...',
-                    style: TextStyle(
-                      color: AppColors.textSecondaryDark,
-                      fontSize: 14,
+          GestureDetector(
+            onTap: () => context.go('/search'),
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search, color: AppColors.textSecondaryDark, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '搜索联系人...',
+                      style: TextStyle(
+                        color: AppColors.textSecondaryDark,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          Expanded(
-            child: ListView.separated(
-              padding: EdgeInsets.zero,
-              itemBuilder: (context, index) {
-                final conversation = _conversations[index];
-                return ConversationItem(
-                  name: conversation['name'],
-                  lastMessage: conversation['lastMessage'],
-                  time: conversation['time'],
-                  isSelected: false,
-                  hasUnread: conversation['unread'] > 0,
-                  unreadCount: conversation['unread'],
-                  onTap: () {
-                    setState(() {
-                      _selectedConversationIndex = index;
-                    });
-                  },
-                );
-              },
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemCount: _conversations.length,
+          if (chatState.isLoading)
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (chatState.conversations.isEmpty)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 64,
+                      color: AppColors.textSecondaryDark,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '还没有会话',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.textSecondaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                itemBuilder: (context, index) {
+                  final conversation = chatState.conversations[index];
+                  final isSelected = conversation.id == ref.read(currentConversationProvider)?.id;
+                  return ConversationItem(
+                    name: conversation.name ?? '聊天',
+                    avatar: conversation.avatar,
+                    lastMessage: conversation.lastMessage,
+                    time: conversation.lastMsgAt != null ? _formatTime(conversation.lastMsgAt!) : null,
+                    isSelected: isSelected,
+                    hasUnread: conversation.unreadCount != null && conversation.unreadCount! > 0,
+                    unreadCount: conversation.unreadCount,
+                    onTap: () {
+                      ref.read(currentConversationProvider.notifier).state = conversation;
+                      ref.read(messagesProvider(conversation.id).notifier).loadMessages();
+                    },
+                  );
+                },
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemCount: chatState.conversations.length,
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildChatArea(bool isDark) {
-    final conversation = _selectedConversationIndex != null
-        ? _conversations[_selectedConversationIndex!]
-        : null;
+  Widget _buildChatArea(bool isDark, Conversation conversation, AuthState authState) {
+    final messagesState = ref.watch(messagesProvider(conversation.id));
 
     return Container(
       color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -200,42 +190,52 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
         children: [
           _buildChatHeader(isDark, conversation),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isSent = message['isSent'] as bool;
-                final messageType = message['type'] == 'image'
-                    ? MessageType.image
-                    : message['type'] == 'file'
-                        ? MessageType.file
-                        : MessageType.text;
-                String? senderName;
-                if (!isSent && conversation != null) {
-                  senderName = conversation['name'] as String?;
-                }
-                return MessageBubble(
-                  isSent: isSent,
-                  type: messageType,
-                  text: message['text'] as String?,
-                  fileName: message['fileName'] as String?,
-                  fileSize: message['fileSize'] as int?,
-                  time: message['time'] as String,
-                  isRead: message['isRead'] ?? false,
-                  senderName: senderName,
-                );
-              },
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-              itemCount: _messages.length,
-            ),
+            child: messagesState.isLoading && messagesState.messages.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : messagesState.messages.isEmpty
+                    ? Center(
+                        child: Text(
+                          '开始聊天吧',
+                          style: TextStyle(color: AppColors.textSecondaryDark),
+                        ),
+                      )
+                    : ListView.separated(
+                        reverse: true,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        itemBuilder: (context, index) {
+                          final message = messagesState.messages[index];
+                          final isSent = message.senderId == authState.user?.id;
+                          final messageType = _convertMessageType(message.type);
+                          String? senderName;
+                          String? senderAvatar;
+                          if (!isSent) {
+                            senderName = message.sender?.nickname;
+                            senderAvatar = message.sender?.avatar;
+                          }
+                          return bubble.MessageBubble(
+                            isSent: isSent,
+                            type: messageType,
+                            text: message.content,
+                            imageUrl: message.mediaUrl,
+                            fileName: message.fileName,
+                            fileSize: message.fileSize,
+                            time: _formatTime(message.createdAt),
+                            isRead: message.readCount != null && message.readCount! > 0,
+                            senderName: senderName,
+                            senderAvatar: senderAvatar,
+                          );
+                        },
+                        separatorBuilder: (context, index) => const SizedBox(height: 16),
+                        itemCount: messagesState.messages.length,
+                      ),
           ),
-          _buildInputArea(isDark),
+          _buildInputArea(isDark, conversation),
         ],
       ),
     );
   }
 
-  Widget _buildChatHeader(bool isDark, Map<String, dynamic>? conversation) {
+  Widget _buildChatHeader(bool isDark, Conversation conversation) {
     return Container(
       height: 72,
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -255,66 +255,62 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
             child: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () {
-                setState(() {
-                  _selectedConversationIndex = null;
-                });
+                ref.read(currentConversationProvider.notifier).state = null;
               },
             ),
           ),
-          if (conversation != null)
-            AppAvatar(
-              name: conversation['name'],
-              size: AvatarSize.medium,
-              backgroundColor: conversation['avatarColor'],
-            ),
+          AppAvatar(
+            name: conversation.name,
+            avatarUrl: conversation.avatar,
+            size: AvatarSize.medium,
+          ),
           const SizedBox(width: 12),
-          if (conversation != null)
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    conversation['name'],
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                    ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  conversation.name ?? '聊天',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '在线',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondaryDark,
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '在线',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondaryDark,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.phone),
             color: AppColors.textSecondaryDark,
-            onPressed: () {},
+            onPressed: () => context.push('/voice-call'),
           ),
           IconButton(
             icon: const Icon(Icons.videocam),
             color: AppColors.textSecondaryDark,
-            onPressed: () {},
+            onPressed: () => context.push('/video-call'),
           ),
           IconButton(
             icon: const Icon(Icons.more_vert),
             color: AppColors.textSecondaryDark,
-            onPressed: () {},
+            onPressed: () => context.push('/chat-settings/${conversation.id}'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInputArea(bool isDark) {
+  Widget _buildInputArea(bool isDark, Conversation conversation) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
@@ -357,7 +353,6 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
             children: [
               Expanded(
                 child: Container(
-                  height: 48,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
@@ -374,6 +369,7 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                       color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                       fontSize: 15,
                     ),
+                    maxLines: null,
                   ),
                 ),
               ),
@@ -389,15 +385,9 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
                   icon: const Icon(Icons.send, color: Colors.white, size: 20),
                   onPressed: () {
                     if (_messageController.text.trim().isNotEmpty) {
-                      setState(() {
-                        _messages.add({
-                          'isSent': true,
-                          'text': _messageController.text.trim(),
-                          'time': DateTime.now().toString().substring(11, 16),
-                          'isRead': false,
-                        });
-                        _messageController.clear();
-                      });
+                      ref.read(messagesProvider(conversation.id).notifier)
+                          .sendMessage(_messageController.text.trim());
+                      _messageController.clear();
                     }
                   },
                 ),
@@ -439,6 +429,9 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
         setState(() {
           _selectedNavIndex = index;
         });
+        if (index == 2) {
+          context.go('/friends');
+        }
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -458,5 +451,20 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
         ],
       ),
     );
+  }
+
+  bubble.MessageType _convertMessageType(MessageType type) {
+    switch (type) {
+      case MessageType.image:
+        return bubble.MessageType.image;
+      case MessageType.file:
+        return bubble.MessageType.file;
+      default:
+        return bubble.MessageType.text;
+    }
+  }
+
+  String _formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 }
