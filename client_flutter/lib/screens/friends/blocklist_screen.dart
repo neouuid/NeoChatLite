@@ -112,21 +112,22 @@ class _BlocklistScreenState extends ConsumerState<BlocklistScreen> {
   void _showUnblockDialog(dynamic friend) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('确定移除黑名单？'),
         content: const Text('移除后将可以收到对方消息'),
         actions: [
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: () => dialogContext.pop(),
             child: const Text('取消'),
           ),
           TextButton(
             onPressed: () async {
-              context.pop();
+              dialogContext.pop();
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               final notifier = ref.read(friendListProvider.notifier);
               final success = await notifier.unblockUser(friend.friendId);
               if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(content: Text('已移除黑名单')),
                 );
               }

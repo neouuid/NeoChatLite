@@ -579,6 +579,7 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
                       onPressed: selectedUserIds.isEmpty
                           ? null
                           : () async {
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
                               context.pop();
                               setState(() => _isAddingMembers = true);
                               try {
@@ -586,13 +587,13 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
                                   await ref.read(groupProvider(widget.groupId).notifier).addMembers([userId]);
                                 }
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  scaffoldMessenger.showSnackBar(
                                     const SnackBar(content: Text('成员已添加')),
                                   );
                                 }
                               } catch (e) {
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  scaffoldMessenger.showSnackBar(
                                     SnackBar(content: Text('添加失败: $e'), backgroundColor: AppColors.error),
                                   );
                                 }
@@ -713,26 +714,28 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
   void _showLeaveDialog(bool isOwner) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(isOwner ? '确定解散群组？' : '确定退出群组？'),
         content: Text(isOwner ? '解散后所有成员将无法查看聊天记录' : '退出后将无法查看聊天记录'),
         actions: [
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: () => dialogContext.pop(),
             child: const Text('取消'),
           ),
           TextButton(
             onPressed: () async {
-              context.pop();
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final router = GoRouter.of(context);
+              dialogContext.pop();
               final success = await ref.read(groupProvider(widget.groupId).notifier).leaveGroup();
               if (mounted) {
                 if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(content: Text(isOwner ? '群组已解散' : '已退出群组')),
                   );
-                  context.go('/');
+                  router.go('/');
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(
                       content: Text('操作失败: ${ref.read(groupProvider(widget.groupId)).error}'),
                       backgroundColor: AppColors.error,

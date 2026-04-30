@@ -220,11 +220,13 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
   void _showDeleteAccountDialog() {
     final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (modalContext, setModalState) => AlertDialog(
           title: const Text('注销账号'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -247,7 +249,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => context.pop(), child: const Text('取消')),
+            TextButton(onPressed: () => dialogContext.pop(), child: const Text('取消')),
             TextButton(
               onPressed: _isDeletingAccount
                   ? null
@@ -263,13 +265,13 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                         await authService
                             .deleteAccount(passwordController.text);
 
-                        if (context.mounted) {
+                        if (mounted) {
                           await ref.read(authStateProvider.notifier).logout();
-                          context.go('/login');
+                          router.go('/login');
                         }
                       } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                        if (mounted) {
+                          scaffoldMessenger.showSnackBar(
                             SnackBar(
                                 content: Text('注销失败: $e'),
                                 backgroundColor: AppColors.error),

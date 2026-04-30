@@ -230,24 +230,26 @@ class _ViewProfileScreenState extends ConsumerState<ViewProfileScreen> {
   void _showBlockDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('确定拉黑？'),
         content: const Text('拉黑后将无法收到对方消息'),
         actions: [
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: () => dialogContext.pop(),
             child: const Text('取消'),
           ),
           TextButton(
             onPressed: () async {
-              context.pop();
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final router = GoRouter.of(context);
+              dialogContext.pop();
               final notifier = ref.read(friendListProvider.notifier);
               final success = await notifier.blockUser(widget.userId);
               if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(content: Text('已拉黑')),
                 );
-                context.pop();
+                router.pop();
               }
             },
             child: const Text('确定', style: TextStyle(color: AppColors.error)),
@@ -260,24 +262,26 @@ class _ViewProfileScreenState extends ConsumerState<ViewProfileScreen> {
   void _showDeleteFriendDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('确定删除好友？'),
         content: const Text('删除后将无法恢复聊天记录'),
         actions: [
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: () => dialogContext.pop(),
             child: const Text('取消'),
           ),
           TextButton(
             onPressed: () async {
-              context.pop();
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final router = GoRouter.of(context);
+              dialogContext.pop();
               final notifier = ref.read(friendListProvider.notifier);
               final success = await notifier.removeFriend(widget.userId);
               if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(content: Text('已删除好友')),
                 );
-                context.pop();
+                router.pop();
               }
             },
             child: const Text('确定', style: TextStyle(color: AppColors.error)),

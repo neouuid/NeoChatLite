@@ -85,7 +85,7 @@ class _ChatBackgroundScreenState extends ConsumerState<ChatBackgroundScreen> {
     } else {
       // For color presets, we'll store the color value as a string
       final color = preset['color'] as Color;
-      final colorString = 'color:${color.value}';
+      final colorString = 'color:${color.toARGB32()}';
       await ref.read(settingsProvider.notifier).setChatBackground(colorString);
       setState(() {
         _selectedBackground = colorString;

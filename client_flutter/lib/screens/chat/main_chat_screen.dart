@@ -43,7 +43,11 @@ class _MainChatScreenState extends ConsumerState<MainChatScreen> {
     final selectedConversation = ref.watch(currentConversationProvider);
 
     if (!authState.isAuthenticated) {
-      Future.microtask(() => context.go('/login'));
+      Future.microtask(() {
+        if (mounted) {
+          context.go('/login');
+        }
+      });
       return const SizedBox.shrink();
     }
 
