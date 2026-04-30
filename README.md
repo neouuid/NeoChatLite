@@ -4,17 +4,7 @@
 
 ## 🎉 项目状态
 
-### React Native 版本 (原始版本)
-**所有核心功能已完成！** 100% 完成度
-
-- ✅ 所有平台完整支持（iOS/Android/Windows/macOS）
-- ✅ 所有核心功能已实现并集成真实 API
-- ✅ 音视频通话（WebRTC）完整实现
-- ✅ @提及功能完整实现
-- ✅ 消息搜索功能完整实现
-- ✅ 账号安全功能完整实现
-
-### Flutter 版本 (新版本 ⭐)
+**Flutter 版本（当前主要版本）**
 - ✅ 29个页面完整实现
 - ✅ 完整的路由系统
 - ✅ Riverpod状态管理
@@ -26,7 +16,7 @@
 
 ## 技术栈
 
-### 客户端 (Flutter - 新版 ⭐)
+### 客户端 (Flutter)
 - **Flutter** - 跨平台UI框架
 - **Dart** - 编程语言
 - **Flutter Riverpod** - 状态管理
@@ -37,13 +27,6 @@
 - **json_serializable** - JSON序列化
 - **cached_network_image** - 图片缓存
 - **photo_view** - 图片查看
-
-### 客户端 (React Native - 旧版)
-- **React Native** - iOS/Android
-- **React Native for Windows + macOS** - 桌面端
-- **TypeScript** - 类型安全
-- **Zustand** - 状态管理
-- **React Navigation** - 导航
 
 ### 后端
 - **Go 1.21+** - 高性能服务端
@@ -74,25 +57,6 @@ neochat/
 │   │   ├── response/        # API 响应
 │   │   └── utils/           # 工具函数
 │   └── configs/             # 配置文件
-├── client/                  # 客户端 (React Native)
-│   ├── shared/              # 共享代码 (85-90%)
-│   │   ├── components/      # 共享组件
-│   │   ├── stores/          # Zustand 状态管理
-│   │   ├── services/        # API 服务
-│   │   ├── hooks/           # React Hooks
-│   │   ├── utils/           # 工具函数
-│   │   ├── constants/       # 常量
-│   │   └── types/           # TypeScript 类型
-│   ├── mobile/              # 移动端
-│   │   ├── src/
-│   │   │   ├── screens/     # 页面
-│   │   │   └── navigation/  # 导航
-│   │   └── App.tsx
-│   └── desktop/             # 桌面端
-│       ├── src/
-│       │   ├── screens/     # 窗口
-│       │   └── components/  # 桌面组件
-│       └── App.tsx
 └── client_flutter/          # 客户端 (Flutter)
     ├── lib/
     │   ├── core/            # 核心模块
@@ -118,13 +82,11 @@ neochat/
 
 ### 环境要求
 
-- Node.js 18+ (React Native版本)
 - Go 1.21+ (后端)
-- Flutter 3.10+ (Flutter版本)
+- Flutter 3.10+ (客户端)
 - PostgreSQL 14+
 - Redis 7+
-- React Native CLI (for mobile)
-- Xcode (for iOS)
+- Xcode (for iOS/macOS)
 - Android Studio (for Android)
 - Visual Studio (for Windows)
 
@@ -167,40 +129,7 @@ go run ./cmd/api-gateway
 
 后端服务将在 `http://localhost:8080` 启动。
 
-#### 3. 前端 (React Native 移动端)
-
-```bash
-cd client/mobile
-
-# 安装依赖
-npm install
-
-# 启动 Metro
-npm start
-
-# 运行 iOS
-npm run ios
-
-# 运行 Android
-npm run android
-```
-
-#### 4. 前端 (React Native 桌面端)
-
-```bash
-cd client/desktop
-
-# 安装依赖
-npm install
-
-# 启动 Windows
-npm run windows
-
-# 启动 macOS
-npm run macos
-```
-
-#### 5. 前端 (Flutter 版本)
+#### 3. 前端 (Flutter)
 
 ```bash
 cd client_flutter
@@ -300,10 +229,7 @@ flutter build appbundle # AAB
 | 单聊功能 (后端) | ✅ | 会话、消息、已读状态、撤回/删除、分页加载 |
 | 群聊功能 (后端) | ✅ | 群组创建、成员管理、角色权限、@提及功能 |
 | WebSocket 实时消息 | ✅ | 新消息推送、在线状态、信令转发 |
-| React Native 移动端界面 | ✅ | 40+ 页面完整实现 |
-| React Native 桌面端界面 | ✅ | 完整窗口和组件实现 |
-| React Native 共享组件库 | ✅ | Avatar、Button、Input、MessageList、ChatInput、VideoView、MentionPicker 等 |
-| Flutter 版本开发 | ✅ | 29个页面完整实现，架构完整 |
+| Flutter 客户端 | ✅ | 29个页面完整实现，架构完整 |
 | 多媒体 (图片/文件) | ✅ | 文件上传/下载、消息转发、收藏 |
 | 音视频通话 | ✅ | WebRTC信令、视频/语音通话UI、通话邀请弹窗 |
 | 消息转发/收藏 | ✅ | 已完成 |
