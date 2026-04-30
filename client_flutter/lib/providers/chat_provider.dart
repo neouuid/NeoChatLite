@@ -297,6 +297,15 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
     }
   }
 
+  Future<void> sendMediaMessage(MessageType type, String mediaUrl, String fileName, int? fileSize) async {
+    try {
+      final typeStr = type == MessageType.image ? 'image' : 'file';
+      _wsService.sendMediaMessage(conversationId, typeStr, mediaUrl, fileName: fileName, fileSize: fileSize);
+    } catch (e, stackTrace) {
+      Logger.error('Send media message failed', error: e, stackTrace: stackTrace);
+    }
+  }
+
   Future<void> markAsRead(String messageId) async {
     try {
       _wsService.markAsRead(messageId);

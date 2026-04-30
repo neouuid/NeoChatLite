@@ -180,4 +180,61 @@ class ChatService {
       (json) => null,
     );
   }
+
+  // ==================== Call API Methods ====================
+
+  Future<ApiResponse<CallRecord>> initiateCall(String calleeId, String type) async {
+    final response = await _api.post('/call/initiate', data: {
+      'callee_id': calleeId,
+      'type': type,
+    });
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => CallRecord.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<ApiResponse<CallRecord>> acceptCall(String callId) async {
+    final response = await _api.post('/call/$callId/accept');
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => CallRecord.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<ApiResponse<void>> rejectCall(String callId) async {
+    final response = await _api.post('/call/$callId/reject');
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => null,
+    );
+  }
+
+  Future<ApiResponse<void>> endCall(String callId) async {
+    final response = await _api.post('/call/$callId/end');
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => null,
+    );
+  }
+
+  Future<ApiResponse<CallRecord>> getCallRecord(String callId) async {
+    final response = await _api.get('/call/$callId');
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => CallRecord.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<ApiResponse<List<CallRecord>>> getUserCallRecords({int limit = 50}) async {
+    final response = await _api.get('/calls', queryParameters: {
+      'limit': limit.toString(),
+    });
+    return ApiResponse.fromJson(
+      response.data,
+      (json) => (json as List<dynamic>)
+          .map((item) => CallRecord.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }

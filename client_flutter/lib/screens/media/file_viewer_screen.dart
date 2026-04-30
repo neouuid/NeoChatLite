@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/widgets/common/common.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class FileViewerScreen extends StatefulWidget {
   const FileViewerScreen({
@@ -28,6 +33,7 @@ class FileViewerScreen extends StatefulWidget {
 class _FileViewerScreenState extends State<FileViewerScreen> {
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
+  String? _localFilePath;
 
   @override
   Widget build(BuildContext context) {
@@ -123,14 +129,14 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
               ],
               const SizedBox(height: 32),
               AppButton(
-                text: _isDownloading ? '下载中...' : '下载文件',
-                onPressed: _isDownloading ? null : _downloadFile,
+                text: _isDownloading ? '下载中...' : (_localFilePath != null ? '已下载' : '下载文件'),
+                onPressed: _isDownloading || _localFilePath != null ? null : _downloadFile,
                 type: AppButtonType.primary,
               ),
               const SizedBox(height: 12),
               AppButton(
                 text: '分享',
-                onPressed: _shareFile,
+                onPressed: _localFilePath != null ? _shareFile : null,
                 type: AppButtonType.secondary,
               ),
             ],
@@ -164,30 +170,116 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   }
 
   Future<void> _downloadFile() async {
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress = 0.0;
-    });
+    try {
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress = 0.0;
+      });
 
-    // 模拟下载进度
-    for (int i = 1; i <= 10; i++) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      if (!mounted) return;
-      setState(() => _downloadProgress = i / 10);
+      if (Theme.of(context).platform == TargetPlatform.android || Theme.of(context).platform == TargetPlatform.iOS) {
+        final status = await Permission.storage.request();
+        if (!status.isGranted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('需要存储权限才能下载文件')),
+            );
+          }
+          setState(() => _isDownloading = false);
+          return;
+        }
+      }
+
+      final request = http.Request('GET', Uri.parse(widget.url));
+      final response = await http.Client().send(request);
+
+      if (response.statusCode != 200) {
+        throw Exception('下载失败: ${response.statusCode}');
+      }
+
+      final contentLength = response.contentLength ?? widget.size ?? 0;
+      final List<int> bytes = [];
+      int received = 0;
+
+      response.stream.listen(
+        (List<int> newBytes) {
+          bytes.addAll(newBytes);
+          received += newBytes.length;
+          if (contentLength > 0 && mounted) {
+            setState(() => _downloadProgress = received / contentLength);
+          }
+        },
+        onDone: () async {
+          if (!mounted) return;
+
+          Directory? saveDir;
+          if (Theme.of(context).platform == TargetPlatform.android) {
+            saveDir = Directory('/storage/emulated/0/Download');
+            if (!await saveDir.exists()) {
+              saveDir = await getExternalStorageDirectory();
+            }
+          } else {
+            saveDir = await getApplicationDocumentsDirectory();
+          }
+
+          if (saveDir == null) {
+            throw Exception('无法获取存储目录');
+          }
+
+          final filePath = '${saveDir.path}/${widget.name}';
+          final file = File(filePath);
+          await file.writeAsBytes(bytes);
+
+          if (mounted) {
+            setState(() {
+              _isDownloading = false;
+              _localFilePath = filePath;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('文件已保存到 $filePath')),
+            );
+          }
+        },
+        onError: (error) {
+          if (mounted) {
+            setState(() => _isDownloading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('下载失败: $error'), backgroundColor: AppColors.error),
+            );
+          }
+        },
+        cancelOnError: true,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDownloading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('下载失败: $e'), backgroundColor: AppColors.error),
+        );
+      }
     }
-
-    if (!mounted) return;
-    setState(() => _isDownloading = false);
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('文件下载功能待实现')),
-    );
   }
 
   Future<void> _shareFile() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('文件分享功能待实现')),
-    );
+    if (_localFilePath == null) return;
+
+    try {
+      final file = File(_localFilePath!);
+      if (!await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('文件不存在'), backgroundColor: AppColors.error),
+          );
+        }
+        return;
+      }
+
+      await Share.shareXFiles([XFile(_localFilePath!)]);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('分享失败: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
   }
 }

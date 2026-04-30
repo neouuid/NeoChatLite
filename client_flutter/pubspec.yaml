@@ -50,6 +50,8 @@ dependencies:
   package_info_plus: 9.0.1
   url_launcher: ^6.2.3
   share_plus: ^7.2.1
+  http: ^1.2.0
+  image_gallery_saver: ^2.0.3
 
   # WebRTC (for calls)
   flutter_webrtc: ^0.10.6

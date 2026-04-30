@@ -142,6 +142,108 @@ class WebSocketService {
     });
   }
 
+  void sendMediaMessage(String conversationId, String type, String mediaUrl, {String? fileName, int? fileSize}) {
+    sendMessage({
+      'type': 'send_message',
+      'data': {
+        'conversation_id': conversationId,
+        'content': '',
+        'type': type,
+        'media_url': mediaUrl,
+        'file_name': fileName,
+        'file_size': fileSize,
+      },
+    });
+  }
+
+  // ==================== WebRTC Signaling Methods ====================
+
+  void sendCallInvite(String calleeId, String callId, String callType, String callerName, String callerAvatar) {
+    sendMessage({
+      'type': 'call_invite',
+      'data': {
+        'callee_id': calleeId,
+        'call_id': callId,
+        'type': callType,
+        'caller_name': callerName,
+        'caller_avatar': callerAvatar,
+      },
+    });
+  }
+
+  void sendCallAccept(String callerId, String callId) {
+    sendMessage({
+      'type': 'call_accept',
+      'data': {
+        'caller_id': callerId,
+        'call_id': callId,
+      },
+    });
+  }
+
+  void sendCallReject(String callerId, String callId) {
+    sendMessage({
+      'type': 'call_reject',
+      'data': {
+        'caller_id': callerId,
+        'call_id': callId,
+      },
+    });
+  }
+
+  void sendCallHangup(String peerId, String callId) {
+    sendMessage({
+      'type': 'call_hangup',
+      'data': {
+        'peer_id': peerId,
+        'call_id': callId,
+      },
+    });
+  }
+
+  void sendSignalOffer(String toUserId, String callId, String sdp) {
+    sendMessage({
+      'type': 'signal_offer',
+      'data': {
+        'to_user_id': toUserId,
+        'call_id': callId,
+        'payload': {
+          'type': 'offer',
+          'sdp': sdp,
+        },
+      },
+    });
+  }
+
+  void sendSignalAnswer(String toUserId, String callId, String sdp) {
+    sendMessage({
+      'type': 'signal_answer',
+      'data': {
+        'to_user_id': toUserId,
+        'call_id': callId,
+        'payload': {
+          'type': 'answer',
+          'sdp': sdp,
+        },
+      },
+    });
+  }
+
+  void sendSignalIceCandidate(String toUserId, String callId, String candidate, String sdpMid, int sdpMLineIndex) {
+    sendMessage({
+      'type': 'signal_ice',
+      'data': {
+        'to_user_id': toUserId,
+        'call_id': callId,
+        'payload': {
+          'candidate': candidate,
+          'sdpMid': sdpMid,
+          'sdpMLineIndex': sdpMLineIndex,
+        },
+      },
+    });
+  }
+
   void markAsRead(String messageId) {
     sendMessage({
       'type': 'mark_read',

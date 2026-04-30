@@ -1,12 +1,16 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/data/models/group.dart';
 import 'package:neochat/data/models/user.dart';
 import 'package:neochat/providers/group_provider.dart';
 import 'package:neochat/providers/auth_provider.dart';
+import 'package:neochat/providers/user_provider.dart';
+import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
 
 class GroupInfoScreen extends ConsumerStatefulWidget {
@@ -25,6 +29,8 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   bool _muteNotifications = false;
+  bool _isUploadingAvatar = false;
+  bool _isAddingMembers = false;
 
   @override
   void dispose() {
@@ -138,18 +144,27 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: _isUploadingAvatar ? AppColors.textSecondaryDark : AppColors.primary,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                           width: 2,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 16,
-                      ),
+                      child: _isUploadingAvatar
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                     ),
                   ),
                 ),
@@ -267,12 +282,15 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
             onTap: () => _showMembersList(members),
           ),
           Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
-          ListTile(
-            leading: const Icon(Icons.person_add),
-            title: const Text('添加成员'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showAddMembers(),
-          ),
+          if (isOwner)
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('添加成员'),
+              trailing: _isAddingMembers
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.chevron_right),
+              onTap: _isAddingMembers ? null : _showAddMembers,
+            ),
         ],
       ),
     );
@@ -311,8 +329,10 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
             ListTile(
               leading: const Icon(Icons.image),
               title: const Text('群头像'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _pickAvatar,
+              trailing: _isUploadingAvatar
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.chevron_right),
+              onTap: _isUploadingAvatar ? null : _pickAvatar,
             ),
           ],
         ],
@@ -330,7 +350,7 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
         children: [
           ListTile(
             leading: const Icon(Icons.exit_to_app, color: AppColors.error),
-            title: const Text('退出群组', style: TextStyle(color: AppColors.error)),
+            title: Text(isOwner ? '解散群组' : '退出群组', style: const TextStyle(color: AppColors.error)),
             onTap: () => _showLeaveDialog(isOwner),
           ),
         ],
@@ -344,9 +364,9 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
       return;
     }
 
-    final success = await ref
-        .read(groupProvider(widget.groupId).notifier)
-        .updateGroup({'name': _nameController.text.trim()});
+    final success = await ref.read(groupProvider(widget.groupId).notifier).updateGroup({
+      'name': _nameController.text.trim(),
+    });
 
     if (!mounted) return;
 
@@ -367,9 +387,9 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
   }
 
   Future<void> _saveDescription() async {
-    final success = await ref
-        .read(groupProvider(widget.groupId).notifier)
-        .updateGroup({'description': _descriptionController.text.trim()});
+    final success = await ref.read(groupProvider(widget.groupId).notifier).updateGroup({
+      'description': _descriptionController.text.trim(),
+    });
 
     if (!mounted) return;
 
@@ -393,9 +413,56 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('头像上传功能待实现')),
-      );
+      setState(() => _isUploadingAvatar = true);
+      try {
+        final apiService = ref.read(apiServiceProvider);
+        final response = await apiService.uploadFile(
+          '/api/v1/upload',
+          await MultipartFile.fromFile(image.path, filename: image.name),
+          data: {'type': 'image'},
+        );
+
+        if (response.statusCode == 200 && response.data != null) {
+          final responseData = response.data as Map<String, dynamic>;
+          final data = responseData['data'] as Map<String, dynamic>;
+          final url = data['url'] as String;
+
+          final success = await ref.read(groupProvider(widget.groupId).notifier).updateGroup({
+            'avatar': url,
+          });
+
+          if (mounted) {
+            if (success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('群头像已更新')),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('更新失败: ${ref.read(groupProvider(widget.groupId)).error}'),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('上传失败'), backgroundColor: AppColors.error),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('上传失败: $e'), backgroundColor: AppColors.error),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isUploadingAvatar = false);
+        }
+      }
     }
   }
 
@@ -403,6 +470,7 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -468,8 +536,178 @@ class _GroupInfoScreenState extends ConsumerState<GroupInfoScreen> {
   }
 
   void _showAddMembers() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('添加成员功能待实现')),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final groupState = ref.read(groupProvider(widget.groupId));
+    final currentMemberIds = groupState.members.map((u) => u.id).toSet();
+    final TextEditingController searchController = TextEditingController();
+    String query = '';
+    final List<String> selectedUserIds = [];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondaryDark,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '添加成员',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: selectedUserIds.isEmpty
+                          ? null
+                          : () async {
+                              context.pop();
+                              setState(() => _isAddingMembers = true);
+                              try {
+                                for (final userId in selectedUserIds) {
+                                  await ref.read(groupProvider(widget.groupId).notifier).addMembers([userId]);
+                                }
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('成员已添加')),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('添加失败: $e'), backgroundColor: AppColors.error),
+                                  );
+                                }
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _isAddingMembers = false);
+                                }
+                              }
+                            },
+                      child: Text('添加(${selectedUserIds.length})'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: AppInput(
+                  controller: searchController,
+                  hint: '搜索好友',
+                  onChanged: (value) {
+                    setModalState(() {
+                      query = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Divider(height: 1, color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight),
+              Expanded(
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final friendState = ref.watch(friendListProvider);
+                    final filteredFriends = friendState.friends.where((f) {
+                      if (f.friend == null) return false;
+                      if (currentMemberIds.contains(f.friendId)) return false;
+                      if (query.isEmpty) return true;
+                      return f.friend!.nickname.toLowerCase().contains(query.toLowerCase()) ||
+                          f.friend!.username.toLowerCase().contains(query.toLowerCase());
+                    }).toList();
+
+                    if (filteredFriends.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Text('没有可添加的好友'),
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemBuilder: (context, index) {
+                        final friend = filteredFriends[index];
+                        final user = friend.friend!;
+                        final isSelected = selectedUserIds.contains(friend.friendId);
+
+                        return ListTile(
+                          leading: Stack(
+                            children: [
+                              AppAvatar(
+                                name: user.nickname,
+                                size: AvatarSize.medium,
+                                avatarUrl: user.avatar,
+                              ),
+                              if (isSelected)
+                                Positioned(
+                                  right: -4,
+                                  bottom: -4,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: const Icon(Icons.check, size: 14, color: Colors.white),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          title: Text(
+                            friend.alias ?? user.nickname,
+                            style: TextStyle(
+                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '@${user.username}',
+                            style: const TextStyle(color: AppColors.textSecondaryDark),
+                          ),
+                          onTap: () {
+                            setModalState(() {
+                              if (isSelected) {
+                                selectedUserIds.remove(friend.friendId);
+                              } else {
+                                selectedUserIds.add(friend.friendId);
+                              }
+                            });
+                          },
+                        );
+                      },
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemCount: filteredFriends.length,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

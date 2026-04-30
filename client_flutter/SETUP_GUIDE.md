@@ -125,8 +125,8 @@ A: 可以使用 --force 参数，但会覆盖部分文件。先备份我们的 l
 
 ```
 A: 检查网络连接，可以尝试使用国内镜像：
-export PUB_HOSTED_URL=https://pub.flutter-io.cn
-export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
+export PUB_HOSTED_URL=https://mirrors.tuna.tsinghua.edu.cn/dart-pub
+export FLUTTER_STORAGE_BASE_URL=https://mirrors.tuna.tsinghua.edu.cn/flutter
 # Windows 上使用 set 而不是 export
 ```
 

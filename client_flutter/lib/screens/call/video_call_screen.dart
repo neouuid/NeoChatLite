@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:neochat/core/theme/app_theme.dart';
+import 'package:neochat/data/models/chat.dart';
 import 'package:neochat/data/models/user.dart';
 import 'package:neochat/providers/auth_provider.dart';
+import 'package:neochat/providers/services_provider.dart';
+import 'package:neochat/data/services/chat_service.dart';
+import 'package:neochat/data/services/websocket_service.dart';
 import 'package:neochat/widgets/common/common.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum CallState {
   calling,
@@ -20,12 +25,14 @@ class VideoCallScreen extends ConsumerStatefulWidget {
     required this.userId,
     this.remoteUser,
     this.isIncoming = false,
+    this.callId,
   });
 
   final String conversationId;
   final String userId;
   final User? remoteUser;
   final bool isIncoming;
+  final String? callId;
 
   @override
   ConsumerState<VideoCallScreen> createState() => _VideoCallScreenState();
@@ -38,35 +45,308 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   bool _isFrontCamera = true;
   int _callDuration = 0;
   late DateTime _callStartTime;
+  String? _callId;
+
+  // WebRTC
+  RTCPeerConnection? _peerConnection;
+  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
+  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
+  MediaStream? _localStream;
 
   @override
   void initState() {
     super.initState();
+    _callId = widget.callId;
+    _initRenderers();
     if (widget.isIncoming) {
       _callState = CallState.calling;
     } else {
       _startCall();
     }
+    _listenToEvents();
+  }
+
+  Future<void> _initRenderers() async {
+    await _localRenderer.initialize();
+    await _remoteRenderer.initialize();
+  }
+
+  void _listenToEvents() {
+    final wsService = ref.read(webSocketServiceProvider);
+    wsService.eventStream.listen((event) {
+      if (!mounted) return;
+      final type = event['type'] as String?;
+      final data = event['data'] as Map<String, dynamic>?;
+
+      switch (type) {
+        case 'call_accept':
+          if (_callState == CallState.calling) {
+            _onCallAccepted();
+          }
+          break;
+        case 'call_reject':
+          if (_callState == CallState.calling) {
+            _onCallRejected();
+          }
+          break;
+        case 'call_hangup':
+          if (_callState == CallState.connected || _callState == CallState.connecting) {
+            _onRemoteHangup();
+          }
+          break;
+        case 'signal_offer':
+          if (_callState == CallState.connecting) {
+            _onOffer(data!);
+          }
+          break;
+        case 'signal_answer':
+          if (_callState == CallState.connecting) {
+            _onAnswer(data!);
+          }
+          break;
+        case 'signal_ice':
+          _onIceCandidate(data!);
+          break;
+      }
+    });
   }
 
   Future<void> _startCall() async {
     setState(() => _callState = CallState.calling);
 
-    // 模拟连接过程
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
+    try {
+      final authState = ref.read(authStateProvider);
+      final chatService = ref.read(chatServiceProvider);
+      final wsService = ref.read(webSocketServiceProvider);
 
+      // 1. Initiate call via API
+      final response = await chatService.initiateCall(widget.userId, 'video');
+      if (!response.success || response.data == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to initiate call: ${response.message}')),
+          );
+        }
+        return;
+      }
+
+      final callRecord = response.data!;
+      _callId = callRecord.id;
+
+      // 2. Send call invite via WebSocket
+      wsService.sendCallInvite(
+        widget.userId,
+        _callId!,
+        'video',
+        authState.user?.nickname ?? 'User',
+        authState.user?.avatar ?? '',
+      );
+
+      // 3. Start WebRTC setup
+      await _setupWebRTC(false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Call failed: $e')),
+        );
+        setState(() => _callState = CallState.ended);
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) context.pop();
+      }
+    }
+  }
+
+  Future<void> _setupWebRTC(bool isAnswer) async {
     setState(() => _callState = CallState.connecting);
 
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
+    try {
+      final config = {
+        'iceServers': [
+          {
+            'urls': 'stun:stun.l.google.com:19302',
+          },
+        ],
+      };
 
+      _peerConnection = await createPeerConnection(config);
+
+      // Get user media
+      final stream = await navigator.mediaDevices.getUserMedia({
+        'video': true,
+        'audio': true,
+      });
+
+      _localStream = stream;
+      _localRenderer.srcObject = _localStream;
+
+      // Add tracks to peer connection
+      stream.getTracks().forEach((track) {
+        _peerConnection?.addTrack(track, stream);
+      });
+
+      // Listen for remote stream
+      _peerConnection?.onTrack = (event) {
+        _remoteRenderer.srcObject = event.streams[0];
+      };
+
+      // Listen for ICE candidates
+      _peerConnection?.onIceCandidate = (candidate) {
+        if (candidate.candidate != null && candidate.candidate!.isNotEmpty) {
+          final wsService = ref.read(webSocketServiceProvider);
+          wsService.sendSignalIceCandidate(
+            widget.userId,
+            _callId!,
+            candidate.candidate!,
+            candidate.sdpMid!,
+            candidate.sdpMLineIndex!,
+          );
+        }
+      };
+
+      // Listen for ICE connection state
+      _peerConnection?.onIceConnectionState = (state) {
+        if (state == RTCIceConnectionState.RTCIceConnectionStateConnected) {
+          _onConnected();
+        }
+      };
+
+      if (!isAnswer) {
+        // Create offer
+        final offer = await _peerConnection!.createOffer();
+        await _peerConnection!.setLocalDescription(offer);
+
+        // Send offer
+        final wsService = ref.read(webSocketServiceProvider);
+        wsService.sendSignalOffer(
+          widget.userId,
+          _callId!,
+          offer.sdp!,
+        );
+      }
+    } catch (e) {
+      print('WebRTC setup failed: $e');
+    }
+  }
+
+  Future<void> _onOffer(Map<String, dynamic> data) async {
+    await _setupWebRTC(true);
+
+    final payload = data['payload'] as Map<String, dynamic>;
+    final sdp = payload['sdp'] as String;
+
+    final remoteDescription = RTCSessionDescription(sdp, 'offer');
+    await _peerConnection!.setRemoteDescription(remoteDescription);
+
+    // Create answer
+    final answer = await _peerConnection!.createAnswer();
+    await _peerConnection!.setLocalDescription(answer);
+
+    // Send answer
+    final wsService = ref.read(webSocketServiceProvider);
+    wsService.sendSignalAnswer(
+      widget.userId,
+      _callId!,
+      answer.sdp!,
+    );
+  }
+
+  Future<void> _onAnswer(Map<String, dynamic> data) async {
+    final payload = data['payload'] as Map<String, dynamic>;
+    final sdp = payload['sdp'] as String;
+
+    final remoteDescription = RTCSessionDescription(sdp, 'answer');
+    await _peerConnection!.setRemoteDescription(remoteDescription);
+  }
+
+  Future<void> _onIceCandidate(Map<String, dynamic> data) async {
+    final payload = data['payload'] as Map<String, dynamic>;
+    final candidate = RTCIceCandidate(
+      payload['candidate'],
+      payload['sdpMid'],
+      payload['sdpMLineIndex'],
+    );
+
+    await _peerConnection!.addCandidate(candidate);
+  }
+
+  void _onConnected() {
     setState(() {
       _callState = CallState.connected;
       _callStartTime = DateTime.now();
     });
-
     _startTimer();
+  }
+
+  void _onCallAccepted() async {
+    setState(() => _callState = CallState.connecting);
+  }
+
+  void _onCallRejected() async {
+    setState(() => _callState = CallState.ended);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Call rejected')),
+      );
+    }
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) context.pop();
+  }
+
+  void _onRemoteHangup() async {
+    await _cleanup();
+    setState(() => _callState = CallState.ended);
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) context.pop();
+  }
+
+  Future<void> _acceptCall() async {
+    if (_callId != null) {
+      final wsService = ref.read(webSocketServiceProvider);
+      wsService.sendCallAccept(widget.userId, _callId!);
+
+      final chatService = ref.read(chatServiceProvider);
+      await chatService.acceptCall(_callId!);
+    }
+
+    await _setupWebRTC(true);
+  }
+
+  Future<void> _declineCall() async {
+    if (_callId != null) {
+      final wsService = ref.read(webSocketServiceProvider);
+      wsService.sendCallReject(widget.userId, _callId!);
+
+      final chatService = ref.read(chatServiceProvider);
+      await chatService.rejectCall(_callId!);
+    }
+    context.pop();
+  }
+
+  Future<void> _endCall() async {
+    if (_callId != null) {
+      final wsService = ref.read(webSocketServiceProvider);
+      wsService.sendCallHangup(widget.userId, _callId!);
+
+      final chatService = ref.read(chatServiceProvider);
+      try {
+        await chatService.endCall(_callId!);
+      } catch (e) {
+        // Ignore, call might already be ended
+      }
+    }
+
+    await _cleanup();
+    setState(() => _callState = CallState.ended);
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) context.pop();
+  }
+
+  Future<void> _cleanup() async {
+    _localStream?.getTracks().forEach((track) => track.stop());
+    await _localStream?.dispose();
+    await _peerConnection?.close();
+    await _localRenderer.dispose();
+    await _remoteRenderer.dispose();
   }
 
   void _startTimer() {
@@ -82,28 +362,23 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     });
   }
 
-  Future<void> _endCall() async {
-    setState(() => _callState = CallState.ended);
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) context.pop();
-  }
-
-  Future<void> _acceptCall() async {
-    setState(() => _callState = CallState.connecting);
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-
-    setState(() {
-      _callState = CallState.connected;
-      _callStartTime = DateTime.now();
+  void _toggleVideo() {
+    setState(() => _isVideoEnabled = !_isVideoEnabled);
+    _localStream?.getVideoTracks().forEach((track) {
+      track.enabled = _isVideoEnabled;
     });
-
-    _startTimer();
   }
 
-  Future<void> _declineCall() async {
-    context.pop();
+  void _toggleMic() {
+    setState(() => _isMicEnabled = !_isMicEnabled);
+    _localStream?.getAudioTracks().forEach((track) {
+      track.enabled = _isMicEnabled;
+    });
+  }
+
+  Future<void> _switchCamera() async {
+    await Helper.switchCamera(_localStream!.getVideoTracks()[0]);
+    setState(() => _isFrontCamera = !_isFrontCamera);
   }
 
   String _formatDuration(int seconds) {
@@ -113,40 +388,53 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   }
 
   @override
+  void dispose() {
+    _cleanup();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
-    final currentUser = authState.user;
     final remoteUser = widget.remoteUser;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 远程视频（全屏）
-          Container(
-            color: Colors.black,
-            child: Center(
-              child: remoteUser != null
-                  ? AppAvatar(
-                      name: remoteUser.nickname,
-                      size: AvatarSize.extraLarge,
-                      avatarUrl: remoteUser.avatar,
-                    )
-                  : const Icon(
-                      Icons.person_outline,
-                      size: 120,
-                      color: Colors.white30,
-                    ),
+          // Remote video (full screen)
+          if (_callState == CallState.connected)
+            SizedBox.expand(
+              child: RTCVideoView(
+                _remoteRenderer,
+                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+              ),
+            )
+          else
+            Container(
+              color: Colors.black,
+              child: Center(
+                child: remoteUser != null
+                    ? AppAvatar(
+                        name: remoteUser.nickname,
+                        size: AvatarSize.extraLarge,
+                        avatarUrl: remoteUser.avatar,
+                      )
+                    : const Icon(
+                        Icons.person_outline,
+                        size: 120,
+                        color: Colors.white30,
+                      ),
+              ),
             ),
-          ),
 
-          // 本地视频（小窗口）
+          // Local video (small window)
           if (_isVideoEnabled && _callState == CallState.connected)
             Positioned(
               top: 40,
               right: 16,
               child: GestureDetector(
-                onTap: () => setState(() => _isFrontCamera = !_isFrontCamera),
+                onTap: _switchCamera,
                 child: Container(
                   width: 120,
                   height: 160,
@@ -154,22 +442,15 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                     color: Colors.grey.shade900,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: currentUser != null
-                      ? AppAvatar(
-                          name: currentUser.nickname,
-                          size: AvatarSize.large,
-                          avatarUrl: currentUser.avatar,
-                        )
-                      : const Icon(
-                          Icons.person_outline,
-                          size: 48,
-                          color: Colors.white30,
-                        ),
+                  child: RTCVideoView(
+                    _localRenderer,
+                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                  ),
                 ),
               ),
             ),
 
-          // 通话状态信息
+          // Call state info
           Positioned(
             top: 40,
             left: 0,
@@ -178,7 +459,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
               child: Column(
                 children: [
                   Text(
-                    remoteUser?.nickname ?? '用户',
+                    remoteUser?.nickname ?? 'User',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
@@ -210,7 +491,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
             ),
           ),
 
-          // 通话控制按钮
+          // Call controls
           Positioned(
             bottom: 0,
             left: 0,
@@ -225,7 +506,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
             ),
           ),
 
-          // 返回按钮
+          // Back button
           if (_callState != CallState.connected)
             Positioned(
               top: 40,
@@ -243,13 +524,13 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   String _getStatusText() {
     switch (_callState) {
       case CallState.calling:
-        return widget.isIncoming ? '邀请你视频通话...' : '正在呼叫...';
+        return widget.isIncoming ? 'Incoming video call...' : 'Calling...';
       case CallState.connecting:
-        return '连接中...';
+        return 'Connecting...';
       case CallState.connected:
-        return '视频通话中';
+        return 'Video call in progress';
       case CallState.ended:
-        return '通话已结束';
+        return 'Call ended';
     }
   }
 
@@ -277,15 +558,15 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       children: [
         _CallButton(
           icon: _isVideoEnabled ? Icons.videocam : Icons.videocam_off,
-          onTap: () => setState(() => _isVideoEnabled = !_isVideoEnabled),
+          onTap: _toggleVideo,
         ),
         _CallButton(
           icon: _isMicEnabled ? Icons.mic : Icons.mic_off,
-          onTap: () => setState(() => _isMicEnabled = !_isMicEnabled),
+          onTap: _toggleMic,
         ),
         _CallButton(
-          icon: Icons.switch_camera,
-          onTap: () => setState(() => _isFrontCamera = !_isFrontCamera),
+          icon: Icons.flip_camera_ios,
+          onTap: _switchCamera,
         ),
         _CallButton(
           icon: Icons.call_end,

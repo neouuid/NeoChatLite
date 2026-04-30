@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:neochat/widgets/common/common.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 
@@ -15,6 +16,7 @@ class MessageBubble extends StatelessWidget {
   final bool isRead;
   final String? senderName;
   final String? senderAvatar;
+  final String? messageId;
 
   const MessageBubble({
     super.key,
@@ -28,6 +30,7 @@ class MessageBubble extends StatelessWidget {
     this.isRead = false,
     this.senderName,
     this.senderAvatar,
+    this.messageId,
   });
 
   @override
@@ -70,7 +73,7 @@ class MessageBubble extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildMessageContent(isDark),
+                  _buildMessageContent(context, isDark),
                   const SizedBox(height: 4),
                   _buildTimeAndStatus(isDark),
                 ],
@@ -82,7 +85,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageContent(bool isDark) {
+  Widget _buildMessageContent(BuildContext context, bool isDark) {
     switch (type) {
       case MessageType.text:
         return Text(
@@ -96,73 +99,87 @@ class MessageBubble extends StatelessWidget {
           ),
         );
       case MessageType.image:
-        return Container(
-          width: 240,
-          height: 180,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+        return GestureDetector(
+          onTap: imageUrl != null
+              ? () {
+                  context.push('/media/image?url=${Uri.encodeComponent(imageUrl!)}${messageId != null ? '&id=${Uri.encodeComponent(messageId!)}' : ''}');
+                }
+              : null,
+          child: Container(
+            width: 240,
+            height: 180,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: isDark ? AppColors.inputBackgroundDark : AppColors.backgroundLight,
+            ),
+            child: imageUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(imageUrl!, fit: BoxFit.cover),
+                  )
+                : const Center(
+                    child: Icon(Icons.image, size: 48, color: AppColors.textSecondaryDark),
+                  ),
           ),
-          child: imageUrl != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(imageUrl!, fit: BoxFit.cover),
-                )
-              : const Center(
-                  child: Icon(Icons.image, size: 48, color: AppColors.textSecondaryDark),
-                ),
         );
       case MessageType.file:
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: isSent ? Colors.white.withValues(alpha: 0.15) : AppColors.inputBackgroundDark,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: isSent ? Colors.white.withValues(alpha: 0.25) : AppColors.backgroundLight,
+        return GestureDetector(
+          onTap: imageUrl != null
+              ? () {
+                  context.push('/media/file?url=${Uri.encodeComponent(imageUrl!)}&name=${Uri.encodeComponent(fileName ?? 'file')}${fileSize != null ? '&size=$fileSize' : ''}');
+                }
+              : null,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: isSent ? Colors.white.withValues(alpha: 0.15) : AppColors.inputBackgroundDark,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: isSent ? Colors.white.withValues(alpha: 0.25) : AppColors.backgroundLight,
+                  ),
+                  child: Icon(
+                    Icons.insert_drive_file,
+                    color: isSent ? Colors.white : AppColors.textSecondaryDark,
+                    size: 24,
+                  ),
                 ),
-                child: Icon(
-                  Icons.insert_drive_file,
-                  color: isSent ? Colors.white : AppColors.textSecondaryDark,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fileName ?? '文件',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: isSent
-                            ? Colors.white
-                            : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (fileSize != null)
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        _formatFileSize(fileSize!),
+                        fileName ?? '文件',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: isSent ? Colors.white.withValues(alpha: 0.7) : AppColors.textSecondaryDark,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: isSent
+                              ? Colors.white
+                              : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                  ],
+                      if (fileSize != null)
+                        Text(
+                          _formatFileSize(fileSize!),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isSent ? Colors.white.withValues(alpha: 0.7) : AppColors.textSecondaryDark,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       case MessageType.audio:

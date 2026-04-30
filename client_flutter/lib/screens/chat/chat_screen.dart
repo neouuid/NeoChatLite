@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:neochat/core/theme/app_theme.dart';
 import 'package:neochat/data/models/chat.dart';
 import 'package:neochat/providers/chat_provider.dart';
 import 'package:neochat/providers/auth_provider.dart';
+import 'package:neochat/providers/services_provider.dart';
 import 'package:neochat/widgets/common/common.dart';
 import 'package:neochat/widgets/chat/message_bubble.dart' as bubble;
 
@@ -20,6 +24,7 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
+  bool _isUploading = false;
 
   @override
   void dispose() {
@@ -84,6 +89,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           AppAvatar(
             name: conversation.name ?? '聊天',
             size: AvatarSize.medium,
+            avatarUrl: conversation.avatar,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -113,17 +119,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           IconButton(
             icon: const Icon(Icons.phone),
             color: AppColors.textSecondaryDark,
-            onPressed: () {},
+            onPressed: () {
+              context.push('/call/voice?id=${widget.conversationId}');
+            },
           ),
           IconButton(
             icon: const Icon(Icons.videocam),
             color: AppColors.textSecondaryDark,
-            onPressed: () {},
+            onPressed: () {
+              context.push('/call/video?id=${widget.conversationId}');
+            },
           ),
           IconButton(
             icon: const Icon(Icons.more_vert),
             color: AppColors.textSecondaryDark,
-            onPressed: () {},
+            onPressed: () {
+              if (widget.conversationId.startsWith('group-')) {
+                final groupId = widget.conversationId.replaceFirst('group-', '');
+                context.push('/group/$groupId');
+              } else {
+                context.push('/settings/chat/${widget.conversationId}');
+              }
+            },
           ),
         ],
       ),
@@ -181,6 +198,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           time: DateFormat.Hm().format(message.createdAt),
           isRead: message.readCount != null && message.readCount! > 0,
           senderName: senderName,
+          senderAvatar: message.sender?.avatar,
+          messageId: message.id,
         );
       },
       separatorBuilder: (context, index) => const SizedBox(height: 16),
@@ -205,17 +224,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           IconButton(
             icon: const Icon(Icons.emoji_emotions_outlined),
             color: AppColors.textSecondaryDark,
-            onPressed: () {},
+            onPressed: _showEmojiPicker,
           ),
           IconButton(
             icon: const Icon(Icons.image_outlined),
             color: AppColors.textSecondaryDark,
-            onPressed: () {},
+            onPressed: _isUploading ? null : _pickImage,
           ),
           IconButton(
             icon: const Icon(Icons.attach_file_outlined),
             color: AppColors.textSecondaryDark,
-            onPressed: () {},
+            onPressed: _isUploading ? null : _pickFile,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -241,18 +260,33 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(22),
+          if (_isUploading)
+            Container(
+              width: 44,
+              height: 44,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          else
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                onPressed: _sendMessage,
+              ),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 20),
-              onPressed: _sendMessage,
-            ),
-          ),
         ],
       ),
     );
@@ -263,6 +297,102 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final notifier = ref.read(messagesProvider(widget.conversationId).notifier);
       notifier.sendMessage(_messageController.text.trim());
       _messageController.clear();
+    }
+  }
+
+  void _showEmojiPicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        height: 300,
+        padding: const EdgeInsets.all(16),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 8,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+          ),
+          itemBuilder: (context, index) {
+            final emojis = ['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😰', '😱'];
+            if (index >= emojis.length) return null;
+            return GestureDetector(
+              onTap: () {
+                _messageController.text += emojis[index];
+                context.pop();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(emojis[index], style: const TextStyle(fontSize: 28)),
+                ),
+              ),
+            );
+          },
+          itemCount: 64,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      await _uploadMedia(image, 'image');
+    }
+  }
+
+  Future<void> _pickFile() async {
+    final FilePickerResult? result = await FilePicker.platform.pickFiles();
+    if (result != null && result.files.single.path != null) {
+      final file = XFile(result.files.single.path!);
+      await _uploadMedia(file, 'file');
+    }
+  }
+
+  Future<void> _uploadMedia(XFile file, String type) async {
+    setState(() => _isUploading = true);
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final response = await apiService.uploadFile(
+        '/api/v1/upload',
+        await MultipartFile.fromFile(file.path, filename: file.name),
+        data: {'type': type},
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final responseData = response.data as Map<String, dynamic>;
+        final data = responseData['data'] as Map<String, dynamic>;
+        final url = data['url'] as String;
+        final fileName = data['file_name'] as String?;
+        final fileSize = data['file_size'] as int?;
+
+        final notifier = ref.read(messagesProvider(widget.conversationId).notifier);
+        notifier.sendMediaMessage(
+          type == 'image' ? MessageType.image : MessageType.file,
+          url,
+          fileName ?? file.name,
+          fileSize,
+        );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('上传失败'), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('上传失败: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
     }
   }
 }
