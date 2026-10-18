@@ -133,3 +133,7 @@ project.lock.json
 artifacts/
 *_wpftmp.csproj
 .vs/
+
+# Dart 客户端 SDK 生成物
+client_sdk/dart/.dart_tool/
+client_sdk/dart/build/
