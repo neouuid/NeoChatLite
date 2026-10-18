@@ -288,6 +288,91 @@ Future<void> main(List<String> args) async {
     fail('撤回失败: $e');
   }
 
+  step('13. A 取消收藏后列表为空');
+  try {
+    api.token = tokenA;
+    final favorites = _list(await api.getChatFavorites());
+    String? favId;
+    for (final fav in favorites.whereType<Map>()) {
+      if (fav['message_id'] == messageId) {
+        favId = fav['id'] as String?;
+        break;
+      }
+    }
+    if (favId == null) {
+      fail('没找到刚才的收藏记录');
+    } else {
+      await api.deleteChatFavoritesId(id: favId);
+      final after = _list(await api.getChatFavorites());
+      final still = after.whereType<Map>().any((f) => f['message_id'] == messageId);
+      if (still) {
+        fail('取消收藏后仍在列表里');
+      } else {
+        ok('取消收藏生效');
+      }
+    }
+  } catch (e) {
+    fail('取消收藏失败: $e');
+  }
+
+  step('14. 群聊 @提及：B 收到提及并可标记已读');
+  try {
+    api.token = tokenA;
+    final groupRes = await api.postGroups(
+      body: {
+        'name': 'e2e 群 $suffix',
+        'member_ids': [idB],
+      },
+    );
+    final groupData = _data(groupRes);
+    // 建群返回 {conversation: {...}, group: {...}}
+    final groupConv = ((groupData['conversation'] as Map?)?['id'] ?? '') as String;
+    if (groupConv.isEmpty) {
+      fail('建群响应缺少会话 id');
+    } else {
+      ok('群会话: $groupConv');
+
+      await api.postChatMessages(
+        body: {
+          'conversation_id': groupConv,
+          'type': 'text',
+          'content': '@[Bob]($idB) 请查收这条提及',
+        },
+      );
+
+      api.token = tokenB;
+      final mentions = _list(await api.getChatMentions(limit: 20));
+      final hit = mentions.whereType<Map>().any(
+            (m) => (m['message'] is Map) &&
+                ((m['message'] as Map)['conversation_id'] == groupConv),
+          );
+      if (hit) {
+        ok('B 收到提及，共 ${mentions.length} 条');
+      } else {
+        fail('B 没有收到提及');
+      }
+
+      final countRes = await api.getChatMentionsUnreadCount();
+      final unread = (_data(countRes)['count'] as num?)?.toInt() ?? 0;
+      if (unread >= 1) {
+        ok('未读提及数 = $unread');
+      } else {
+        fail('未读提及数不符合预期: $unread');
+      }
+
+      await api.postChatMentionsReadAll();
+      final afterRes = await api.getChatMentionsUnreadCount();
+      final after = (_data(afterRes)['count'] as num?)?.toInt() ?? 0;
+      if (after == 0) {
+        ok('全部标记已读后未读清零');
+      } else {
+        fail('已读后未读仍为 $after');
+      }
+    }
+  } catch (e) {
+    fail('提及验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

@@ -5,6 +5,8 @@ import 'package:neochat_api/neochat_api.dart';
 
 import '../state/session.dart';
 import 'chat_page.dart';
+import 'favorites_page.dart';
+import 'mentions_page.dart';
 import 'search_page.dart';
 
 /// 会话列表：GET /api/v1/chat/conversations
@@ -21,11 +23,13 @@ class _ConversationsPageState extends State<ConversationsPage> {
   late Future<List<Map<String, dynamic>>> _future;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Map<String, bool> _online = {};
+  int _unreadMentions = 0;
 
   @override
   void initState() {
     super.initState();
     _future = widget.session.loadConversations();
+    _loadUnreadMentions();
     // 实时事件：新消息刷新列表；在线状态更新头像上的小圆点
     _realtimeSub = widget.session.realtimeEvents?.listen((event) {
       if (event.type == 'new_message') {
@@ -69,6 +73,16 @@ class _ConversationsPageState extends State<ConversationsPage> {
     return 0;
   }
 
+  Future<void> _loadUnreadMentions() async {
+    try {
+      final count = await widget.session.unreadMentionCount();
+      if (!mounted) return;
+      setState(() => _unreadMentions = count);
+    } catch (_) {
+      // 忽略：未读数不影响主流程
+    }
+  }
+
   /// 单聊会话里对方的 user_id（群聊返回 null）
   String? _peerUserId(Map<String, dynamic> conv) {
     final me = widget.session.userId;
@@ -108,10 +122,64 @@ class _ConversationsPageState extends State<ConversationsPage> {
               );
             },
           ),
-          IconButton(
-            tooltip: '退出登录',
-            icon: const Icon(Icons.logout),
-            onPressed: widget.session.logout,
+          PopupMenuButton<String>(
+            tooltip: '更多',
+            onSelected: (value) async {
+              switch (value) {
+                case 'mentions':
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MentionsPage(session: widget.session),
+                    ),
+                  );
+                  _loadUnreadMentions();
+                case 'favorites':
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => FavoritesPage(session: widget.session),
+                    ),
+                  );
+                case 'logout':
+                  widget.session.logout();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'mentions',
+                child: Row(
+                  children: [
+                    const Icon(Icons.alternate_email),
+                    const SizedBox(width: 12),
+                    const Text('@我的'),
+                    if (_unreadMentions > 0) ...[
+                      const SizedBox(width: 8),
+                      Badge(label: Text('$_unreadMentions')),
+                    ],
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'favorites',
+                child: Row(
+                  children: [
+                    Icon(Icons.star_outline),
+                    SizedBox(width: 12),
+                    Text('收藏'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 12),
+                    Text('退出登录'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

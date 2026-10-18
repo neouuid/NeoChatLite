@@ -156,6 +156,62 @@ class NeoChatSession extends ChangeNotifier {
     return _asList(res['data']);
   }
 
+  /// 我收到的 @提及列表
+  Future<List<Map<String, dynamic>>> loadMentions({int? limit}) async {
+    final res = await _api.getChatMentions(limit: limit);
+    return _asList(res['data']);
+  }
+
+  /// 未读提及数
+  Future<int> unreadMentionCount() async {
+    final res = await _api.getChatMentionsUnreadCount();
+    final data = _asMap(res['data']);
+    final count = data['count'];
+    return count is num ? count.toInt() : 0;
+  }
+
+  /// 标记单条提及已读
+  Future<bool> markMentionRead(String mentionId) async {
+    try {
+      await _api.postChatMentionIdRead(id: mentionId);
+      return true;
+    } catch (e) {
+      _error = '标记已读失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 全部提及标记已读
+  Future<bool> markAllMentionsRead() async {
+    try {
+      await _api.postChatMentionsReadAll();
+      return true;
+    } catch (e) {
+      _error = '标记已读失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 我的收藏
+  Future<List<Map<String, dynamic>>> loadFavorites() async {
+    final res = await _api.getChatFavorites();
+    return _asList(res['data']);
+  }
+
+  /// 取消收藏
+  Future<bool> removeFavorite(String favoriteId) async {
+    try {
+      await _api.deleteChatFavoritesId(id: favoriteId);
+      return true;
+    } catch (e) {
+      _error = '取消收藏失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// 离线消息补拉：带上上次同步得到的 server_time 作为游标。
   /// 返回本次补到的消息条数。
   Future<int> syncOfflineMessages() async {
