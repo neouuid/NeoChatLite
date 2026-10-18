@@ -69,7 +69,8 @@ echo "==> 构建后端（需要 cgo，SQLite 依赖它）"
 ( cd "$ROOT/backend" && CGO_ENABLED=1 go build -o "$RUN_DIR/neochat-server" ./cmd/api-gateway )
 
 echo "==> 启动后端（端口 $PORT，SQLite 模式，无 Redis）"
-( cd "$RUN_DIR" && ./neochat-server >server.log 2>&1 ) &
+# 用 exec 让 $! 就是服务进程本身，否则 kill 只能杀掉外层子 shell
+( cd "$RUN_DIR" && exec ./neochat-server >server.log 2>&1 ) &
 SERVER_PID=$!
 cleanup() {
   if kill -0 "$SERVER_PID" 2>/dev/null; then
