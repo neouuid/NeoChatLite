@@ -59,3 +59,13 @@ await rt.connect(token);
 | `message_read` | 服务端 → 客户端 | 有人标记会话已读时广播（`data.user_id` 是读者） |
 | `online_status` | 服务端 → 客户端 | 用户上下线（`data.user_id` / `data.online`） |
 | `signal_offer` / `signal_answer` | 双向 | WebRTC 信令（`data.to_user_id` 定向转发） |
+
+## 容易踩的协议细节（E2E 过程中确认）
+
+| 场景 | 约定 |
+|---|---|
+| 建群响应 | `data: {conversation: {...}, group: {...}}`，会话 ID 在 `data.conversation.id` |
+| @提及语法 | 文本里必须是 `@[显示名](用户UUID)`，服务端用正则解析后创建提及记录 |
+| 已读回执 | 服务端广播 `message_read`，`data.user_id` 是读者，`from_id` 也是读者 |
+| 撤回 | `DELETE /chat/messages/{id}` 为软删除，之后不会再出现在消息列表 |
+| 转发 | `POST /chat/messages/forward`，body `{message_id, conversation_ids[]}` |
