@@ -110,6 +110,52 @@ class NeoChatSession extends ChangeNotifier {
     }
   }
 
+  /// 撤回（删除）一条消息
+  Future<bool> deleteMessage(String messageId) async {
+    try {
+      await _api.deleteChatMessagesId(id: messageId);
+      return true;
+    } catch (e) {
+      _error = '撤回失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 转发消息到多个会话
+  Future<bool> forwardMessage(String messageId, List<String> conversationIds) async {
+    try {
+      await _api.postChatMessagesForward(
+        body: {'message_id': messageId, 'conversation_ids': conversationIds},
+      );
+      return true;
+    } catch (e) {
+      _error = '转发失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 收藏消息
+  Future<bool> favoriteMessage(String messageId, {String? note}) async {
+    try {
+      await _api.postChatFavorites(
+        body: {'message_id': messageId, if (note != null) 'note': note},
+      );
+      return true;
+    } catch (e) {
+      _error = '收藏失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 搜索消息（返回 [{id, conversation_id, content, ...}]）
+  Future<List<Map<String, dynamic>>> searchMessages(String query) async {
+    final res = await _api.getChatSearchMessages(q: query);
+    return _asList(res['data']);
+  }
+
   /// 离线消息补拉：带上上次同步得到的 server_time 作为游标。
   /// 返回本次补到的消息条数。
   Future<int> syncOfflineMessages() async {

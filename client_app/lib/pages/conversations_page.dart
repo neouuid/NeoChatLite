@@ -5,6 +5,7 @@ import 'package:neochat_api/neochat_api.dart';
 
 import '../state/session.dart';
 import 'chat_page.dart';
+import 'search_page.dart';
 
 /// 会话列表：GET /api/v1/chat/conversations
 class ConversationsPage extends StatefulWidget {
@@ -85,6 +86,17 @@ class _ConversationsPageState extends State<ConversationsPage> {
       appBar: AppBar(
         title: const Text('会话'),
         actions: [
+          IconButton(
+            tooltip: '搜索聊天记录',
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SearchPage(session: widget.session),
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: '同步离线消息',
             icon: const Icon(Icons.cloud_sync_outlined),

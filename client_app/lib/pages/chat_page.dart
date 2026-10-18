@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:neochat_api/neochat_api.dart';
 
 import '../state/session.dart';
@@ -138,6 +139,101 @@ class _ChatPageState extends State<ChatPage> {
     await _load();
   }
 
+  Future<void> _showMessageActions(Map<String, dynamic> msg) async {
+    final messageId = msg['id'] as String? ?? '';
+    final isMine = widget.session.userId != null &&
+        msg['sender_id'] == widget.session.userId;
+    final content = msg['content'] as String? ?? '';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: const Text('复制'),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await Clipboard.setData(ClipboardData(text: content));
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('已复制')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.star_outline),
+              title: const Text('收藏'),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                final ok = await widget.session.favoriteMessage(messageId);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(ok ? '已收藏' : (widget.session.error ?? '收藏失败'))),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.forward),
+              title: const Text('转发'),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await _forwardTo(messageId);
+              },
+            ),
+            if (isMine)
+              ListTile(
+                leading: const Icon(Icons.undo),
+                title: const Text('撤回'),
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  final ok = await widget.session.deleteMessage(messageId);
+                  if (!mounted) return;
+                  if (ok) {
+                    _load();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(widget.session.error ?? '撤回失败')),
+                    );
+                  }
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _forwardTo(String messageId) async {
+    final conversations = await widget.session.loadConversations();
+    if (!mounted) return;
+    final target = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('转发到'),
+        children: [
+          for (final conv in conversations)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, conv['id'] as String?),
+              child: Text(
+                (conv['name'] as String?)?.isNotEmpty == true
+                    ? conv['name'] as String
+                    : '会话 ${(conv['id'] as String? ?? '').split('-').first}',
+              ),
+            ),
+        ],
+      ),
+    );
+    if (target == null || target.isEmpty) return;
+    final ok = await widget.session.forwardMessage(messageId, [target]);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? '已转发' : (widget.session.error ?? '转发失败'))),
+    );
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
@@ -183,7 +279,9 @@ class _ChatPageState extends State<ChatPage> {
                           return Align(
                             alignment:
                                 isMine ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
+                            child: GestureDetector(
+                              onLongPress: () => _showMessageActions(msg),
+                              child: Container(
                               margin: const EdgeInsets.symmetric(vertical: 4),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -198,7 +296,8 @@ class _ChatPageState extends State<ChatPage> {
                                     : Theme.of(context).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(content),
+                                child: Text(content),
+                              ),
                             ),
                           );
                         },

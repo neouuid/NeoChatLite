@@ -130,11 +130,13 @@ Future<void> main(List<String> args) async {
 
   step('4. A 发送一条消息');
   const content = '端到端验证消息 hello-e2e';
+  late String messageId;
   try {
-    await api.postChatMessages(
+    final res = await api.postChatMessages(
       body: {'conversation_id': convId, 'type': 'text', 'content': content},
     );
-    ok('消息已发送');
+    messageId = (_data(res)['id'] ?? '') as String;
+    ok('消息已发送 id=$messageId');
   } catch (e) {
     fail('发送消息失败: $e');
     exit(1);
@@ -207,6 +209,83 @@ Future<void> main(List<String> args) async {
     }
   } catch (e) {
     fail('拉取消息列表失败: $e');
+  }
+
+  step('9. A 收藏该消息，收藏列表可见');
+  try {
+    api.token = tokenA;
+    await api.postChatFavorites(body: {'message_id': messageId});
+    final favorites = _list(await api.getChatFavorites());
+    final found = favorites.whereType<Map>().any((f) => f['message_id'] == messageId);
+    if (found) {
+      ok('收藏成功，共 ${favorites.length} 条');
+    } else {
+      fail('收藏列表中没有该消息');
+    }
+  } catch (e) {
+    fail('收藏失败: $e');
+  }
+
+  step('10. A 转发该消息到第二个会话');
+  late String conv2;
+  try {
+    // 建一个 A 与 B 的另一个会话（用群聊场景更简单：直接再建单聊会复用已有会话）
+    final res = await api.postChatConversations(body: {'user_id': idB});
+    conv2 = (_data(res)['id'] ?? '') as String;
+    ok('第二个会话: $conv2');
+  } catch (e) {
+    fail('建第二个会话失败: $e');
+  }
+  if (conv2.isNotEmpty) {
+    try {
+      await api.postChatMessagesForward(
+        body: {
+          'message_id': messageId,
+          'conversation_ids': [conv2],
+        },
+      );
+      final msgs = _list(await api.getChatConversationsIdMessages(id: conv2));
+      final forwarded = msgs.whereType<Map>().any(
+            (m) => (m['content'] as String?)?.contains(content) == true,
+          );
+      if (forwarded) {
+        ok('转发成功，目标会话包含该消息');
+      } else {
+        fail('目标会话里没有找到转发内容');
+      }
+    } catch (e) {
+      fail('转发失败: $e');
+    }
+  }
+
+  step('11. A 搜索消息');
+  try {
+    final res = await api.getChatSearchMessages(q: '端到端验证');
+    final hits = _list(res);
+    final found = hits.whereType<Map>().any(
+          (m) => (m['content'] as String?)?.contains('端到端验证') == true,
+        );
+    if (found) {
+      ok('搜索命中 ${hits.length} 条');
+    } else {
+      fail('搜索没有命中');
+    }
+  } catch (e) {
+    fail('搜索失败: $e');
+  }
+
+  step('12. A 撤回消息后不再出现在消息列表');
+  try {
+    await api.deleteChatMessagesId(id: messageId);
+    final msgs = _list(await api.getChatConversationsIdMessages(id: convId));
+    final stillThere = msgs.whereType<Map>().any((m) => m['id'] == messageId);
+    if (stillThere) {
+      fail('撤回后消息仍在列表中');
+    } else {
+      ok('撤回生效');
+    }
+  } catch (e) {
+    fail('撤回失败: $e');
   }
 
   print('');

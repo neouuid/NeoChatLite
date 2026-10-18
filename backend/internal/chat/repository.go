@@ -569,8 +569,8 @@ func (r *Repository) SearchMessages(userID uuid.UUID, query string, limit int) (
 	err := r.db.
 		Joins("JOIN conversation_members ON conversation_members.conversation_id = messages.conversation_id").
 		Where("conversation_members.user_id = ?", userID).
-		Where("messages.type = ? AND messages.content ILIKE ?", "text", "%"+query+"%").
-		Preload("Sender").Preload("Conversation").
+		Where("messages.type = ? AND LOWER(messages.content) LIKE LOWER(?)", "text", "%"+query+"%").
+		Preload("Sender").
 		Order("messages.created_at DESC").
 		Limit(limit).
 		Find(&msgs).Error
@@ -591,7 +591,7 @@ func (r *Repository) SearchGroups(userID uuid.UUID, query string, limit int) ([]
 	err := r.db.
 		Joins("JOIN conversation_members ON conversation_members.conversation_id = groups.id").
 		Where("conversation_members.user_id = ?", userID).
-		Where("groups.name ILIKE ?", "%"+query+"%").
+		Where("LOWER(groups.name) LIKE LOWER(?)", "%"+query+"%").
 		Order("groups.updated_at DESC").
 		Limit(limit).
 		Find(&groups).Error
