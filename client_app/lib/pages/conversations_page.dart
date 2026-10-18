@@ -19,15 +19,25 @@ class ConversationsPage extends StatefulWidget {
 class _ConversationsPageState extends State<ConversationsPage> {
   late Future<List<Map<String, dynamic>>> _future;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
+  final Map<String, bool> _online = {};
 
   @override
   void initState() {
     super.initState();
     _future = widget.session.loadConversations();
-    // 实时新消息 → 刷新会话列表（未读数/最后一条消息）
+    // 实时事件：新消息刷新列表；在线状态更新头像上的小圆点
     _realtimeSub = widget.session.realtimeEvents?.listen((event) {
       if (event.type == 'new_message') {
         _reload();
+        return;
+      }
+      if (event.type == 'online_status') {
+        final data = event.data;
+        if (data is Map && data['user_id'] is String) {
+          setState(() {
+            _online[data['user_id'] as String] = data['online'] == true;
+          });
+        }
       }
     });
   }
@@ -43,6 +53,30 @@ class _ConversationsPageState extends State<ConversationsPage> {
       _future = widget.session.loadConversations();
     });
     await _future;
+  }
+
+  /// 当前用户在该会话的未读数（服务端把 unread_count 挂在 members 上）
+  int _myUnread(Map<String, dynamic> conv) {
+    final me = widget.session.userId;
+    final members = (conv['members'] as List?) ?? const [];
+    for (final member in members.whereType<Map>()) {
+      if (member['user_id'] == me) {
+        final count = member['unread_count'];
+        return count is int ? count : 0;
+      }
+    }
+    return 0;
+  }
+
+  /// 单聊会话里对方的 user_id（群聊返回 null）
+  String? _peerUserId(Map<String, dynamic> conv) {
+    final me = widget.session.userId;
+    final members = (conv['members'] as List?) ?? const [];
+    for (final member in members.whereType<Map>()) {
+      final userId = member['user_id'];
+      if (userId is String && userId != me) return userId;
+    }
+    return null;
   }
 
   @override
@@ -105,14 +139,21 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     ? conv['name'] as String
                     : '会话 ${id.split('-').first}';
                 final subtitle = conv['last_message'] as String? ?? '';
-                final unread = conv['unread_count'];
+                final peerId = _peerUserId(conv);
+                final peerOnline = peerId != null && (_online[peerId] ?? false);
+                final unread = _myUnread(conv);
                 return ListTile(
-                  leading: CircleAvatar(
-                    child: Text(title.characters.first.toUpperCase()),
+                  leading: Badge(
+                    isLabelVisible: peerOnline,
+                    smallSize: 10,
+                    backgroundColor: Colors.green,
+                    child: CircleAvatar(
+                      child: Text(title.characters.first.toUpperCase()),
+                    ),
                   ),
                   title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
                   subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  trailing: (unread is int && unread > 0)
+                  trailing: unread > 0
                       ? Badge(label: Text('$unread'))
                       : null,
                   onTap: () {

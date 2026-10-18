@@ -1,8 +1,8 @@
 // 实时消息端到端验证：
 //   dart run tool/e2e_realtime.dart [baseUrl]
 //
-// 流程：注册/登录两个用户 → 建会话 → B 建立 WebSocket 连接 →
-// A 发送消息 → 断言 B 在 5 秒内收到 new_message 事件。
+// 覆盖：注册/登录 → 建会话 → 双方建立 WebSocket →
+//       发送消息(new_message) → 正在输入(typing) → 已读回执(message_read)
 import 'dart:async';
 import 'dart:io';
 
@@ -24,6 +24,22 @@ Map<String, dynamic> _data(dynamic res) {
     return Map<String, dynamic>.from(res['data'] as Map);
   }
   return <String, dynamic>{};
+}
+
+/// 在超时时间内等待满足条件的事件
+Future<RealtimeEvent?> _waitFor(
+  List<RealtimeEvent> events,
+  bool Function(RealtimeEvent) predicate, {
+  Duration timeout = const Duration(seconds: 5),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    for (final event in events) {
+      if (predicate(event)) return event;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+  }
+  return null;
 }
 
 Future<void> main(List<String> args) async {
@@ -88,32 +104,43 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 
-  step('3. B 建立 WebSocket 连接');
-  final realtime = RealtimeClient(baseUrl: baseUrl);
-  final received = <RealtimeEvent>[];
-  final connected = Completer<bool>();
-  final statusSub = realtime.statusStream.listen((status) {
-    if (status == RealtimeStatus.connected && !connected.isCompleted) {
-      connected.complete(true);
-    }
-  });
-  final eventSub = realtime.events.listen(received.add);
+  step('3. 双方建立 WebSocket 连接');
+  final rtA = RealtimeClient(baseUrl: baseUrl);
+  final rtB = RealtimeClient(baseUrl: baseUrl);
+  final eventsA = <RealtimeEvent>[];
+  final eventsB = <RealtimeEvent>[];
+  final subs = <StreamSubscription>[];
+
+  Future<bool> connectClient(RealtimeClient client, String token) async {
+    final connected = Completer<bool>();
+    subs.add(client.statusStream.listen((status) {
+      if (status == RealtimeStatus.connected && !connected.isCompleted) {
+        connected.complete(true);
+      }
+    }));
+    await client.connect(token);
+    return connected.future
+        .timeout(const Duration(seconds: 5), onTimeout: () => false);
+  }
 
   try {
-    await realtime.connect(tokenB);
-    final okConnected = await connected.future
-        .timeout(const Duration(seconds: 5), onTimeout: () => false);
-    if (!okConnected) {
-      fail('WebSocket 未在 5 秒内连上');
+    subs.add(rtA.events.listen(eventsA.add));
+    subs.add(rtB.events.listen(eventsB.add));
+    if (!await connectClient(rtA, tokenA)) {
+      fail('A 未能在 5 秒内连上');
       exit(1);
     }
-    ok('已连接，状态=${realtime.status}');
+    if (!await connectClient(rtB, tokenB)) {
+      fail('B 未能在 5 秒内连上');
+      exit(1);
+    }
+    ok('两端均已连接');
   } catch (e) {
     fail('连接失败: $e');
     exit(1);
   }
 
-  step('4. A 发送消息，B 应实时收到');
+  step('4. A 发送消息，B 应实时收到 new_message');
   const content = '实时消息验证 hello-realtime';
   try {
     api.token = tokenA;
@@ -121,37 +148,73 @@ Future<void> main(List<String> args) async {
       body: {'conversation_id': convId, 'type': 'text', 'content': content},
     );
 
-    // 等待 new_message 事件
-    final deadline = DateTime.now().add(const Duration(seconds: 5));
-    while (DateTime.now().isBefore(deadline)) {
-      final hit = received.any((event) =>
-          event.type == 'new_message' &&
-          event.convId == convId &&
-          event.data is Map &&
-          (event.data as Map)['content'] == content);
-      if (hit) break;
-      await Future<void>.delayed(const Duration(milliseconds: 120));
-    }
-
-    final hit = received.any((event) =>
-        event.type == 'new_message' &&
-        event.convId == convId &&
-        event.data is Map &&
-        (event.data as Map)['content'] == content);
-
-    if (hit) {
-      ok('收到 new_message 事件，共 ${received.length} 条实时事件');
+    final hit = await _waitFor(
+      eventsB,
+      (e) =>
+          e.type == 'new_message' &&
+          e.convId == convId &&
+          e.data is Map &&
+          (e.data as Map)['content'] == content,
+    );
+    if (hit != null) {
+      ok('B 收到 new_message');
     } else {
-      fail('5 秒内没有收到预期事件，收到: ${received.map((e) => e.type).toList()}');
+      fail('B 未收到 new_message，收到: ${eventsB.map((e) => e.type).toList()}');
     }
   } catch (e) {
     fail('发送消息失败: $e');
   }
 
-  step('5. 关闭连接');
-  await eventSub.cancel();
-  await statusSub.cancel();
-  await realtime.dispose();
+  step('5. B 发「正在输入」，A 应实时收到 typing');
+  try {
+    rtB.sendTyping(convId);
+    final hit = await _waitFor(
+      eventsA,
+      (e) => e.type == 'typing' && e.convId == convId && e.fromId != null,
+    );
+    if (hit != null) {
+      ok('A 收到 typing（from=${hit.fromId!.substring(0, 8)}…）');
+    } else {
+      fail('A 未收到 typing，收到: ${eventsA.map((e) => e.type).toList()}');
+    }
+
+    rtB.sendTyping(convId, typing: false);
+    final stop = await _waitFor(
+      eventsA,
+      (e) => e.type == 'stop_typing' && e.convId == convId,
+    );
+    if (stop != null) {
+      ok('A 收到 stop_typing');
+    } else {
+      fail('A 未收到 stop_typing');
+    }
+  } catch (e) {
+    fail('typing 验证失败: $e');
+  }
+
+  step('6. B 标记已读，A 应实时收到 message_read');
+  try {
+    api.token = tokenB;
+    await api.postChatConversationsIdRead(id: convId);
+    final hit = await _waitFor(
+      eventsA,
+      (e) => e.type == 'message_read' && e.convId == convId,
+    );
+    if (hit != null) {
+      ok('A 收到 message_read');
+    } else {
+      fail('A 未收到 message_read，收到: ${eventsA.map((e) => e.type).toList()}');
+    }
+  } catch (e) {
+    fail('已读验证失败: $e');
+  }
+
+  step('7. 关闭连接');
+  for (final sub in subs) {
+    await sub.cancel();
+  }
+  await rtA.dispose();
+  await rtB.dispose();
   ok('已断开');
 
   print('');

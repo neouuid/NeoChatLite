@@ -501,7 +501,25 @@ func (s *Service) MarkConversationAsRead(convID, userID uuid.UUID) error {
 		return errors.New("not a member of this conversation")
 	}
 
-	return s.repo.MarkConversationAsRead(convID, userID)
+	if err := s.repo.MarkConversationAsRead(convID, userID); err != nil {
+		return err
+	}
+
+	// 把「已读」实时同步给会话里的其他成员，客户端才能显示已读状态
+	if s.hub != nil {
+		s.hub.broadcast <- WSMessage{
+			Type:   WSMessageTypeMessageRead,
+			FromID: userID,
+			ConvID: convID,
+			Data: map[string]interface{}{
+				"conversation_id": convID,
+				"user_id":         userID,
+				"read_at":         time.Now().UTC().Format(time.RFC3339Nano),
+			},
+		}
+	}
+
+	return nil
 }
 
 // ==================== Favorite Service Methods ====================

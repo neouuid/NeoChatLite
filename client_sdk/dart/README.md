@@ -49,3 +49,13 @@ await rt.connect(token);
 - 内置心跳（25s 发 `ping`，`pong` 不进事件流）与指数退避重连（1/2/5/10/20s）
 - 传输层可通过 `RealtimeConnector` 替换（Flutter Web 用 `package:web_socket_channel` 实现即可）
 - 端到端验证：`dart run tool/e2e_realtime.dart http://127.0.0.1:18080`
+
+### 已支持的事件
+
+| 事件 | 方向 | 说明 |
+|---|---|---|
+| `new_message` | 服务端 → 客户端 | 新消息（含 `conv_id`、`data` 为消息体） |
+| `typing` / `stop_typing` | 双向 | `RealtimeClient.sendTyping(convId)` 发送，服务端转发给同会话成员 |
+| `message_read` | 服务端 → 客户端 | 有人标记会话已读时广播（`data.user_id` 是读者） |
+| `online_status` | 服务端 → 客户端 | 用户上下线（`data.user_id` / `data.online`） |
+| `signal_offer` / `signal_answer` | 双向 | WebRTC 信令（`data.to_user_id` 定向转发） |

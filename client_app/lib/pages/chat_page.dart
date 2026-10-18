@@ -28,22 +28,75 @@ class _ChatPageState extends State<ChatPage> {
   final List<Map<String, dynamic>> _messages = [];
   bool _loading = true;
   String? _error;
+  bool _peerTyping = false;
+  DateTime? _peerReadAt;
+  Timer? _typingResetTimer;
+  Timer? _typingSendTimer;
+  bool _typingSent = false;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
   @override
   void initState() {
     super.initState();
     _load();
-    // 实时消息到达时刷新当前会话
+    // 实时事件：新消息 / 对方正在输入 / 对方已读
     _realtimeSub = widget.session.realtimeEvents?.listen((event) {
-      if (event.type == 'new_message' && event.convId == widget.conversationId) {
-        _load();
+      if (event.convId != widget.conversationId) return;
+      final fromMe = event.fromId != null && event.fromId == widget.session.userId;
+
+      switch (event.type) {
+        case 'new_message':
+          _load();
+        case 'typing':
+          if (fromMe) return;
+          _typingResetTimer?.cancel();
+          setState(() => _peerTyping = true);
+          _typingResetTimer = Timer(const Duration(seconds: 3), () {
+            if (mounted) setState(() => _peerTyping = false);
+          });
+        case 'stop_typing':
+          if (fromMe) return;
+          _typingResetTimer?.cancel();
+          setState(() => _peerTyping = false);
+        case 'message_read':
+          if (fromMe) return;
+          setState(() => _peerReadAt = DateTime.now());
       }
+    });
+
+    // 输入变化时发送「正在输入」（800ms 防抖，停止输入后发 stop_typing）
+    _input.addListener(_onInputChanged);
+  }
+
+  void _onInputChanged() {
+    final hasText = _input.text.trim().isNotEmpty;
+
+    _typingSendTimer?.cancel();
+    if (!hasText) {
+      if (_typingSent) {
+        widget.session.sendTyping(widget.conversationId, typing: false);
+        _typingSent = false;
+      }
+      return;
+    }
+
+    _typingSendTimer = Timer(const Duration(milliseconds: 800), () {
+      widget.session.sendTyping(widget.conversationId);
+      _typingSent = true;
+      // 停顿后自动收起输入状态
+      _typingSendTimer = Timer(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        widget.session.sendTyping(widget.conversationId, typing: false);
+        _typingSent = false;
+      });
     });
   }
 
   @override
   void dispose() {
+    _typingResetTimer?.cancel();
+    _typingSendTimer?.cancel();
+    _input.removeListener(_onInputChanged);
     _realtimeSub?.cancel();
     _input.dispose();
     _scroll.dispose();
@@ -151,6 +204,25 @@ class _ChatPageState extends State<ChatPage> {
                         },
                       ),
           ),
+          if (_peerTyping || _peerReadAt != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  if (_peerTyping)
+                    Text(
+                      '对方正在输入…',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  const Spacer(),
+                  if (_peerReadAt != null)
+                    Text(
+                      '对方已读',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                ],
+              ),
+            ),
           SafeArea(
             top: false,
             child: Padding(

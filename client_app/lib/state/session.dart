@@ -120,6 +120,11 @@ class NeoChatSession extends ChangeNotifier {
     return messages.length;
   }
 
+  /// 发送「正在输入」状态（未建立实时连接时是空操作）
+  void sendTyping(String conversationId, {bool typing = true}) {
+    _realtime?.sendTyping(conversationId, typing: typing);
+  }
+
   /// 建立实时连接；重连成功后自动补拉离线消息。
   Future<void> _connectRealtime(String token) async {
     final client = RealtimeClient(baseUrl: _baseUrl);

@@ -130,6 +130,29 @@ class RealtimeClient {
     await _open();
   }
 
+  /// 发送「正在输入」/「停止输入」。
+  /// 服务端会转发给同会话的其他成员（type: typing / stop_typing）。
+  void sendTyping(String conversationId, {bool typing = true}) {
+    _sendEvent({
+      'type': typing ? 'typing' : 'stop_typing',
+      'conv_id': conversationId,
+      'data': {'conversation_id': conversationId},
+    });
+  }
+
+  /// 发送任意已约定的 WS 事件（用于 WebRTC 信令等扩展场景）
+  void sendEvent(Map<String, dynamic> event) => _sendEvent(event);
+
+  void _sendEvent(Map<String, dynamic> event) {
+    final socket = _socket;
+    if (socket == null) return;
+    try {
+      socket.send(jsonEncode(event));
+    } catch (_) {
+      _scheduleReconnect();
+    }
+  }
+
   /// 主动断开，不再自动重连
   Future<void> disconnect() async {
     _closedByUser = true;
