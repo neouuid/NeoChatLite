@@ -14,6 +14,7 @@ import (
 	"github.com/neochat/backend/internal/auth"
 	"github.com/neochat/backend/internal/chat"
 	"github.com/neochat/backend/internal/user"
+	"github.com/neochat/backend/pkg/broadcast"
 	"github.com/neochat/backend/pkg/config"
 	"github.com/neochat/backend/pkg/database"
 	"github.com/neochat/backend/pkg/email"
@@ -78,6 +79,22 @@ func main() {
 	wsHub := chat.NewWebSocketHub(chatService, cfg)
 	chatService.SetWebSocketHub(wsHub)
 	userHandler.SetWebSocketHub(wsHub)
+
+	// 跨实例广播：多实例部署时把消息同步给其它实例上的连接。
+	// 未配置 Redis 时自动降级为进程内广播（单实例行为）。
+	if redis.Client != nil {
+		broadcaster := broadcast.New(redis.Client, instanceID())
+		wsHub.SetBroadcaster(broadcaster)
+		if err := broadcaster.Subscribe(context.Background(), wsHub.DeliverRemote); err != nil {
+			logger.Errorf("Failed to subscribe cross-instance broadcast: %v", err)
+		} else {
+			logger.Info("Cross-instance WebSocket broadcast enabled (Redis Pub/Sub)")
+			defer func() { _ = broadcaster.Close() }()
+		}
+	} else {
+		logger.Warn("Redis not configured, WebSocket broadcast is limited to this instance")
+	}
+
 	go wsHub.Run()
 
 	// 设置路由
@@ -123,4 +140,13 @@ func main() {
 	}
 
 	logger.Info("Server exiting")
+}
+
+// instanceID 生成本实例的唯一标识，用于跨实例广播时跳过自己发出的消息。
+func instanceID() string {
+	host, err := os.Hostname()
+	if err != nil || host == "" {
+		host = "unknown-host"
+	}
+	return fmt.Sprintf("%s-%d", host, os.Getpid())
 }

@@ -253,6 +253,59 @@ func (h *Handler) GetConversationMessages(c *gin.Context) {
 	response.Success(c, msgs)
 }
 
+// SyncOfflineMessages 离线消息增量同步
+// @Summary 离线消息同步
+// @Description 客户端重连/冷启动时携带 since（上次返回的 server_time）增量拉取错过的消息
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param since query string false "上次同步的 server_time（RFC3339），缺省为最近 7 天"
+// @Param limit query int false "单次最大条数，默认 200，最大 500"
+// @Success 200 {object} response.ApiResponse{data=object}
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/sync [get]
+func (h *Handler) SyncOfflineMessages(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	since := time.Now().Add(-7 * 24 * time.Hour)
+	if raw := c.Query("since"); raw != "" {
+		parsed, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			response.BadRequest(c, "invalid since, expected RFC3339")
+			return
+		}
+		since = parsed
+	}
+
+	limit := 200
+	if raw := c.Query("limit"); raw != "" {
+		_, _ = fmt.Sscanf(raw, "%d", &limit)
+	}
+
+	// 先记录同步窗口的结束时间再查询：可能重复，但不会漏掉查询期间到达的消息。
+	// 客户端按消息 ID 去重即可。
+	syncedAt := time.Now()
+
+	msgs, err := h.service.GetOfflineMessages(userID, since, limit)
+	if err != nil {
+		response.InternalServerError(c, "failed to sync messages")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"messages":    msgs,
+		"since":       since.UTC().Format(time.RFC3339Nano),
+		"server_time": syncedAt.UTC().Format(time.RFC3339Nano),
+		"has_more":    len(msgs) >= limit,
+	})
+}
+
 // EditMessage 编辑消息
 // @Summary 编辑消息
 // @Description 编辑已发送的消息

@@ -245,6 +245,34 @@ func (r *Repository) MarkConversationAsRead(convID, userID uuid.UUID) error {
 	return r.UpdateConversationMember(member)
 }
 
+// GetMessagesSince 拉取「用户所在会话中、since 之后」的所有消息。
+// 用于客户端重连/冷启动时的离线消息补拉：数据库是消息的唯一真相，
+// 客户端只需带上上次同步得到的 server_time 作为游标即可增量同步。
+func (r *Repository) GetMessagesSince(userID uuid.UUID, since time.Time, limit int) ([]*Message, error) {
+	if limit <= 0 {
+		limit = 200
+	}
+	if limit > 500 {
+		limit = 500
+	}
+
+	var msgs []*Message
+	err := r.db.
+		Joins("JOIN conversation_members ON conversation_members.conversation_id = messages.conversation_id").
+		Where("conversation_members.user_id = ?", userID).
+		Where("conversation_members.deleted_at IS NULL").
+		Where("messages.created_at > ?", since).
+		Preload("Sender").
+		Order("messages.created_at ASC").
+		Limit(limit).
+		Find(&msgs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return msgs, nil
+}
+
 // GetUnreadCount 获取未读消息数
 func (r *Repository) GetUnreadCount(convID, userID uuid.UUID) (int64, error) {
 	member, err := r.GetConversationMember(convID, userID)

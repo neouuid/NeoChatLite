@@ -173,6 +173,9 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			chatGroup.PUT("/message/:id", deps.ChatHandler.EditMessage)
 			chatGroup.DELETE("/message/:id", deps.ChatHandler.DeleteMessage)
 
+			// 离线消息增量同步（客户端重连后补拉）
+			chatGroup.GET("/sync", deps.ChatHandler.SyncOfflineMessages)
+
 			// 收藏（主路径复数，旧路径兼容）
 			chatGroup.GET("/favorites", deps.ChatHandler.GetUserFavorites)
 			chatGroup.POST("/favorites", deps.ChatHandler.AddFavorite)

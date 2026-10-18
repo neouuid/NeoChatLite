@@ -17,7 +17,22 @@ func TestWebSocketIntegration(t *testing.T) {
 
 	// 设置测试环境
 	cfg := test.SetupTestConfig(t)
-	db := test.SetupTestDatabase(t, cfg)
+	db := test.SetupTestDatabase(t, cfg,
+		&user.User{},
+		&user.Friend{},
+		&user.Blocklist{},
+		&auth.VerificationToken{},
+		&auth.Device{},
+		&auth.LoginHistory{},
+		&Conversation{},
+		&ConversationMember{},
+		&Message{},
+		&MessageRead{},
+		&Group{},
+		&Favorite{},
+		&CallRecord{},
+		&Mention{},
+	)
 	defer test.CleanupTestDatabase(t)
 
 	// 初始化各模块

@@ -430,6 +430,13 @@ func (s *Service) GetConversationMessages(convID, userID uuid.UUID, before *time
 	return s.repo.GetConversationMessages(convID, before, limit)
 }
 
+// GetOfflineMessages 补拉离线消息。
+// 客户端断线期间的消息已经落库，重连后带上上次的 server_time 即可增量拉取，
+// 因此「离线消息」不依赖额外的队列，数据库本身就是可靠存储。
+func (s *Service) GetOfflineMessages(userID uuid.UUID, since time.Time, limit int) ([]*Message, error) {
+	return s.repo.GetMessagesSince(userID, since, limit)
+}
+
 // EditMessage 编辑消息
 func (s *Service) EditMessage(msgID, userID uuid.UUID, content string) (*Message, error) {
 	msg, err := s.repo.GetMessageByID(msgID)

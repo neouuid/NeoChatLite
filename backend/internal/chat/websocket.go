@@ -1,14 +1,17 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
+	"github.com/neochat/backend/pkg/broadcast"
 	"github.com/neochat/backend/pkg/config"
 	"github.com/neochat/backend/pkg/logger"
 )
@@ -60,15 +63,17 @@ type Client struct {
 
 // WebSocketHub WebSocket集线器
 type WebSocketHub struct {
-	clients    map[uuid.UUID]*Client
-	userConns  map[uuid.UUID]map[uuid.UUID]bool // userID -> clientID -> bool
-	register   chan *Client
-	unregister chan *Client
-	broadcast  chan WSMessage
-	mu         sync.RWMutex
-	service    *Service
-	upgrader   websocket.Upgrader
-	cfg        *config.Config
+	clients     map[uuid.UUID]*Client
+	userConns   map[uuid.UUID]map[uuid.UUID]bool // userID -> clientID -> bool
+	register    chan *Client
+	unregister  chan *Client
+	broadcast   chan WSMessage
+	remote      chan WSMessage // 来自其它实例的广播
+	broadcaster broadcast.Broadcaster
+	mu          sync.RWMutex
+	service     *Service
+	upgrader    websocket.Upgrader
+	cfg         *config.Config
 }
 
 func NewWebSocketHub(service *Service, cfg *config.Config) *WebSocketHub {
@@ -78,6 +83,7 @@ func NewWebSocketHub(service *Service, cfg *config.Config) *WebSocketHub {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan WSMessage, 256),
+		remote:     make(chan WSMessage, 256),
 		service:    service,
 		cfg:        cfg,
 	}
@@ -89,6 +95,78 @@ func NewWebSocketHub(service *Service, cfg *config.Config) *WebSocketHub {
 	}
 
 	return hub
+}
+
+// SetBroadcaster 注入跨实例广播器。
+// 不注入时保持单实例行为（所有投递只发生在当前进程内）。
+func (h *WebSocketHub) SetBroadcaster(b broadcast.Broadcaster) {
+	h.broadcaster = b
+}
+
+// DeliverRemote 处理来自其它实例的广播：解析出 WSMessage 后投递给本地连接。
+// 该方法是 broadcast.Handler 的实现，由订阅协程调用。
+func (h *WebSocketHub) DeliverRemote(env broadcast.Envelope) {
+	var message WSMessage
+	if err := json.Unmarshal(env.Payload, &message); err != nil {
+		logger.Warnf("Invalid remote broadcast payload: %v", err)
+		return
+	}
+
+	// 定向投递：只推给信封里点名的用户
+	if len(env.UserIDs) > 0 {
+		for _, raw := range env.UserIDs {
+			userID, err := uuid.Parse(raw)
+			if err != nil {
+				continue
+			}
+			h.deliverToUser(userID, message)
+		}
+		return
+	}
+
+	// 会话/全员广播交给 Run 循环统一处理（需要查会话成员）
+	select {
+	case h.remote <- message:
+	default:
+		logger.Warnf("Remote broadcast queue full, dropping message type=%s", message.Type)
+	}
+}
+
+// publish 把消息广播给其它实例（异步、失败不影响本地投递）。
+func (h *WebSocketHub) publish(env broadcast.Envelope) {
+	if h.broadcaster == nil {
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		if err := h.broadcaster.Publish(ctx, env); err != nil {
+			logger.Warnf("Failed to publish broadcast: %v", err)
+		}
+	}()
+}
+
+// isTransientMessage 判断是否是无需跨实例同步的瞬时消息
+func isTransientMessage(messageType string) bool {
+	switch messageType {
+	case WSMessageTypePing, WSMessageTypePong, WSMessageTypeError:
+		return true
+	default:
+		return false
+	}
+}
+
+// publishMessage 把一个 WSMessage 广播给其它实例
+func (h *WebSocketHub) publishMessage(message WSMessage, userIDs ...string) {
+	if h.broadcaster == nil || isTransientMessage(message.Type) {
+		return
+	}
+	payload, err := json.Marshal(message)
+	if err != nil {
+		logger.Warnf("Failed to marshal WSMessage for broadcast: %v", err)
+		return
+	}
+	h.publish(broadcast.Envelope{UserIDs: userIDs, Payload: payload})
 }
 
 // checkOrigin 检查 WebSocket Origin
@@ -172,11 +250,22 @@ func (h *WebSocketHub) Run() {
 
 		case message := <-h.broadcast:
 			h.handleBroadcast(message)
+
+		case message := <-h.remote:
+			// 来自其它实例的广播：只做本地投递，不再二次发布，避免循环
+			h.deliverLocal(message)
 		}
 	}
 }
 
 func (h *WebSocketHub) handleBroadcast(message WSMessage) {
+	// 先做本地投递，再广播给其它实例，保证单实例与多实例行为一致
+	h.deliverLocal(message)
+	h.publishMessage(message)
+}
+
+// deliverLocal 只做当前进程内的投递（本实例的连接）
+func (h *WebSocketHub) deliverLocal(message WSMessage) {
 	switch message.Type {
 	case WSMessageTypeNewMessage:
 		// 发送给会话中的所有成员
@@ -237,8 +326,14 @@ func (h *WebSocketHub) broadcastToAll(message WSMessage) {
 	}
 }
 
-// SendToUser 发送消息给指定用户的所有连接
+// SendToUser 发送消息给指定用户的所有连接（本地投递 + 广播到其它实例）
 func (h *WebSocketHub) SendToUser(userID uuid.UUID, message WSMessage) {
+	h.deliverToUser(userID, message)
+	h.publishMessage(message, userID.String())
+}
+
+// deliverToUser 只投递给当前实例上该用户的连接
+func (h *WebSocketHub) deliverToUser(userID uuid.UUID, message WSMessage) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 

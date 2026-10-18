@@ -201,6 +201,8 @@ func CreateTestUser(t *testing.T, db *gorm.DB, username, email, password string)
 	testUser := &user.User{
 		Username: username,
 		Email:    email,
+		// users.phone 是唯一索引，多个测试用户共用空串会冲突
+		Phone:    "13" + uuid.New().String()[:9],
 		Password: hashedPassword,
 		Nickname: username,
 	}
