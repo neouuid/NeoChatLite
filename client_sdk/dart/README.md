@@ -32,40 +32,63 @@ final convs = await api.get_chat_conversations();
 final rt = RealtimeClient(baseUrl: 'http://localhost:8080');
 rt.statusStream.listen((status) {
   if (status == RealtimeStatus.connected) {
-    // 重连成功：补拉离线消息
-    api.getChatSync(since: lastServerTime);
+    api.getChatSync(since: lastServerTime); // 重连后补拉离线消息
   }
 });
 rt.events.listen((event) {
-  if (event.type == 'new_message') {
-    print('${event.convId}: ${event.data['content']}');
-  }
+  if (event.type == 'new_message') print(event.data['content']);
 });
 await rt.connect(token);
 ```
 
-- 连接地址 `ws(s)://host/api/v1/chat/ws?token=<JWT>`；浏览器 WS 无法自定义请求头，
-  服务端为此提供了 `WebSocketAuthMiddleware`（仅 `/chat/ws` 接受 `?token=`）
-- 内置心跳（25s 发 `ping`，`pong` 不进事件流）与指数退避重连（1/2/5/10/20s）
-- 传输层可通过 `RealtimeConnector` 替换（Flutter Web 用 `package:web_socket_channel` 实现即可）
-- 端到端验证：`dart run tool/e2e_realtime.dart http://127.0.0.1:18080`
+- 地址 `ws(s)://host/api/v1/chat/ws?token=<JWT>`；浏览器 WS 无法自定义请求头，
+  服务端为此提供 `WebSocketAuthMiddleware`（仅 `/chat/ws` 接受 `?token=`）
+- 内置心跳（25s ping，pong 不进事件流）与指数退避重连（1/2/5/10/20s）
+- 传输层可用 `RealtimeConnector` 替换（Web 端注入自己的实现即可）
 
-### 已支持的事件
+### 事件表
 
 | 事件 | 方向 | 说明 |
 |---|---|---|
-| `new_message` | 服务端 → 客户端 | 新消息（含 `conv_id`、`data` 为消息体） |
-| `typing` / `stop_typing` | 双向 | `RealtimeClient.sendTyping(convId)` 发送，服务端转发给同会话成员 |
-| `message_read` | 服务端 → 客户端 | 有人标记会话已读时广播（`data.user_id` 是读者） |
-| `online_status` | 服务端 → 客户端 | 用户上下线（`data.user_id` / `data.online`） |
-| `signal_offer` / `signal_answer` | 双向 | WebRTC 信令（`data.to_user_id` 定向转发） |
+| `new_message` | 服务端 → 客户端 | 新消息（`conv_id` + `data` 为消息体） |
+| `typing` / `stop_typing` | 双向 | `sendTyping(convId)`，服务端转发给同会话成员 |
+| `message_read` | 服务端 → 客户端 | 有人标记已读时广播（`data.user_id` 是读者） |
+| `online_status` | 服务端 → 客户端 | 上下线（`data.user_id` / `data.online`） |
+| `signal_offer` / `signal_answer` | 双向 | WebRTC 信令，按 `data.to_user_id` 定向转发 |
 
-## 容易踩的协议细节（E2E 过程中确认）
+## 附件上传
 
-| 场景 | 约定 |
-|---|---|
-| 建群响应 | `data: {conversation: {...}, group: {...}}`，会话 ID 在 `data.conversation.id` |
-| @提及语法 | 文本里必须是 `@[显示名](用户UUID)`，服务端用正则解析后创建提及记录 |
-| 已读回执 | 服务端广播 `message_read`，`data.user_id` 是读者，`from_id` 也是读者 |
-| 撤回 | `DELETE /chat/messages/{id}` 为软删除，之后不会再出现在消息列表 |
-| 转发 | `POST /chat/messages/forward`，body `{message_id, conversation_ids[]}` |
+```dart
+final data = await uploadWithUploader(
+  uploader: IoUploader(),
+  baseUrl: 'http://localhost:8080',
+  bytes: fileBytes,
+  filename: 'photo.png',
+  type: 'image',        // image | file
+  token: token,
+);
+// data: {url, file_name, file_size, mime_type}
+
+await api.postChatMessages(body: {
+  'conversation_id': convId,
+  'type': 'image',      // image | file
+  'content': '',
+  'media_url': data['url'],
+  'file_name': data['file_name'],
+  'file_size': data['file_size'],
+});
+```
+
+- 服务端按 **multipart part 的 Content-Type** 校验图片类型，SDK 会按扩展名推断
+  （png/jpeg/gif/webp/pdf/txt/zip），否则会报 `unsupported image type`
+- 上传后的相对 URL（`/uploads/...`）需要拼上服务端地址才能访问
+
+## 响应结构约定
+
+- 所有接口统一信封 `{success, data, errors?, message?}`
+- 登录返回 **`access_token`**（另有 `refresh_token`），不是 `token`
+- `unread_count` 挂在 `conversation.members[]`，**按用户区分**，不是会话顶层
+- `GET /chat/sync` 的 `data` 为 `{messages, since, server_time, has_more}`
+- 建群响应 `data: {conversation, group}`，会话 ID 在 `data.conversation.id`
+- @提及语法必须是 `@[显示名](用户UUID)`，服务端用正则解析
+- 注册时 `email` / `phone` 唯一，批量建测试账号需各自唯一

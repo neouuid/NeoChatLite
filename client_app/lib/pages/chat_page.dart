@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:neochat_api/neochat_api.dart';
 
@@ -140,6 +141,143 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
     await _load();
+  }
+
+  Widget _buildBubbleContent(Map<String, dynamic> msg, String content) {
+    final type = msg['type'] as String? ?? 'text';
+    final mediaUrl = msg['media_url'] as String? ?? '';
+
+    if (type == 'image' && mediaUrl.isNotEmpty) {
+      return GestureDetector(
+        onTap: () => _previewImage(mediaUrl),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            '${widget.session.baseUrl}$mediaUrl',
+            width: 180,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const Text('[图片加载失败]'),
+          ),
+        ),
+      );
+    }
+
+    if (type == 'file') {
+      final fileName = msg['file_name'] as String? ?? '文件';
+      final size = msg['file_size'];
+      final sizeLabel = size is int ? _formatSize(size) : '';
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.insert_drive_file, size: 20),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(fileName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                if (sizeLabel.isNotEmpty)
+                  Text(sizeLabel, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Text(content);
+  }
+
+  static String _formatSize(int bytes) {
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
+    }
+    if (bytes >= 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '$bytes B';
+  }
+
+  void _previewImage(String mediaUrl) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(8),
+        child: InteractiveViewer(
+          child: Image.network('${widget.session.baseUrl}$mediaUrl'),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAttachmentSheet() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.image_outlined),
+              title: const Text('发送图片'),
+              onTap: () => Navigator.pop(sheetContext, 'image'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_file),
+              title: const Text('发送文件'),
+              onTap: () => Navigator.pop(sheetContext, 'file'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || choice == null) return;
+    await _pickAndSend(isImage: choice == 'image');
+  }
+
+  Future<void> _pickAndSend({required bool isImage}) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: isImage ? FileType.image : FileType.any,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('无法读取文件内容')),
+      );
+      return;
+    }
+
+    // 上传期间用一个简单的加载提示
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('正在上传 ${file.name}…'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+
+    final ok = await widget.session.sendAttachment(
+      conversationId: widget.conversationId,
+      bytes: bytes,
+      filename: file.name,
+      isImage: isImage,
+    );
+    if (!mounted) return;
+    if (ok) {
+      await _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.session.error ?? '发送失败')),
+      );
+    }
   }
 
   Future<void> _showMessageActions(Map<String, dynamic> msg) async {
@@ -315,7 +453,7 @@ class _ChatPageState extends State<ChatPage> {
                                     : Theme.of(context).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                                child: Text(content),
+                                child: _buildBubbleContent(msg, content),
                               ),
                             ),
                           );
@@ -347,6 +485,11 @@ class _ChatPageState extends State<ChatPage> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Row(
                 children: [
+                  IconButton(
+                    tooltip: '发送图片或文件',
+                    icon: const Icon(Icons.attach_file),
+                    onPressed: _showAttachmentSheet,
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _input,

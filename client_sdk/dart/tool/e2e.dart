@@ -460,6 +460,66 @@ Future<void> main(List<String> args) async {
     fail('群管理验证失败: $e');
   }
 
+  step('16. 上传图片并发送图片消息');
+  try {
+    // 1x1 透明 PNG
+    final png = <int>[
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+      0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+      0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+    ];
+
+    api.token = tokenA;
+    final uploaded = await uploadWithUploader(
+      uploader: IoUploader(),
+      baseUrl: baseUrl,
+      bytes: png,
+      filename: 'tiny.png',
+      type: 'image',
+      token: tokenA,
+    );
+    final mediaUrl = (uploaded['url'] ?? '') as String;
+    if (mediaUrl.isEmpty) {
+      fail('上传响应缺少 url: $uploaded');
+    } else {
+      ok('上传成功: $mediaUrl');
+
+      await api.postChatMessages(
+        body: {
+          'conversation_id': convId,
+          'type': 'image',
+          'content': '',
+          'media_url': mediaUrl,
+          'file_name': 'tiny.png',
+          'file_size': png.length,
+        },
+      );
+
+      final msgs = _list(await api.getChatConversationsIdMessages(id: convId));
+      final found = msgs.whereType<Map>().any(
+            (m) => m['type'] == 'image' && m['media_url'] == mediaUrl,
+          );
+      if (found) {
+        ok('图片消息已发送');
+      } else {
+        fail('消息列表里没有找到图片消息');
+      }
+
+      final req = await HttpClient().getUrl(Uri.parse('$baseUrl$mediaUrl'));
+      final resp = await req.close();
+      if (resp.statusCode == 200) {
+        ok('附件可访问（HTTP 200）');
+      } else {
+        fail('附件访问失败: ${resp.statusCode}');
+      }
+    }
+  } catch (e) {
+    fail('上传/图片消息失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

@@ -10,8 +10,10 @@ class NeoChatSession extends ChangeNotifier {
   NeoChatSession({
     String? baseUrl,
     NeoChatApi? api,
+    Uploader? uploader,
     bool enableRealtime = true,
-  })  : _api = api ??
+  })  : _uploader = uploader ?? IoUploader(),
+        _api = api ??
             NeoChatApi(
               baseUrl: baseUrl ?? defaultBaseUrl,
             ),
@@ -28,7 +30,11 @@ class NeoChatSession extends ChangeNotifier {
   NeoChatApi get api => _api;
 
   final String _baseUrl;
+  final Uploader _uploader;
   final bool _enableRealtime;
+
+  /// 服务端地址（拼接上传后的相对 URL 用）
+  String get baseUrl => _baseUrl;
   RealtimeClient? _realtime;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   StreamSubscription<RealtimeStatus>? _realtimeStatusSub;
@@ -307,6 +313,72 @@ class NeoChatSession extends ChangeNotifier {
       return true;
     } catch (e) {
       _error = '解散失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 上传附件，返回服务端 data（含 url）
+  Future<Map<String, dynamic>?> uploadAttachment({
+    required List<int> bytes,
+    required String filename,
+    String type = 'file',
+  }) async {
+    try {
+      return await uploadWithUploader(
+        uploader: _uploader,
+        baseUrl: _baseUrl,
+        bytes: bytes,
+        filename: filename,
+        type: type,
+        token: _api.token,
+      );
+    } catch (e) {
+      _error = '上传失败：$e';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// 上传并发送一条图片/文件消息
+  Future<bool> sendAttachment({
+    required String conversationId,
+    required List<int> bytes,
+    required String filename,
+    required bool isImage,
+  }) async {
+    final uploaded = await uploadAttachment(
+      bytes: bytes,
+      filename: filename,
+      type: isImage ? 'image' : 'file',
+    );
+    if (uploaded == null) return false;
+
+    final url = (_asString(uploaded['url']) ?? '');
+    if (url.isEmpty) {
+      _error = '上传响应缺少 url';
+      notifyListeners();
+      return false;
+    }
+
+    final ok = await sendMessagePayload({
+      'conversation_id': conversationId,
+      'type': isImage ? 'image' : 'file',
+      'content': isImage ? '' : filename,
+      'media_url': url,
+      'file_name': _asString(uploaded['file_name']) ?? filename,
+      'file_size': uploaded['file_size'] ?? bytes.length,
+    });
+    return ok;
+  }
+
+  /// 发送一条自定义消息体（附件等场景复用）
+  Future<bool> sendMessagePayload(Map<String, dynamic> body) async {
+    try {
+      await _api.postChatMessages(body: body);
+      return true;
+    } catch (e) {
+      _error = '发送失败：$e';
       notifyListeners();
       return false;
     }

@@ -99,6 +99,29 @@ class _FakeApi extends NeoChatApi {
   }
 }
 
+/// 假上传器：不产生网络请求
+class _FakeUploader implements Uploader {
+  final List<String> calls = [];
+
+  @override
+  Future<Map<String, dynamic>> upload({
+    required Uri url,
+    required List<int> bytes,
+    required String filename,
+    Map<String, String>? headers,
+    String field = 'file',
+    Map<String, String> fields = const {},
+  }) async {
+    calls.add('${url.path} $filename ${fields['type']}');
+    return {
+      'url': '/uploads/${fields['type']}/$filename',
+      'file_name': filename,
+      'file_size': bytes.length,
+      'mime_type': 'image/png',
+    };
+  }
+}
+
 void main() {
   test('登录成功后写入 token 与用户信息', () async {
     final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
@@ -167,6 +190,33 @@ void main() {
     expect(await session.updateMemberRole('conv-new', 'user-2', 'admin'), isTrue);
     expect(await session.removeGroupMember('conv-new', 'user-2'), isTrue);
     expect(await session.leaveGroup('conv-new'), isTrue);
+  });
+
+  test('上传附件后能发送图片消息', () async {
+    final uploader = _FakeUploader();
+    final session = NeoChatSession(
+      api: _FakeApi(),
+      uploader: uploader,
+      enableRealtime: false,
+    );
+
+    final uploaded = await session.uploadAttachment(
+      bytes: [1, 2, 3],
+      filename: 'tiny.png',
+      type: 'image',
+    );
+    expect(uploaded, isNotNull);
+    expect(uploaded!['url'], '/uploads/image/tiny.png');
+    expect(uploader.calls.single, contains('/api/v1/upload'));
+    expect(uploader.calls.single, contains('image'));
+
+    final ok = await session.sendAttachment(
+      conversationId: 'conv-1',
+      bytes: [1, 2, 3],
+      filename: 'tiny.png',
+      isImage: true,
+    );
+    expect(ok, isTrue);
   });
 
   test('登出后清空状态', () async {

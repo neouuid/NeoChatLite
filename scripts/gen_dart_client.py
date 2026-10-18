@@ -411,7 +411,6 @@ def main() -> None:
     (OUT / "lib" / "src").mkdir(parents=True, exist_ok=True)
 
     (OUT / "pubspec.yaml").write_text(PUBSPEC)
-    (OUT / "README.md").write_text(README)
     (OUT / "lib" / "src" / "models.dart").write_text(gen_models(definitions, name_map))
     (OUT / "lib" / "src" / "transport.dart").write_text(TRANSPORT)
     (OUT / "lib" / "src" / "api_client.dart").write_text(gen_api(paths, name_map))
@@ -421,6 +420,7 @@ def main() -> None:
         "export 'src/models.dart';\n"
         "export 'src/realtime.dart';\n"
         "export 'src/transport.dart';\n"
+        "export 'src/upload.dart';\n"
     )
 
     print(f"生成完成：{OUT}")
