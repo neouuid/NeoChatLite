@@ -28,9 +28,17 @@ class IoTransport implements Transport {
     Object? body,
   }) async {
     final request = await _client.openUrl(method, url);
-    headers?.forEach(request.headers.set);
+    headers?.forEach((key, value) {
+      // Content-Type 统一在下面设置（需要带 charset=utf-8，否则中文会报错）
+      if (key.toLowerCase() != 'content-type') {
+        request.headers.set(key, value);
+      }
+    });
     if (body != null) {
-      request.write(jsonEncode(body));
+      request.headers.contentType =
+          ContentType('application', 'json', charset: 'utf-8');
+      // 必须按 UTF-8 写字节，直接 write 字符串会按 latin1 编码导致中文报错
+      request.add(utf8.encode(jsonEncode(body)));
     }
 
     final response = await request.close();

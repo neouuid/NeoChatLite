@@ -137,3 +137,6 @@ artifacts/
 # Dart 客户端 SDK 生成物
 client_sdk/dart/.dart_tool/
 client_sdk/dart/build/
+
+# 本地 E2E 运行目录
+.e2e-run/
