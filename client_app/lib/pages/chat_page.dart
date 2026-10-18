@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:neochat_api/neochat_api.dart';
 
 import '../state/session.dart';
 
@@ -25,15 +28,23 @@ class _ChatPageState extends State<ChatPage> {
   final List<Map<String, dynamic>> _messages = [];
   bool _loading = true;
   String? _error;
+  StreamSubscription<RealtimeEvent>? _realtimeSub;
 
   @override
   void initState() {
     super.initState();
     _load();
+    // 实时消息到达时刷新当前会话
+    _realtimeSub = widget.session.realtimeEvents?.listen((event) {
+      if (event.type == 'new_message' && event.convId == widget.conversationId) {
+        _load();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _realtimeSub?.cancel();
     _input.dispose();
     _scroll.dispose();
     super.dispose();

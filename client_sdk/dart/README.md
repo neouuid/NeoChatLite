@@ -26,17 +26,26 @@ final convs = await api.get_chat_conversations();
 - 方法名由 `operationId` 或「请求方法 + 路径」推导
 - 返回值是解码后的 JSON（`Map` / `List`），模型类见 `lib/src/models.dart`
 
-## 响应结构约定（E2E 验证后补充）
+## 实时消息
 
-- 所有接口统一返回信封 `{success, data, errors?, message?}`
-  - 列表/对象都在 `data` 里，例如会话列表：`data: [...]`
-  - 离线同步 `GET /chat/sync`：`data: {messages, since, server_time, has_more}`
-- 登录返回的是 **`access_token`**（另有 `refresh_token`），不是 `token`
-- `unread_count` 挂在 `conversation.members[]` 上，**按用户区分**，不是会话顶层字段
-- 注册时 `email` / `phone` 是唯一索引，批量建测试账号需要各自唯一
-
-本地端到端验证：
-
-```bash
-bash scripts/e2e_local.sh    # SQLite 起后端 + 跑 tool/e2e.dart，无需 Postgres/Redis
+```dart
+final rt = RealtimeClient(baseUrl: 'http://localhost:8080');
+rt.statusStream.listen((status) {
+  if (status == RealtimeStatus.connected) {
+    // 重连成功：补拉离线消息
+    api.getChatSync(since: lastServerTime);
+  }
+});
+rt.events.listen((event) {
+  if (event.type == 'new_message') {
+    print('${event.convId}: ${event.data['content']}');
+  }
+});
+await rt.connect(token);
 ```
+
+- 连接地址 `ws(s)://host/api/v1/chat/ws?token=<JWT>`；浏览器 WS 无法自定义请求头，
+  服务端为此提供了 `WebSocketAuthMiddleware`（仅 `/chat/ws` 接受 `?token=`）
+- 内置心跳（25s 发 `ping`，`pong` 不进事件流）与指数退避重连（1/2/5/10/20s）
+- 传输层可通过 `RealtimeConnector` 替换（Flutter Web 用 `package:web_socket_channel` 实现即可）
+- 端到端验证：`dart run tool/e2e_realtime.dart http://127.0.0.1:18080`

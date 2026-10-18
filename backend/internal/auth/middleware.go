@@ -67,6 +67,45 @@ func NewMiddleware(cfg *config.Config) *Middleware {
 	return &Middleware{config: cfg}
 }
 
+// WebSocketAuthMiddleware 专用于 WebSocket 的鉴权中间件。
+//
+// 浏览器的 WebSocket API 无法自定义请求头，所以除 Authorization 头之外，
+// 额外允许通过 query 参数 token 传递 JWT。该中间件只挂在 /chat/ws 上，
+// 避免 token 出现在其它普通接口的 URL 里（会进访问日志）。
+func (m *Middleware) WebSocketAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := ""
+		if authHeader := c.GetHeader("Authorization"); authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if !(len(parts) == 2 && parts[0] == "Bearer") {
+				response.Unauthorized(c, "authorization header format must be Bearer {token}")
+				c.Abort()
+				return
+			}
+			token = parts[1]
+		} else {
+			token = c.Query("token")
+		}
+
+		if token == "" {
+			response.Unauthorized(c, "token is required (header or ?token=)")
+			c.Abort()
+			return
+		}
+
+		claims, err := utils.ParseToken(token, m.config)
+		if err != nil {
+			response.Unauthorized(c, "invalid or expired token")
+			c.Abort()
+			return
+		}
+
+		c.Set("user_id", claims.UserID.String())
+		c.Set("username", claims.Username)
+		c.Next()
+	}
+}
+
 // AuthMiddleware JWT认证中间件
 func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

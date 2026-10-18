@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:neochat_api/neochat_api.dart';
 
@@ -8,10 +10,13 @@ class NeoChatSession extends ChangeNotifier {
   NeoChatSession({
     String? baseUrl,
     NeoChatApi? api,
-  }) : _api = api ??
+    bool enableRealtime = true,
+  })  : _api = api ??
             NeoChatApi(
               baseUrl: baseUrl ?? defaultBaseUrl,
-            );
+            ),
+        _baseUrl = baseUrl ?? defaultBaseUrl,
+        _enableRealtime = enableRealtime;
 
   /// 默认服务端地址，可通过 `--dart-define=NEOCHAT_BASE_URL=...` 覆盖
   static const String defaultBaseUrl = String.fromEnvironment(
@@ -21,6 +26,15 @@ class NeoChatSession extends ChangeNotifier {
 
   final NeoChatApi _api;
   NeoChatApi get api => _api;
+
+  final String _baseUrl;
+  final bool _enableRealtime;
+  RealtimeClient? _realtime;
+  StreamSubscription<RealtimeEvent>? _realtimeSub;
+  StreamSubscription<RealtimeStatus>? _realtimeStatusSub;
+
+  /// 实时事件流（未连接时为 null）
+  Stream<RealtimeEvent>? get realtimeEvents => _realtime?.events;
 
   String? _token;
   String? _userId;
@@ -55,6 +69,9 @@ class NeoChatSession extends ChangeNotifier {
       _userId = _asString(user['id']);
       _username = _asString(user['username']);
       _error = null;
+      if (_enableRealtime) {
+        unawaited(_connectRealtime(token));
+      }
       return true;
     } on ApiException catch (e) {
       _error = e.message;
@@ -103,6 +120,41 @@ class NeoChatSession extends ChangeNotifier {
     return messages.length;
   }
 
+  /// 建立实时连接；重连成功后自动补拉离线消息。
+  Future<void> _connectRealtime(String token) async {
+    final client = RealtimeClient(baseUrl: _baseUrl);
+    _realtime = client;
+
+    _realtimeStatusSub = client.statusStream.listen((status) {
+      // 断线重连成功时补拉这期间错过的消息
+      if (status == RealtimeStatus.connected && _lastSyncAt != null) {
+        unawaited(syncOfflineMessages());
+      }
+    });
+    _realtimeSub = client.events.listen((event) {
+      if (event.type == 'new_message') {
+        notifyListeners();
+      }
+    });
+
+    try {
+      await client.connect(token);
+    } catch (e) {
+      _error = '实时连接失败：$e';
+      notifyListeners();
+    }
+  }
+
+  Future<void> _disposeRealtime() async {
+    await _realtimeSub?.cancel();
+    await _realtimeStatusSub?.cancel();
+    _realtimeSub = null;
+    _realtimeStatusSub = null;
+    final client = _realtime;
+    _realtime = null;
+    await client?.dispose();
+  }
+
   void logout() {
     _token = null;
     _userId = null;
@@ -110,6 +162,7 @@ class NeoChatSession extends ChangeNotifier {
     _lastSyncAt = null;
     _api.token = null;
     _error = null;
+    unawaited(_disposeRealtime());
     notifyListeners();
   }
 

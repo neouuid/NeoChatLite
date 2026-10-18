@@ -419,6 +419,7 @@ def main() -> None:
         "// 由 scripts/gen_dart_client.py 生成，请勿手工修改。\n\n"
         "export 'src/api_client.dart';\n"
         "export 'src/models.dart';\n"
+        "export 'src/realtime.dart';\n"
         "export 'src/transport.dart';\n"
     )
 

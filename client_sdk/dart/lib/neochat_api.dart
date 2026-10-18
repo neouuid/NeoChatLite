@@ -2,4 +2,5 @@
 
 export 'src/api_client.dart';
 export 'src/models.dart';
+export 'src/realtime.dart';
 export 'src/transport.dart';

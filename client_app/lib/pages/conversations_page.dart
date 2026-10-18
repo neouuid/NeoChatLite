@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:neochat_api/neochat_api.dart';
 
 import '../state/session.dart';
 import 'chat_page.dart';
@@ -15,11 +18,24 @@ class ConversationsPage extends StatefulWidget {
 
 class _ConversationsPageState extends State<ConversationsPage> {
   late Future<List<Map<String, dynamic>>> _future;
+  StreamSubscription<RealtimeEvent>? _realtimeSub;
 
   @override
   void initState() {
     super.initState();
     _future = widget.session.loadConversations();
+    // 实时新消息 → 刷新会话列表（未读数/最后一条消息）
+    _realtimeSub = widget.session.realtimeEvents?.listen((event) {
+      if (event.type == 'new_message') {
+        _reload();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _realtimeSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _reload() async {

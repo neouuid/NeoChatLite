@@ -95,5 +95,6 @@ echo "    健康检查通过: $(curl -s "$BASE_URL/health")"
 
 echo "==> 运行 Dart 端到端脚本"
 ( cd "$ROOT/client_sdk/dart" && dart run tool/e2e.dart "$BASE_URL" )
+( cd "$ROOT/client_sdk/dart" && dart run tool/e2e_realtime.dart "$BASE_URL" )
 
 echo "==> 完成（后端已停止）"

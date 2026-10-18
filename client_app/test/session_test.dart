@@ -50,7 +50,7 @@ class _FakeApi extends NeoChatApi {
 
 void main() {
   test('登录成功后写入 token 与用户信息', () async {
-    final session = NeoChatSession(api: _FakeApi());
+    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
 
     expect(session.isLoggedIn, isFalse);
     final ok = await session.login('alice', 'secret');
@@ -63,7 +63,7 @@ void main() {
   });
 
   test('密码错误时返回 false 并记录错误', () async {
-    final session = NeoChatSession(api: _FakeApi());
+    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
 
     final ok = await session.login('alice', 'wrong');
 
@@ -73,7 +73,7 @@ void main() {
   });
 
   test('会话列表解析', () async {
-    final session = NeoChatSession(api: _FakeApi());
+    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
 
     final conversations = await session.loadConversations();
 
@@ -83,7 +83,7 @@ void main() {
   });
 
   test('离线补拉后更新同步游标', () async {
-    final session = NeoChatSession(api: _FakeApi());
+    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
     expect(session.lastSyncAt, isNull);
 
     final count = await session.syncOfflineMessages();
@@ -93,13 +93,13 @@ void main() {
   });
 
   test('发送消息成功返回 true', () async {
-    final session = NeoChatSession(api: _FakeApi());
+    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
 
     expect(await session.sendMessage('conv-1', 'hi'), isTrue);
   });
 
   test('登出后清空状态', () async {
-    final session = NeoChatSession(api: _FakeApi());
+    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
     await session.login('alice', 'secret');
     await session.syncOfflineMessages();
 

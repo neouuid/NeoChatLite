@@ -198,8 +198,11 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			chatGroup.POST("/mentions/read-all", deps.ChatHandler.MarkAllMentionsAsRead)
 
 			// WebSocket
-			chatGroup.GET("/ws", deps.WsHub.WebSocketHandler)
+			// WebSocket 单独注册（见下方 api.GET），此处不再挂载
 		}
+
+		// WebSocket：浏览器无法自定义请求头，用 WebSocketAuthMiddleware 支持 ?token=
+		api.GET("/chat/ws", deps.AuthMiddleware.WebSocketAuthMiddleware(), deps.WsHub.WebSocketHandler)
 
 		// 文件上传路由
 		uploadGroup := api.Group("/upload", deps.AuthMiddleware.AuthMiddleware())
