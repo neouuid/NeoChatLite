@@ -167,6 +167,12 @@ func (h *Handler) SendMessage(c *gin.Context) {
 		return
 	}
 
+	// 兼容 RESTful 风格 POST /chat/conversations/:id/messages：
+	// 请求体未带 conversation_id 时，回退使用路径中的会话 ID。
+	if req.ConversationID == "" {
+		req.ConversationID = c.Param("id")
+	}
+
 	convID, err := uuid.Parse(req.ConversationID)
 	if err != nil {
 		response.BadRequest(c, "invalid conversation id")
@@ -267,7 +273,11 @@ func (h *Handler) EditMessage(c *gin.Context) {
 		return
 	}
 
-	idStr := c.Param("id")
+	// 同时支持 /chat/message/:id 与 /chat/conversations/:id/messages/:message_id
+	idStr := c.Param("message_id")
+	if idStr == "" {
+		idStr = c.Param("id")
+	}
 	msgID, err := uuid.Parse(idStr)
 	if err != nil {
 		response.BadRequest(c, "invalid message id")
@@ -315,7 +325,11 @@ func (h *Handler) DeleteMessage(c *gin.Context) {
 		return
 	}
 
-	idStr := c.Param("id")
+	// 同时支持 /chat/message/:id 与 /chat/conversations/:id/messages/:message_id
+	idStr := c.Param("message_id")
+	if idStr == "" {
+		idStr = c.Param("id")
+	}
 	msgID, err := uuid.Parse(idStr)
 	if err != nil {
 		response.BadRequest(c, "invalid message id")

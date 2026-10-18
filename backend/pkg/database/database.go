@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -33,7 +32,7 @@ func Init(cfg *config.Config) error {
 	var err error
 
 	if cfg.Database.Driver == "sqlite" {
-		db, err = gorm.Open(sqlite.Open(dsn), gormConfig)
+		db, err = openSQLite(dsn, gormConfig)
 	} else {
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
 	}

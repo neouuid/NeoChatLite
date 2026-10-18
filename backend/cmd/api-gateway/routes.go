@@ -87,19 +87,35 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			authGroup.GET("/devices", deps.AuthMiddleware.AuthMiddleware(), deps.AuthHandler.GetDevices)
 		}
 
-		// 用户路由
-		userGroup := api.Group("/user")
-		userGroup.Use(deps.AuthMiddleware.AuthMiddleware())
-		{
-			userGroup.GET("/profile", deps.UserHandler.GetProfile)
-			userGroup.PUT("/profile", deps.UserHandler.UpdateProfile)
-			userGroup.GET("/search", deps.UserHandler.SearchUsers)
-			userGroup.GET("/:id", deps.UserHandler.GetUserByID)
+		// ── 用户路由 ──
+		// 主路径为 RESTful 复数 /users；旧路径 /user 保留为兼容别名。
+		for _, g := range []*gin.RouterGroup{
+			api.Group("/users", deps.AuthMiddleware.AuthMiddleware()),
+			api.Group("/user", deps.AuthMiddleware.AuthMiddleware()),
+		} {
+			g.GET("/profile", deps.UserHandler.GetProfile)
+			g.PUT("/profile", deps.UserHandler.UpdateProfile)
+			g.GET("/search", deps.UserHandler.SearchUsers)
+			g.GET("/:id", deps.UserHandler.GetUserByID)
 		}
 
-		// 好友路由
-		friendGroup := api.Group("/friend")
-		friendGroup.Use(deps.AuthMiddleware.AuthMiddleware())
+		// ── 好友路由 ──
+		// 主路径 /friends；旧路径 /friend/* 保留为兼容别名。
+		friendsGroup := api.Group("/friends", deps.AuthMiddleware.AuthMiddleware())
+		{
+			friendsGroup.GET("", deps.UserHandler.GetFriends)
+			friendsGroup.DELETE("/:id", deps.UserHandler.DeleteFriend)
+			friendsGroup.PUT("/:id", deps.UserHandler.UpdateFriendAlias)
+			friendsGroup.PUT("/:id/alias", deps.UserHandler.UpdateFriendAlias)
+			friendsGroup.POST("/requests", deps.UserHandler.SendFriendRequest)
+			friendsGroup.GET("/requests", deps.UserHandler.GetFriendRequests)
+			friendsGroup.POST("/requests/:id/accept", deps.UserHandler.AcceptFriendRequest)
+			friendsGroup.POST("/requests/:id/reject", deps.UserHandler.RejectFriendRequest)
+			friendsGroup.POST("/requests/:id/cancel", deps.UserHandler.CancelFriendRequest)
+		}
+
+		// 兼容：旧好友路径
+		friendGroup := api.Group("/friend", deps.AuthMiddleware.AuthMiddleware())
 		{
 			friendGroup.GET("/list", deps.UserHandler.GetFriends)
 			friendGroup.DELETE("/:id", deps.UserHandler.DeleteFriend)
@@ -111,46 +127,67 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			friendGroup.POST("/request/:id/cancel", deps.UserHandler.CancelFriendRequest)
 		}
 
-		// 黑名单路由
-		blockGroup := api.Group("/block")
-		blockGroup.Use(deps.AuthMiddleware.AuthMiddleware())
+		// ── 黑名单路由 ──
+		// 主路径 /blocklist；旧路径 /block/* 保留为兼容别名。
+		blocklistGroup := api.Group("/blocklist", deps.AuthMiddleware.AuthMiddleware())
+		{
+			blocklistGroup.GET("", deps.UserHandler.GetBlocklist)
+			blocklistGroup.POST("", deps.UserHandler.BlockUser)
+			blocklistGroup.DELETE("/:id", deps.UserHandler.UnblockUser)
+		}
+
+		// 兼容：旧黑名单路径
+		blockGroup := api.Group("/block", deps.AuthMiddleware.AuthMiddleware())
 		{
 			blockGroup.GET("/list", deps.UserHandler.GetBlocklist)
 			blockGroup.POST("/", deps.UserHandler.BlockUser)
 			blockGroup.DELETE("/:id", deps.UserHandler.UnblockUser)
 		}
 
-		// 聊天路由
-		chatGroup := api.Group("/chat")
-		chatGroup.Use(deps.AuthMiddleware.AuthMiddleware())
+		// ── 聊天路由 ──
+		chatGroup := api.Group("/chat", deps.AuthMiddleware.AuthMiddleware())
 		{
-			// 会话路由
+			// 会话（主路径：复数 /conversations）
 			chatGroup.GET("/conversations", deps.ChatHandler.GetUserConversations)
+			chatGroup.POST("/conversations", deps.ChatHandler.CreateSingleConversation)
+			chatGroup.GET("/conversations/:id", deps.ChatHandler.GetConversation)
+			chatGroup.PUT("/conversations/:id", deps.ChatHandler.UpdateConversation)
+			chatGroup.DELETE("/conversations/:id", deps.ChatHandler.DeleteConversation)
+			chatGroup.POST("/conversations/:id/read", deps.ChatHandler.MarkConversationAsRead)
+
+			// 消息（会话下挂载，同时保留旧的扁平路径）
+			chatGroup.GET("/conversations/:id/messages", deps.ChatHandler.GetConversationMessages)
+			chatGroup.POST("/conversations/:id/messages", deps.ChatHandler.SendMessage)
+			chatGroup.PUT("/conversations/:id/messages/:message_id", deps.ChatHandler.EditMessage)
+			chatGroup.DELETE("/conversations/:id/messages/:message_id", deps.ChatHandler.DeleteMessage)
+
+			chatGroup.PUT("/messages/:id", deps.ChatHandler.EditMessage)
+			chatGroup.DELETE("/messages/:id", deps.ChatHandler.DeleteMessage)
+
+			// 兼容：旧会话/消息路径
 			chatGroup.GET("/conversation/:id", deps.ChatHandler.GetConversation)
 			chatGroup.POST("/conversation/single", deps.ChatHandler.CreateSingleConversation)
 			chatGroup.POST("/conversation/:id/read", deps.ChatHandler.MarkConversationAsRead)
-			chatGroup.PUT("/conversations/:id", deps.ChatHandler.UpdateConversation)
-			chatGroup.DELETE("/conversations/:id", deps.ChatHandler.DeleteConversation)
-
-			// 消息路由
 			chatGroup.GET("/conversation/:id/messages", deps.ChatHandler.GetConversationMessages)
 			chatGroup.POST("/message", deps.ChatHandler.SendMessage)
 			chatGroup.PUT("/message/:id", deps.ChatHandler.EditMessage)
 			chatGroup.DELETE("/message/:id", deps.ChatHandler.DeleteMessage)
 
-			// 收藏路由
+			// 收藏（主路径复数，旧路径兼容）
 			chatGroup.GET("/favorites", deps.ChatHandler.GetUserFavorites)
+			chatGroup.POST("/favorites", deps.ChatHandler.AddFavorite)
+			chatGroup.DELETE("/favorites/:id", deps.ChatHandler.RemoveFavorite)
 			chatGroup.POST("/favorite", deps.ChatHandler.AddFavorite)
 			chatGroup.DELETE("/favorite/:id", deps.ChatHandler.RemoveFavorite)
 
-			// 消息转发路由
+			// 消息转发
 			chatGroup.POST("/messages/forward", deps.ChatHandler.ForwardMessage)
 
-			// 搜索路由
+			// 搜索
 			chatGroup.GET("/search/messages", deps.ChatHandler.SearchMessages)
 			chatGroup.GET("/search/groups", deps.ChatHandler.SearchGroups)
 
-			// 提及路由
+			// 提及
 			chatGroup.GET("/mentions", deps.ChatHandler.GetUserMentions)
 			chatGroup.GET("/mentions/unread-count", deps.ChatHandler.GetUnreadMentionCount)
 			chatGroup.POST("/mention/:id/read", deps.ChatHandler.MarkMentionAsRead)
@@ -161,30 +198,43 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 		}
 
 		// 文件上传路由
-		uploadGroup := api.Group("/upload")
-		uploadGroup.Use(deps.AuthMiddleware.AuthMiddleware())
+		uploadGroup := api.Group("/upload", deps.AuthMiddleware.AuthMiddleware())
 		{
 			uploadGroup.POST("", deps.UploadHandler.UploadFile)
 		}
 
-		// 群组路由
-		groupGroup := api.Group("/group")
-		groupGroup.Use(deps.AuthMiddleware.AuthMiddleware())
-		{
-			groupGroup.POST("/", deps.ChatHandler.CreateGroup)
-			groupGroup.GET("/:id", deps.ChatHandler.GetGroup)
-			groupGroup.PUT("/:id", deps.ChatHandler.UpdateGroup)
-			groupGroup.DELETE("/:id", deps.ChatHandler.DisbandGroup)
-			groupGroup.POST("/:id/leave", deps.ChatHandler.LeaveGroup)
-			groupGroup.GET("/:id/members", deps.ChatHandler.GetGroupMembers)
-			groupGroup.POST("/:id/members", deps.ChatHandler.AddGroupMember)
-			groupGroup.DELETE("/:id/members/:user_id", deps.ChatHandler.RemoveGroupMember)
-			groupGroup.PUT("/:id/members/:user_id/role", deps.ChatHandler.UpdateMemberRole)
+		// ── 群组路由 ──
+		// 主路径 /groups；旧路径 /group 保留为兼容别名。
+		for _, g := range []*gin.RouterGroup{
+			api.Group("/groups", deps.AuthMiddleware.AuthMiddleware()),
+			api.Group("/group", deps.AuthMiddleware.AuthMiddleware()),
+		} {
+			g.POST("", deps.ChatHandler.CreateGroup)
+			g.POST("/", deps.ChatHandler.CreateGroup)
+			g.GET("/:id", deps.ChatHandler.GetGroup)
+			g.PUT("/:id", deps.ChatHandler.UpdateGroup)
+			g.DELETE("/:id", deps.ChatHandler.DisbandGroup)
+			g.POST("/:id/leave", deps.ChatHandler.LeaveGroup)
+			g.GET("/:id/members", deps.ChatHandler.GetGroupMembers)
+			g.POST("/:id/members", deps.ChatHandler.AddGroupMember)
+			g.DELETE("/:id/members/:user_id", deps.ChatHandler.RemoveGroupMember)
+			g.PUT("/:id/members/:user_id/role", deps.ChatHandler.UpdateMemberRole)
 		}
 
-		// 通话路由
-		callGroup := api.Group("/call")
-		callGroup.Use(deps.AuthMiddleware.AuthMiddleware())
+		// ── 通话路由 ──
+		// 主路径 /calls；旧路径 /call/* 保留为兼容别名。
+		callsGroup := api.Group("/calls", deps.AuthMiddleware.AuthMiddleware())
+		{
+			callsGroup.GET("", deps.ChatHandler.GetUserCallRecords)
+			callsGroup.POST("/initiate", deps.ChatHandler.InitiateCall)
+			callsGroup.POST("/:id/accept", deps.ChatHandler.AcceptCall)
+			callsGroup.POST("/:id/reject", deps.ChatHandler.RejectCall)
+			callsGroup.POST("/:id/end", deps.ChatHandler.EndCall)
+			callsGroup.GET("/:id", deps.ChatHandler.GetCallRecord)
+		}
+
+		// 兼容：旧通话路径
+		callGroup := api.Group("/call", deps.AuthMiddleware.AuthMiddleware())
 		{
 			callGroup.POST("/initiate", deps.ChatHandler.InitiateCall)
 			callGroup.POST("/:id/accept", deps.ChatHandler.AcceptCall)

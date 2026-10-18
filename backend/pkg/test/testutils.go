@@ -1,4 +1,7 @@
+//go:build cgo
+
 // 测试工具包
+// 依赖 cgo 版 SQLite 驱动；未开启 cgo 时该包不参与编译（测试本身也需要 cgo）。
 package test
 
 import (
