@@ -40,7 +40,7 @@ func GetUserIDFromContext(c *gin.Context) (uuid.UUID, error) {
 // @Success 200 {object} response.ApiResponse{data=Conversation}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/chat/conversation/single [post]
+// @Router /api/v1/chat/conversations [post]
 func (h *Handler) CreateSingleConversation(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -82,7 +82,7 @@ func (h *Handler) CreateSingleConversation(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Conversation}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/chat/conversation/{id} [get]
+// @Router /api/v1/chat/conversations/{id} [get]
 func (h *Handler) GetConversation(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -145,7 +145,7 @@ func (h *Handler) GetUserConversations(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Message}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/chat/message [post]
+// @Router /api/v1/chat/messages [post]
 func (h *Handler) SendMessage(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -217,7 +217,7 @@ func (h *Handler) SendMessage(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=[]Message}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/chat/conversation/{id}/messages [get]
+// @Router /api/v1/chat/conversations/{id}/messages [get]
 func (h *Handler) GetConversationMessages(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -318,7 +318,7 @@ func (h *Handler) SyncOfflineMessages(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Message}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/chat/message/{id} [put]
+// @Router /api/v1/chat/messages/{id} [put]
 func (h *Handler) EditMessage(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -370,7 +370,7 @@ func (h *Handler) EditMessage(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/chat/message/{id} [delete]
+// @Router /api/v1/chat/messages/{id} [delete]
 func (h *Handler) DeleteMessage(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -408,7 +408,7 @@ func (h *Handler) DeleteMessage(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/chat/conversation/{id}/read [post]
+// @Router /api/v1/chat/conversations/{id}/read [post]
 func (h *Handler) MarkConversationAsRead(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -523,7 +523,7 @@ func (h *Handler) DeleteConversation(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Favorite}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/chat/favorite [post]
+// @Router /api/v1/chat/favorites [post]
 func (h *Handler) AddFavorite(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -566,7 +566,7 @@ func (h *Handler) AddFavorite(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/chat/favorite/{id} [delete]
+// @Router /api/v1/chat/favorites/{id} [delete]
 func (h *Handler) RemoveFavorite(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -628,7 +628,7 @@ func (h *Handler) GetUserFavorites(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=map[string]interface{}}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/group [post]
+// @Router /api/v1/groups [post]
 func (h *Handler) CreateGroup(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -682,7 +682,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Group}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/group/{id} [get]
+// @Router /api/v1/groups/{id} [get]
 func (h *Handler) GetGroup(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -718,7 +718,7 @@ func (h *Handler) GetGroup(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Group}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/group/{id} [put]
+// @Router /api/v1/groups/{id} [put]
 func (h *Handler) UpdateGroup(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -764,7 +764,7 @@ func (h *Handler) UpdateGroup(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/group/{id}/members [post]
+// @Router /api/v1/groups/{id}/members [post]
 func (h *Handler) AddGroupMember(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -813,7 +813,7 @@ func (h *Handler) AddGroupMember(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/group/{id}/members/{user_id} [delete]
+// @Router /api/v1/groups/{id}/members/{user_id} [delete]
 func (h *Handler) RemoveGroupMember(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -856,7 +856,7 @@ func (h *Handler) RemoveGroupMember(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/group/{id}/members/{user_id}/role [put]
+// @Router /api/v1/groups/{id}/members/{user_id}/role [put]
 func (h *Handler) UpdateMemberRole(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -910,7 +910,7 @@ func (h *Handler) UpdateMemberRole(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/group/{id}/leave [post]
+// @Router /api/v1/groups/{id}/leave [post]
 func (h *Handler) LeaveGroup(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -944,7 +944,7 @@ func (h *Handler) LeaveGroup(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/group/{id} [delete]
+// @Router /api/v1/groups/{id} [delete]
 func (h *Handler) DisbandGroup(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -978,7 +978,7 @@ func (h *Handler) DisbandGroup(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=[]ConversationMember}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/group/{id}/members [get]
+// @Router /api/v1/groups/{id}/members [get]
 func (h *Handler) GetGroupMembers(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -1073,7 +1073,7 @@ func (h *Handler) ForwardMessage(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=CallRecord}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/call/initiate [post]
+// @Router /api/v1/calls/initiate [post]
 func (h *Handler) InitiateCall(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -1121,7 +1121,7 @@ func (h *Handler) InitiateCall(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=CallRecord}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/call/{id}/accept [post]
+// @Router /api/v1/calls/{id}/accept [post]
 func (h *Handler) AcceptCall(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -1156,7 +1156,7 @@ func (h *Handler) AcceptCall(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/call/{id}/reject [post]
+// @Router /api/v1/calls/{id}/reject [post]
 func (h *Handler) RejectCall(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -1190,7 +1190,7 @@ func (h *Handler) RejectCall(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/call/{id}/end [post]
+// @Router /api/v1/calls/{id}/end [post]
 func (h *Handler) EndCall(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -1224,7 +1224,7 @@ func (h *Handler) EndCall(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=CallRecord}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/call/{id} [get]
+// @Router /api/v1/calls/{id} [get]
 func (h *Handler) GetCallRecord(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {

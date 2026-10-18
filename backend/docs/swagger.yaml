@@ -1,0 +1,2500 @@
+basePath: /api/v1
+definitions:
+  github_com_neochat_backend_internal_user.User:
+    properties:
+      avatar:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      nickname:
+        type: string
+      phone:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  github_com_neochat_backend_pkg_response.ApiResponse:
+    properties:
+      data: {}
+      errors: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  internal_auth.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_neochat_backend_internal_user.User'
+    type: object
+  internal_auth.ChangePasswordRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    type: object
+  internal_auth.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  internal_auth.LoginRequest:
+    properties:
+      identifier:
+        description: 用户名、邮箱或手机号
+        type: string
+      password:
+        type: string
+    type: object
+  internal_auth.RegisterRequest:
+    properties:
+      email:
+        type: string
+      nickname:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      username:
+        type: string
+    type: object
+  internal_auth.ResetPasswordRequest:
+    properties:
+      new_password:
+        type: string
+      token:
+        type: string
+    type: object
+  internal_auth.VerifyEmailRequest:
+    properties:
+      code:
+        type: string
+    type: object
+  internal_chat.CallRecord:
+    properties:
+      answered_at:
+        type: string
+      callee:
+        $ref: '#/definitions/github_com_neochat_backend_internal_user.User'
+      callee_id:
+        type: string
+      caller:
+        allOf:
+        - $ref: '#/definitions/github_com_neochat_backend_internal_user.User'
+        description: Associations
+      caller_id:
+        type: string
+      conversation_id:
+        type: string
+      created_at:
+        type: string
+      duration:
+        description: 通话时长（秒）
+        type: integer
+      ended_at:
+        type: string
+      id:
+        type: string
+      started_at:
+        type: string
+      status:
+        description: calling, in_progress, completed, missed, rejected, cancelled
+        type: string
+      type:
+        description: video, voice
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_chat.Conversation:
+    properties:
+      avatar:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: string
+      last_message:
+        type: string
+      last_msg_at:
+        type: string
+      members:
+        description: Associations
+        items:
+          $ref: '#/definitions/internal_chat.ConversationMember'
+        type: array
+      name:
+        type: string
+      type:
+        description: single, group
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_chat.ConversationMember:
+    properties:
+      conversation_id:
+        type: string
+      id:
+        type: string
+      joined_at:
+        type: string
+      last_read_at:
+        type: string
+      muted:
+        type: boolean
+      nickname:
+        type: string
+      role:
+        description: member, admin, owner
+        type: string
+      unread_count:
+        type: integer
+      user:
+        allOf:
+        - $ref: '#/definitions/github_com_neochat_backend_internal_user.User'
+        description: Associations
+      user_id:
+        type: string
+    type: object
+  internal_chat.Favorite:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      message:
+        allOf:
+        - $ref: '#/definitions/internal_chat.Message'
+        description: Associations
+      message_id:
+        type: string
+      note:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_chat.Group:
+    properties:
+      avatar:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      max_members:
+        type: integer
+      member_count:
+        description: Not stored in DB, populated dynamically
+        type: integer
+      name:
+        type: string
+      owner_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_chat.Mention:
+    properties:
+      created_at:
+        type: string
+      has_read:
+        type: boolean
+      id:
+        type: string
+      message:
+        allOf:
+        - $ref: '#/definitions/internal_chat.Message'
+        description: Associations
+      message_id:
+        type: string
+      read_at:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_neochat_backend_internal_user.User'
+      user_id:
+        type: string
+    type: object
+  internal_chat.Message:
+    properties:
+      content:
+        type: string
+      conversation_id:
+        type: string
+      created_at:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: string
+      is_edited:
+        type: boolean
+      media_url:
+        type: string
+      mentions:
+        items:
+          $ref: '#/definitions/internal_chat.Mention'
+        type: array
+      read_count:
+        description: Not stored in DB, populated dynamically
+        type: integer
+      reply_to:
+        $ref: '#/definitions/internal_chat.Message'
+      reply_to_id:
+        type: string
+      sender:
+        allOf:
+        - $ref: '#/definitions/github_com_neochat_backend_internal_user.User'
+        description: Associations
+      sender_id:
+        type: string
+      total_count:
+        type: integer
+      type:
+        description: text, image, file, system
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_user.Blocklist:
+    properties:
+      blocked:
+        allOf:
+        - $ref: '#/definitions/internal_user.User'
+        description: Associations
+      blocked_id:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      reason:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_user.Friend:
+    properties:
+      alias:
+        type: string
+      created_at:
+        type: string
+      friend:
+        $ref: '#/definitions/internal_user.User'
+      friend_id:
+        type: string
+      id:
+        type: string
+      status:
+        description: pending, accepted, blocked
+        type: string
+      updated_at:
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/internal_user.User'
+        description: Associations
+      user_id:
+        type: string
+    type: object
+  internal_user.User:
+    properties:
+      avatar:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      nickname:
+        type: string
+      phone:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: NeoChat
+  description: NeoChat 跨平台聊天服务端 API。客户端在 Authorization 头里携带 "Bearer {token}"。
+  title: NeoChat API
+  version: "1.0"
+paths:
+  /api/v1/auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: 已登录用户修改密码
+      parameters:
+      - description: 密码信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 修改密码
+      tags:
+      - auth
+  /api/v1/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: 发送验证码到邮箱以重置密码
+      parameters:
+      - description: 邮箱信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      summary: 忘记密码
+      tags:
+      - auth
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 使用用户名/邮箱/手机号和密码登录
+      parameters:
+      - description: 登录信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_auth.AuthResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      summary: 用户登录
+      tags:
+      - auth
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: 清除用户的认证状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      summary: 用户登出
+      tags:
+      - auth
+  /api/v1/auth/me:
+    get:
+      consumes:
+      - application/json
+      description: 获取已登录用户的详细信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户信息（含 id/username/email/nickname/avatar 等）
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户信息
+      tags:
+      - auth
+  /api/v1/auth/profile:
+    get:
+      consumes:
+      - application/json
+      description: 获取已登录用户的详细信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户信息（含 id/username/email/nickname/avatar 等）
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户信息
+      tags:
+      - auth
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用刷新令牌获取新的访问令牌
+      parameters:
+      - description: 刷新令牌
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_auth.AuthResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      summary: 刷新访问令牌
+      tags:
+      - auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: 创建新用户账户
+      parameters:
+      - description: 注册信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_auth.AuthResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      summary: 用户注册
+      tags:
+      - auth
+  /api/v1/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: 使用验证码重置密码
+      parameters:
+      - description: 重置密码信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      summary: 重置密码
+      tags:
+      - auth
+  /api/v1/auth/send-verification-email:
+    post:
+      consumes:
+      - application/json
+      description: 向已登录用户发送邮箱验证邮件
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 发送邮箱验证邮件
+      tags:
+      - auth
+  /api/v1/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: 使用验证码验证邮箱
+      parameters:
+      - description: 验证码
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      summary: 验证邮箱
+      tags:
+      - auth
+  /api/v1/blocklist:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的黑名单列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_user.Blocklist'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取黑名单
+      tags:
+      - block
+    post:
+      consumes:
+      - application/json
+      description: 将用户加入黑名单
+      parameters:
+      - description: 拉黑信息
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_user.Blocklist'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 拉黑用户
+      tags:
+      - block
+  /api/v1/blocklist/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 将用户从黑名单移除
+      parameters:
+      - description: 被拉黑用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 取消拉黑
+      tags:
+      - block
+  /api/v1/calls:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的通话记录
+      parameters:
+      - default: 50
+        description: 记录数量限制
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_chat.CallRecord'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取通话记录列表
+      tags:
+      - call
+  /api/v1/calls/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定通话的详细信息
+      parameters:
+      - description: 通话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.CallRecord'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取通话记录
+      tags:
+      - call
+  /api/v1/calls/{id}/accept:
+    post:
+      consumes:
+      - application/json
+      description: 接受来电
+      parameters:
+      - description: 通话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.CallRecord'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 接受通话
+      tags:
+      - call
+  /api/v1/calls/{id}/end:
+    post:
+      consumes:
+      - application/json
+      description: 挂断当前通话
+      parameters:
+      - description: 通话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 结束通话
+      tags:
+      - call
+  /api/v1/calls/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      description: 拒绝来电
+      parameters:
+      - description: 通话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 拒绝通话
+      tags:
+      - call
+  /api/v1/calls/initiate:
+    post:
+      consumes:
+      - application/json
+      description: 向指定用户发起视频或语音通话
+      parameters:
+      - description: 通话信息
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.CallRecord'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 发起通话
+      tags:
+      - call
+  /api/v1/chat/conversations:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的所有会话
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_chat.Conversation'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取会话列表
+      tags:
+      - chat
+    post:
+      consumes:
+      - application/json
+      description: 创建与指定用户的单聊会话
+      parameters:
+      - description: 用户ID
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.Conversation'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建单聊会话
+      tags:
+      - chat
+  /api/v1/chat/conversations/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定会话（软删除）
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除会话
+      tags:
+      - chat
+    get:
+      consumes:
+      - application/json
+      description: 获取指定会话的详细信息
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.Conversation'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取会话详情
+      tags:
+      - chat
+    put:
+      consumes:
+      - application/json
+      description: 更新会话的名称、头像等信息
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 会话信息
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.Conversation'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新会话
+      tags:
+      - chat
+  /api/v1/chat/conversations/{id}/messages:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定会话的消息列表
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 在此时间之前的消息
+        in: query
+        name: before
+        type: string
+      - default: 50
+        description: 消息数量限制
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_chat.Message'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取会话消息
+      tags:
+      - chat
+  /api/v1/chat/conversations/{id}/read:
+    post:
+      consumes:
+      - application/json
+      description: 将指定会话的所有消息标记为已读
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 标记会话为已读
+      tags:
+      - chat
+  /api/v1/chat/favorites:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的收藏消息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_chat.Favorite'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取收藏列表
+      tags:
+      - chat
+    post:
+      consumes:
+      - application/json
+      description: 收藏指定消息
+      parameters:
+      - description: 消息ID和备注
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.Favorite'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 添加收藏
+      tags:
+      - chat
+  /api/v1/chat/favorites/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 取消收藏指定消息
+      parameters:
+      - description: 收藏ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 移除收藏
+      tags:
+      - chat
+  /api/v1/chat/mention/{id}/read:
+    post:
+      consumes:
+      - application/json
+      description: 将指定提及标记为已读
+      parameters:
+      - description: 提及ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 标记提及为已读
+      tags:
+      - chat
+  /api/v1/chat/mentions:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户被@的消息列表
+      parameters:
+      - default: 50
+        description: 结果数量限制
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_chat.Mention'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取提及列表
+      tags:
+      - chat
+  /api/v1/chat/mentions/read-all:
+    post:
+      consumes:
+      - application/json
+      description: 将当前用户的所有提及标记为已读
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 标记所有提及为已读
+      tags:
+      - chat
+  /api/v1/chat/mentions/unread-count:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的未读提及数量
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  format: int64
+                  type: integer
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取未读提及数量
+      tags:
+      - chat
+  /api/v1/chat/messages:
+    post:
+      consumes:
+      - application/json
+      description: 向指定会话发送消息
+      parameters:
+      - description: 消息内容
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.Message'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 发送消息
+      tags:
+      - chat
+  /api/v1/chat/messages/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定消息
+      parameters:
+      - description: 消息ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除消息
+      tags:
+      - chat
+    put:
+      consumes:
+      - application/json
+      description: 编辑已发送的消息
+      parameters:
+      - description: 消息ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 消息内容
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.Message'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 编辑消息
+      tags:
+      - chat
+  /api/v1/chat/messages/forward:
+    post:
+      consumes:
+      - application/json
+      description: 将消息转发到多个会话
+      parameters:
+      - description: 转发信息
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_chat.Message'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 转发消息
+      tags:
+      - chat
+  /api/v1/chat/search/groups:
+    get:
+      consumes:
+      - application/json
+      description: 在用户加入的群组中搜索
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 50
+        description: 结果数量限制
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_chat.Group'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 搜索群组
+      tags:
+      - chat
+  /api/v1/chat/search/messages:
+    get:
+      consumes:
+      - application/json
+      description: 在用户参与的会话中搜索消息内容
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 50
+        description: 结果数量限制
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_chat.Message'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 搜索消息
+      tags:
+      - chat
+  /api/v1/chat/sync:
+    get:
+      consumes:
+      - application/json
+      description: 客户端重连/冷启动时携带 since（上次返回的 server_time）增量拉取错过的消息
+      parameters:
+      - description: 上次同步的 server_time（RFC3339），缺省为最近 7 天
+        in: query
+        name: since
+        type: string
+      - description: 单次最大条数，默认 200，最大 500
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 离线消息同步
+      tags:
+      - chat
+  /api/v1/friends:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的好友列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_user.User'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取好友列表
+      tags:
+      - friend
+  /api/v1/friends/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除好友关系
+      parameters:
+      - description: 好友ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除好友
+      tags:
+      - friend
+  /api/v1/friends/{id}/alias:
+    put:
+      consumes:
+      - application/json
+      description: 更新好友的备注名称
+      parameters:
+      - description: 好友ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 备注
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_user.Friend'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新好友备注
+      tags:
+      - friend
+  /api/v1/friends/requests:
+    get:
+      consumes:
+      - application/json
+      description: 获取收到和发送的好友请求
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取好友请求列表
+      tags:
+      - friend
+    post:
+      consumes:
+      - application/json
+      description: 向指定用户发送好友请求
+      parameters:
+      - description: 好友ID
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_user.Friend'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 发送好友请求
+      tags:
+      - friend
+  /api/v1/friends/requests/{id}/accept:
+    post:
+      consumes:
+      - application/json
+      description: 接受好友请求
+      parameters:
+      - description: 请求ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_user.Friend'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 接受好友请求
+      tags:
+      - friend
+  /api/v1/friends/requests/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: 取消已发送的好友请求
+      parameters:
+      - description: 请求ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 取消好友请求
+      tags:
+      - friend
+  /api/v1/friends/requests/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      description: 拒绝好友请求
+      parameters:
+      - description: 请求ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 拒绝好友请求
+      tags:
+      - friend
+  /api/v1/groups:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的群组聊天
+      parameters:
+      - description: 群组信息
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建群组
+      tags:
+      - group
+  /api/v1/groups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 解散整个群组（仅群主）
+      parameters:
+      - description: 群组ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 解散群组
+      tags:
+      - group
+    get:
+      consumes:
+      - application/json
+      description: 获取指定群组的详细信息
+      parameters:
+      - description: 群组ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取群组信息
+      tags:
+      - group
+    put:
+      consumes:
+      - application/json
+      description: 更新群组的名称、描述等信息
+      parameters:
+      - description: 群组ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 群组信息
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_chat.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新群组信息
+      tags:
+      - group
+  /api/v1/groups/{id}/leave:
+    post:
+      consumes:
+      - application/json
+      description: 主动退出群组
+      parameters:
+      - description: 群组ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 退出群组
+      tags:
+      - group
+  /api/v1/groups/{id}/members:
+    get:
+      consumes:
+      - application/json
+      description: 获取群组的所有成员
+      parameters:
+      - description: 群组ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_chat.ConversationMember'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取群成员列表
+      tags:
+      - group
+    post:
+      consumes:
+      - application/json
+      description: 将用户添加到群组
+      parameters:
+      - description: 群组ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 用户ID
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 添加群成员
+      tags:
+      - group
+  /api/v1/groups/{id}/members/{user_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 将成员从群组移除
+      parameters:
+      - description: 群组ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 成员用户ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 移除群成员
+      tags:
+      - group
+  /api/v1/groups/{id}/members/{user_id}/role:
+    put:
+      consumes:
+      - application/json
+      description: 更改群组成员的角色
+      parameters:
+      - description: 群组ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 成员用户ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: 角色
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新成员角色
+      tags:
+      - group
+  /api/v1/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传图片或文件
+      parameters:
+      - description: 文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: '文件类型: image/file'
+        in: formData
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 上传文件
+      tags:
+      - upload
+  /api/v1/users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据用户ID获取用户资料
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_user.User'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取用户资料
+      tags:
+      - user
+  /api/v1/users/profile:
+    get:
+      consumes:
+      - application/json
+      description: 获取已登录用户的详细资料
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_user.User'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户资料
+      tags:
+      - user
+    put:
+      consumes:
+      - application/json
+      description: 更新当前用户的资料
+      parameters:
+      - description: 更新信息
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_user.User'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新用户资料
+      tags:
+      - user
+  /api/v1/users/search:
+    get:
+      consumes:
+      - application/json
+      description: 根据关键词搜索用户
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: keyword
+        required: true
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 搜索用户
+      tags:
+      - user
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

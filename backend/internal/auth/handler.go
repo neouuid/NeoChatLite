@@ -131,7 +131,7 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} response.ApiResponse{data=user.User}
+// @Success 200 {object} response.ApiResponse{data=object} "用户信息（含 id/username/email/nickname/avatar 等）"
 // @Failure 401 {object} response.ApiResponse
 // @Failure 404 {object} response.ApiResponse
 // @Router /api/v1/auth/profile [get]
@@ -603,7 +603,7 @@ func (h *Handler) Logout(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} response.ApiResponse{data=user.User}
+// @Success 200 {object} response.ApiResponse{data=object} "用户信息（含 id/username/email/nickname/avatar 等）"
 // @Failure 401 {object} response.ApiResponse
 // @Router /api/v1/auth/me [get]
 func (h *Handler) GetMe(c *gin.Context) {

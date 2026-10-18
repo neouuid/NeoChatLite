@@ -49,7 +49,7 @@ func GetUserIDFromContext(c *gin.Context) (uuid.UUID, error) {
 // @Security BearerAuth
 // @Success 200 {object} response.ApiResponse{data=User}
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/user/profile [get]
+// @Router /api/v1/users/profile [get]
 func (h *Handler) GetProfile(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -77,7 +77,7 @@ func (h *Handler) GetProfile(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=User}
 // @Failure 401 {object} response.ApiResponse
 // @Failure 404 {object} response.ApiResponse
-// @Router /api/v1/user/{id} [get]
+// @Router /api/v1/users/{id} [get]
 func (h *Handler) GetUserByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -107,7 +107,7 @@ func (h *Handler) GetUserByID(c *gin.Context) {
 // @Param page_size query int false "每页数量" default(20)
 // @Success 200 {object} response.ApiResponse{data=map[string]interface{}}
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/user/search [get]
+// @Router /api/v1/users/search [get]
 func (h *Handler) SearchUsers(c *gin.Context) {
 	keyword := c.Query("keyword")
 	if keyword == "" {
@@ -150,7 +150,7 @@ func (h *Handler) SearchUsers(c *gin.Context) {
 // @Param request body map[string]string true "更新信息"
 // @Success 200 {object} response.ApiResponse{data=User}
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/user/profile [put]
+// @Router /api/v1/users/profile [put]
 func (h *Handler) UpdateProfile(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -190,7 +190,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Friend}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/friend/request [post]
+// @Router /api/v1/friends/requests [post]
 func (h *Handler) SendFriendRequest(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -244,7 +244,7 @@ func (h *Handler) SendFriendRequest(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Friend}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/friend/request/{id}/accept [post]
+// @Router /api/v1/friends/requests/{id}/accept [post]
 func (h *Handler) AcceptFriendRequest(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -292,7 +292,7 @@ func (h *Handler) AcceptFriendRequest(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/friend/request/{id}/reject [post]
+// @Router /api/v1/friends/requests/{id}/reject [post]
 func (h *Handler) RejectFriendRequest(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -326,7 +326,7 @@ func (h *Handler) RejectFriendRequest(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/friend/request/{id}/cancel [post]
+// @Router /api/v1/friends/requests/{id}/cancel [post]
 func (h *Handler) CancelFriendRequest(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -358,7 +358,7 @@ func (h *Handler) CancelFriendRequest(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} response.ApiResponse{data=map[string]interface{}}
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/friend/requests [get]
+// @Router /api/v1/friends/requests [get]
 func (h *Handler) GetFriendRequests(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -387,7 +387,7 @@ func (h *Handler) GetFriendRequests(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} response.ApiResponse{data=[]User}
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/friend/list [get]
+// @Router /api/v1/friends [get]
 func (h *Handler) GetFriends(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -415,7 +415,7 @@ func (h *Handler) GetFriends(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/friend/{id} [delete]
+// @Router /api/v1/friends/{id} [delete]
 func (h *Handler) DeleteFriend(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -450,7 +450,7 @@ func (h *Handler) DeleteFriend(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Friend}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/friend/{id}/alias [put]
+// @Router /api/v1/friends/{id}/alias [put]
 func (h *Handler) UpdateFriendAlias(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -495,7 +495,7 @@ func (h *Handler) UpdateFriendAlias(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse{data=Blocklist}
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/block [post]
+// @Router /api/v1/blocklist [post]
 func (h *Handler) BlockUser(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -538,7 +538,7 @@ func (h *Handler) BlockUser(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Failure 400 {object} response.ApiResponse
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/block/{id} [delete]
+// @Router /api/v1/blocklist/{id} [delete]
 func (h *Handler) UnblockUser(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
@@ -570,7 +570,7 @@ func (h *Handler) UnblockUser(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} response.ApiResponse{data=[]Blocklist}
 // @Failure 401 {object} response.ApiResponse
-// @Router /api/v1/block/list [get]
+// @Router /api/v1/blocklist [get]
 func (h *Handler) GetBlocklist(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
