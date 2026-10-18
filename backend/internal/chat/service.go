@@ -505,6 +505,10 @@ func (s *Service) MarkConversationAsRead(convID, userID uuid.UUID) error {
 		return err
 	}
 
+	// 未读数变了，必须让该用户的会话列表缓存失效，
+	// 否则客户端读到的仍是「已读前」的未读数（启用 Redis 时必现）。
+	_ = redis.Delete(redis.KeyPrefixConversations + userID.String())
+
 	// 把「已读」实时同步给会话里的其他成员，客户端才能显示已读状态
 	if s.hub != nil {
 		s.hub.broadcast <- WSMessage{

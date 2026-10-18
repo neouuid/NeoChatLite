@@ -341,11 +341,18 @@ Future<void> main(List<String> args) async {
       );
 
       api.token = tokenB;
-      final mentions = _list(await api.getChatMentions(limit: 20));
-      final hit = mentions.whereType<Map>().any(
-            (m) => (m['message'] is Map) &&
-                ((m['message'] as Map)['conversation_id'] == groupConv),
-          );
+      // 提及是在服务端 goroutine 里异步创建的，轮询等待最多 3 秒
+      var mentions = _list(await api.getChatMentions(limit: 20));
+      var hit = false;
+      final deadline = DateTime.now().add(const Duration(seconds: 3));
+      while (!hit && DateTime.now().isBefore(deadline)) {
+        mentions = _list(await api.getChatMentions(limit: 20));
+        hit = mentions.whereType<Map>().any(
+              (m) => (m['message'] is Map) &&
+                  ((m['message'] as Map)['conversation_id'] == groupConv),
+            );
+        if (!hit) await Future<void>.delayed(const Duration(milliseconds: 150));
+      }
       if (hit) {
         ok('B 收到提及，共 ${mentions.length} 条');
       } else {
@@ -371,6 +378,86 @@ Future<void> main(List<String> args) async {
     }
   } catch (e) {
     fail('提及验证失败: $e');
+  }
+
+  step('15. 群管理：拉人 / 改角色 / 踢人 / 退群');
+  try {
+    // 注册第三个用户 C
+    final userC = 'carol$suffix';
+    await api.postAuthRegister(
+      body: {
+        'username': userC,
+        'password': 'Passw0rd!',
+        'email': '$userC@e2e.local',
+        'phone': '133${suffix.toString().padLeft(8, '0')}',
+      },
+    );
+    final resC = _data(
+      await api.postAuthLogin(
+        body: {'identifier': userC, 'password': 'Passw0rd!'},
+      ),
+    );
+    final idC = ((resC['user'] as Map?)?['id'] ?? '') as String;
+    if (idC.isEmpty) {
+      fail('用户 C 登录响应缺少 id');
+      exit(1);
+    }
+
+    api.token = tokenA;
+    final groupData = _data(
+      await api.postGroups(body: {
+        'name': 'gm 群 $suffix',
+        'member_ids': [idB],
+      }),
+    );
+    final gid = ((groupData['conversation'] as Map?)?['id'] ?? '') as String;
+
+    // 拉人
+    await api.postGroupsIdMembers(id: gid, body: {'user_id': idC});
+    var members = _list(await api.getGroupsIdMembers(id: gid));
+    if (members.length == 3) {
+      ok('拉人成功，成员数 = 3');
+    } else {
+      fail('拉人后成员数为 ${members.length}，期望 3');
+    }
+
+    // 改角色
+    await api.putGroupsIdMembersUserIdRole(
+      id: gid,
+      userId: idB,
+      body: {'role': 'admin'},
+    );
+    members = _list(await api.getGroupsIdMembers(id: gid));
+    final bobRole = members
+        .whereType<Map>()
+        .firstWhere((m) => m['user_id'] == idB, orElse: () => {})['role'];
+    if (bobRole == 'admin') {
+      ok('B 已设为管理员');
+    } else {
+      fail('B 的角色为 $bobRole，期望 admin');
+    }
+
+    // 踢人
+    await api.deleteGroupsIdMembersUserId(id: gid, userId: idC);
+    members = _list(await api.getGroupsIdMembers(id: gid));
+    if (members.length == 2) {
+      ok('踢人成功，成员数 = 2');
+    } else {
+      fail('踢人后成员数为 ${members.length}，期望 2');
+    }
+
+    // B 退群
+    api.token = tokenB;
+    await api.postGroupsIdLeave(id: gid);
+    api.token = tokenA;
+    members = _list(await api.getGroupsIdMembers(id: gid));
+    if (members.length == 1) {
+      ok('B 退群成功，成员数 = 1');
+    } else {
+      fail('退群后成员数为 ${members.length}，期望 1');
+    }
+  } catch (e) {
+    fail('群管理验证失败: $e');
   }
 
   print('');

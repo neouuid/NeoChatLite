@@ -5,6 +5,7 @@ import 'package:neochat_api/neochat_api.dart';
 
 import '../state/session.dart';
 import 'chat_page.dart';
+import 'create_group_page.dart';
 import 'favorites_page.dart';
 import 'mentions_page.dart';
 import 'search_page.dart';
@@ -133,6 +134,15 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     ),
                   );
                   _loadUnreadMentions();
+                case 'createGroup':
+                  final convId = await Navigator.of(context).push<String>(
+                    MaterialPageRoute(
+                      builder: (_) => CreateGroupPage(session: widget.session),
+                    ),
+                  );
+                  if (convId != null) {
+                    await _reload();
+                  }
                 case 'favorites':
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -155,6 +165,16 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       const SizedBox(width: 8),
                       Badge(label: Text('$_unreadMentions')),
                     ],
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'createGroup',
+                child: Row(
+                  children: [
+                    Icon(Icons.group_add_outlined),
+                    SizedBox(width: 12),
+                    Text('发起群聊'),
                   ],
                 ),
               ),
@@ -243,6 +263,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                           session: widget.session,
                           conversationId: id,
                           title: title,
+                          isGroup: conv['type'] == 'group',
                         ),
                       ),
                     );

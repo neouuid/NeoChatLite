@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:neochat_api/neochat_api.dart';
 
 import '../state/session.dart';
+import 'group_info_page.dart';
 
 /// 聊天页：GET /api/v1/chat/conversations/:id/messages + POST /api/v1/chat/messages
 class ChatPage extends StatefulWidget {
@@ -13,11 +14,13 @@ class ChatPage extends StatefulWidget {
     required this.session,
     required this.conversationId,
     required this.title,
+    this.isGroup = false,
   });
 
   final NeoChatSession session;
   final String conversationId;
   final String title;
+  final bool isGroup;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -248,6 +251,22 @@ class _ChatPageState extends State<ChatPage> {
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
+          if (widget.isGroup)
+            IconButton(
+              tooltip: '群信息',
+              icon: const Icon(Icons.groups),
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => GroupInfoPage(
+                      session: widget.session,
+                      groupId: widget.conversationId,
+                      title: widget.title,
+                    ),
+                  ),
+                );
+              },
+            ),
           IconButton(
             tooltip: '刷新',
             icon: const Icon(Icons.refresh),

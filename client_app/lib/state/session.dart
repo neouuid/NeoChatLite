@@ -212,6 +212,106 @@ class NeoChatSession extends ChangeNotifier {
     }
   }
 
+  /// 好友列表（建群/拉人时选人用）
+  Future<List<Map<String, dynamic>>> loadFriends() async {
+    final res = await _api.getFriends();
+    return _asList(res['data']);
+  }
+
+  /// 创建群聊，返回新会话 ID
+  Future<String?> createGroup({
+    required String name,
+    List<String> memberIds = const [],
+  }) async {
+    try {
+      final res = await _api.postGroups(body: {
+        'name': name,
+        'member_ids': memberIds,
+      });
+      final data = _asMap(res['data']);
+      final conversation = _asMap(data['conversation']);
+      return _asString(conversation['id']);
+    } catch (e) {
+      _error = '建群失败：$e';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// 群成员列表
+  Future<List<Map<String, dynamic>>> loadGroupMembers(String groupId) async {
+    final res = await _api.getGroupsIdMembers(id: groupId);
+    return _asList(res['data']);
+  }
+
+  /// 拉人进群
+  Future<bool> addGroupMember(String groupId, String userId) async {
+    try {
+      await _api.postGroupsIdMembers(id: groupId, body: {'user_id': userId});
+      return true;
+    } catch (e) {
+      _error = '添加成员失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 移出群成员
+  Future<bool> removeGroupMember(String groupId, String userId) async {
+    try {
+      await _api.deleteGroupsIdMembersUserId(id: groupId, userId: userId);
+      return true;
+    } catch (e) {
+      _error = '移除成员失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 修改成员角色（member / admin / owner）
+  Future<bool> updateMemberRole(
+    String groupId,
+    String userId,
+    String role,
+  ) async {
+    try {
+      await _api.putGroupsIdMembersUserIdRole(
+        id: groupId,
+        userId: userId,
+        body: {'role': role},
+      );
+      return true;
+    } catch (e) {
+      _error = '修改角色失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 退出群聊
+  Future<bool> leaveGroup(String groupId) async {
+    try {
+      await _api.postGroupsIdLeave(id: groupId);
+      return true;
+    } catch (e) {
+      _error = '退群失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 解散群聊（群主）
+  Future<bool> disbandGroup(String groupId) async {
+    try {
+      await _api.deleteGroupsId(id: groupId);
+      return true;
+    } catch (e) {
+      _error = '解散失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// 离线消息补拉：带上上次同步得到的 server_time 作为游标。
   /// 返回本次补到的消息条数。
   Future<int> syncOfflineMessages() async {

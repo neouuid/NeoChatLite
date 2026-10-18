@@ -46,6 +46,57 @@ class _FakeApi extends NeoChatApi {
   Future<dynamic> postChatMessages({required Map<String, dynamic> body}) async {
     return {'success': true, 'data': body};
   }
+
+  @override
+  Future<dynamic> postGroups({required Map<String, dynamic> body}) async {
+    return {
+      'success': true,
+      'data': {
+        'conversation': {'id': 'conv-new', 'name': body['name'], 'type': 'group'},
+        'group': {'id': 'group-1'},
+      },
+    };
+  }
+
+  @override
+  Future<dynamic> getGroupsIdMembers({required String id}) async {
+    return {
+      'success': true,
+      'data': [
+        {'user_id': 'user-1', 'role': 'owner', 'user': {'username': 'alice'}},
+      ],
+    };
+  }
+
+  @override
+  Future<dynamic> postGroupsIdMembers({
+    required String id,
+    required Map<String, dynamic> body,
+  }) async {
+    return {'success': true};
+  }
+
+  @override
+  Future<dynamic> putGroupsIdMembersUserIdRole({
+    required String id,
+    required String userId,
+    required Map<String, dynamic> body,
+  }) async {
+    return {'success': true};
+  }
+
+  @override
+  Future<dynamic> deleteGroupsIdMembersUserId({
+    required String id,
+    required String userId,
+  }) async {
+    return {'success': true};
+  }
+
+  @override
+  Future<dynamic> postGroupsIdLeave({required String id}) async {
+    return {'success': true};
+  }
 }
 
 void main() {
@@ -96,6 +147,26 @@ void main() {
     final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
 
     expect(await session.sendMessage('conv-1', 'hi'), isTrue);
+  });
+
+  test('建群返回会话 ID 并可读取成员', () async {
+    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+
+    final convId = await session.createGroup(name: '测试群', memberIds: ['user-2']);
+    expect(convId, 'conv-new');
+
+    final members = await session.loadGroupMembers('conv-new');
+    expect(members, hasLength(1));
+    expect(members.first['role'], 'owner');
+  });
+
+  test('群管理操作返回成功', () async {
+    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+
+    expect(await session.addGroupMember('conv-new', 'user-2'), isTrue);
+    expect(await session.updateMemberRole('conv-new', 'user-2', 'admin'), isTrue);
+    expect(await session.removeGroupMember('conv-new', 'user-2'), isTrue);
+    expect(await session.leaveGroup('conv-new'), isTrue);
   });
 
   test('登出后清空状态', () async {
