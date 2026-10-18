@@ -92,3 +92,27 @@ await api.postChatMessages(body: {
 - 建群响应 `data: {conversation, group}`，会话 ID 在 `data.conversation.id`
 - @提及语法必须是 `@[显示名](用户UUID)`，服务端用正则解析
 - 注册时 `email` / `phone` 唯一，批量建测试账号需各自唯一
+
+## 跨平台（Web / 移动端 / 桌面端）
+
+传输层按平台自动选择实现，业务代码无需分支：
+
+| 平台 | Transport | WebSocket | 依赖 |
+|---|---|---|---|
+| 移动端 / 桌面端 | `IoTransport`（dart:io） | `ioRealtimeConnector`（dart:io） | 无额外依赖 |
+| Web（JS / Wasm） | `HttpTransport`（package:http） | `webRealtimeConnector`（web_socket_channel） | http / http_parser / web_socket_channel |
+| 其它 | 明确抛 `UnsupportedError` | 同左 | — |
+
+选择逻辑用条件导入（`dart.library.io` / `dart.library.js_interop`），
+默认工厂：`createDefaultTransport()`、`createDefaultUploader()`、
+`createDefaultRealtimeConnector()`。
+
+验证方式：
+
+```bash
+cd client_sdk/dart && dart test        # 含 HttpTransport 行为测试（MockClient，无需浏览器）
+cd client_app && flutter build web     # Web 产物可编译
+```
+
+> 注意：Web 端浏览器无法自定义 WebSocket 请求头，token 通过 `?token=` 传递；
+> 服务端仅对 `/chat/ws` 接受该方式。

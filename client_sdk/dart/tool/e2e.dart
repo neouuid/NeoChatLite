@@ -474,7 +474,7 @@ Future<void> main(List<String> args) async {
 
     api.token = tokenA;
     final uploaded = await uploadWithUploader(
-      uploader: IoUploader(),
+      uploader: TransportUploader(),
       baseUrl: baseUrl,
       bytes: png,
       filename: 'tiny.png',

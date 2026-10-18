@@ -199,7 +199,7 @@ def gen_api(paths: dict, name_map: dict[str, str]) -> str:
         "/// NeoChat 服务端 API 客户端。",
         "class NeoChatApi {",
         "  NeoChatApi({required this.baseUrl, Transport? transport, this.token})",
-        "      : transport = transport ?? IoTransport();",
+        "      : transport = transport ?? createDefaultTransport();",
         "",
         "  final String baseUrl;",
         "  final Transport transport;",
@@ -368,6 +368,14 @@ publish_to: none
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  http: ^1.2.0
+  http_parser: ^4.0.2
+  web_socket_channel: ^2.4.0
+
+dev_dependencies:
+  test: ^1.24.0
 '''
 
 README = '''# neochat_api (Dart)
@@ -412,7 +420,6 @@ def main() -> None:
 
     (OUT / "pubspec.yaml").write_text(PUBSPEC)
     (OUT / "lib" / "src" / "models.dart").write_text(gen_models(definitions, name_map))
-    (OUT / "lib" / "src" / "transport.dart").write_text(TRANSPORT)
     (OUT / "lib" / "src" / "api_client.dart").write_text(gen_api(paths, name_map))
     (OUT / "lib" / "neochat_api.dart").write_text(
         "// 由 scripts/gen_dart_client.py 生成，请勿手工修改。\n\n"

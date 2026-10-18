@@ -12,7 +12,7 @@ class NeoChatSession extends ChangeNotifier {
     NeoChatApi? api,
     Uploader? uploader,
     bool enableRealtime = true,
-  })  : _uploader = uploader ?? IoUploader(),
+  })  : _uploader = uploader ?? createDefaultUploader(),
         _api = api ??
             NeoChatApi(
               baseUrl: baseUrl ?? defaultBaseUrl,

@@ -6,7 +6,10 @@
 // 传输层可替换：默认用 dart:io 的 WebSocket，Flutter Web 可注入自己的 RealtimeConnector。
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+
+import 'realtime_stub.dart'
+    if (dart.library.io) 'realtime_io.dart'
+    if (dart.library.js_interop) 'realtime_web.dart' as platform;
 
 /// 服务端下发的实时事件（type 见服务端 WSMessageType，例如 new_message / typing）
 class RealtimeEvent {
@@ -57,29 +60,12 @@ typedef RealtimeConnector = Future<RealtimeSocket> Function(
   Map<String, String> headers,
 );
 
-/// 基于 dart:io 的默认实现
-class IoRealtimeSocket implements RealtimeSocket {
-  IoRealtimeSocket(this._socket);
+/// 按当前平台创建默认 WebSocket 连接器
+RealtimeConnector createDefaultRealtimeConnector() =>
+    platform.createRealtimeConnector();
 
-  final WebSocket _socket;
-
-  @override
-  Stream<String> get messages => _socket.map((event) => '$event');
-
-  @override
-  void send(String data) => _socket.add(data);
-
-  @override
-  Future<void> close() => _socket.close();
-}
-
-Future<RealtimeSocket> ioRealtimeConnector(
-  Uri uri,
-  Map<String, String> headers,
-) async {
-  final socket = await WebSocket.connect(uri.toString(), headers: headers);
-  return IoRealtimeSocket(socket);
-}
+/// 当前平台默认连接器名字
+String defaultRealtimeConnectorName() => platform.connectorName();
 
 /// 实时客户端：自动重连 + 心跳 + 事件流
 class RealtimeClient {
@@ -94,7 +80,7 @@ class RealtimeClient {
       Duration(seconds: 10),
       Duration(seconds: 20),
     ],
-  }) : _connector = connector ?? ioRealtimeConnector;
+  }) : _connector = connector ?? createDefaultRealtimeConnector();
 
   final String baseUrl;
   final RealtimeConnector _connector;

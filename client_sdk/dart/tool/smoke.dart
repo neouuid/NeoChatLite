@@ -20,6 +20,22 @@ class _RecordingTransport implements Transport {
     calls.add('$method ${url.path}$query');
     return {'success': true, 'data': null};
   }
+
+  @override
+  Future<dynamic> uploadFile({
+    required Uri url,
+    required List<int> bytes,
+    required String filename,
+    Map<String, String>? headers,
+    String field = 'file',
+    Map<String, String> fields = const {},
+  }) async {
+    calls.add('UPLOAD ${url.path} $filename');
+    return {
+      'success': true,
+      'data': {'url': '/uploads/fake.png', 'file_name': filename},
+    };
+  }
 }
 
 void _expect(String actual, String expected) {

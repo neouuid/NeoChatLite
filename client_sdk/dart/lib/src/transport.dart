@@ -1,62 +1,11 @@
-// 由 scripts/gen_dart_client.py 生成，请勿手工修改。
-
-import 'dart:convert';
-import 'dart:io';
-
-/// 统一的传输层：默认实现用 dart:io，
-/// Flutter Web 等平台可自行实现（例如基于 package:http）。
-abstract class Transport {
-  Future<dynamic> send({
-    required String method,
-    required Uri url,
-    Map<String, String>? headers,
-    Object? body,
-  });
-}
-
-/// 基于 dart:io 的实现（移动端 / 桌面端可用）
-class IoTransport implements Transport {
-  IoTransport({HttpClient? client}) : _client = client ?? HttpClient();
-
-  final HttpClient _client;
-
-  @override
-  Future<dynamic> send({
-    required String method,
-    required Uri url,
-    Map<String, String>? headers,
-    Object? body,
-  }) async {
-    final request = await _client.openUrl(method, url);
-    headers?.forEach((key, value) {
-      // Content-Type 统一在下面设置（需要带 charset=utf-8，否则中文会报错）
-      if (key.toLowerCase() != 'content-type') {
-        request.headers.set(key, value);
-      }
-    });
-    if (body != null) {
-      request.headers.contentType =
-          ContentType('application', 'json', charset: 'utf-8');
-      // 必须按 UTF-8 写字节，直接 write 字符串会按 latin1 编码导致中文报错
-      request.add(utf8.encode(jsonEncode(body)));
-    }
-
-    final response = await request.close();
-    final text = await response.transform(utf8.decoder).join();
-    final decoded = text.isEmpty ? null : jsonDecode(text);
-
-    if (response.statusCode >= 400) {
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: decoded is Map && decoded['message'] is String
-            ? decoded['message'] as String
-            : text,
-        payload: decoded,
-      );
-    }
-    return decoded;
-  }
-}
+// 传输层抽象：跨平台通过条件导入选择实现。
+//
+//   dart:io 可用（移动端 / 桌面端 / 服务端）→ transport_io.dart
+//   Web（dart.library.js_interop）           → transport_web.dart
+//   其它                                      → transport_stub.dart（明确抛错）
+import 'transport_stub.dart'
+    if (dart.library.io) 'transport_io.dart'
+    if (dart.library.js_interop) 'transport_web.dart' as platform;
 
 /// API 调用失败时抛出
 class ApiException implements Exception {
@@ -69,3 +18,28 @@ class ApiException implements Exception {
   @override
   String toString() => 'ApiException($statusCode): $message';
 }
+
+/// 统一的传输层（JSON 请求 + multipart 上传）
+abstract class Transport {
+  Future<dynamic> send({
+    required String method,
+    required Uri url,
+    Map<String, String>? headers,
+    Object? body,
+  });
+
+  Future<dynamic> uploadFile({
+    required Uri url,
+    required List<int> bytes,
+    required String filename,
+    Map<String, String>? headers,
+    String field = 'file',
+    Map<String, String> fields = const {},
+  });
+}
+
+/// 按当前平台创建默认传输实现
+Transport createDefaultTransport() => platform.createTransport();
+
+/// 当前平台默认实现的名字（日志/排查用）
+String defaultTransportName() => platform.transportName();

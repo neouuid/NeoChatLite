@@ -7,7 +7,7 @@ import 'transport.dart';
 /// NeoChat 服务端 API 客户端。
 class NeoChatApi {
   NeoChatApi({required this.baseUrl, Transport? transport, this.token})
-      : transport = transport ?? IoTransport();
+      : transport = transport ?? createDefaultTransport();
 
   final String baseUrl;
   final Transport transport;
