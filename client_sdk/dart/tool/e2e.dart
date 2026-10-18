@@ -520,6 +520,61 @@ Future<void> main(List<String> args) async {
     fail('上传/图片消息失败: $e');
   }
 
+  step('17. 消息分页：before 游标向上翻历史');
+  try {
+    api.token = tokenA;
+    // 在 conv2 里补 5 条消息，便于分页
+    for (var i = 1; i <= 5; i++) {
+      await api.postChatMessages(
+        body: {
+          'conversation_id': conv2,
+          'type': 'text',
+          'content': 'page-msg-$i',
+        },
+      );
+    }
+
+    final page1 = _list(
+      await api.getChatConversationsIdMessages(id: conv2, limit: 3),
+    );
+    if (page1.length == 3) {
+      ok('第一页 3 条');
+    } else {
+      fail('第一页条数为 ${page1.length}，期望 3');
+    }
+
+    final oldestCreatedAt = (page1.first['created_at'] ?? '') as String;
+    final page2 = _list(
+      await api.getChatConversationsIdMessages(
+        id: conv2,
+        before: oldestCreatedAt,
+        limit: 3,
+      ),
+    );
+
+    final page1Ids = page1.map((m) => (m as Map)['id']).toSet();
+    final page2Ids = page2.map((m) => (m as Map)['id']).toSet();
+    final overlap = page1Ids.intersection(page2Ids);
+
+    if (page2.isEmpty) {
+      fail('第二页为空');
+    } else if (overlap.isNotEmpty) {
+      fail('两页有重叠消息: $overlap');
+    } else {
+      ok('第二页 ${page2.length} 条，与第一页无重叠');
+    }
+
+    // 第二页的消息应早于第一页最早一条
+    final page2Latest = (page2.last['created_at'] ?? '') as String;
+    if (page2Latest.compareTo(oldestCreatedAt) <= 0) {
+      ok('第二页时间均早于第一页最早时间');
+    } else {
+      fail('第二页出现了更新的消息: $page2Latest > $oldestCreatedAt');
+    }
+  } catch (e) {
+    fail('分页验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

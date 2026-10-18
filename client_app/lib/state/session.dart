@@ -96,9 +96,18 @@ class NeoChatSession extends ChangeNotifier {
     return _asList(res['data']);
   }
 
-  /// 拉取某个会话的历史消息（按后端默认分页）
-  Future<List<Map<String, dynamic>>> loadMessages(String conversationId) async {
-    final res = await _api.getChatConversationsIdMessages(id: conversationId);
+  /// 拉取某个会话的消息。
+  /// [before] 为时间游标（RFC3339），用于向上翻更早的历史消息。
+  Future<List<Map<String, dynamic>>> loadMessages(
+    String conversationId, {
+    String? before,
+    int? limit,
+  }) async {
+    final res = await _api.getChatConversationsIdMessages(
+      id: conversationId,
+      before: before,
+      limit: limit,
+    );
     return _asList(res['data']);
   }
 

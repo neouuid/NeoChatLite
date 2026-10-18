@@ -32,6 +32,8 @@ class _ChatPageState extends State<ChatPage> {
   final _scroll = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
   String? _error;
   bool _peerTyping = false;
   DateTime? _peerReadAt;
@@ -40,10 +42,13 @@ class _ChatPageState extends State<ChatPage> {
   bool _typingSent = false;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
+  static const int _pageSize = 50;
+
   @override
   void initState() {
     super.initState();
     _load();
+    _scroll.addListener(_onScroll);
     // 实时事件：新消息 / 对方正在输入 / 对方已读
     _realtimeSub = widget.session.realtimeEvents?.listen((event) {
       if (event.convId != widget.conversationId) return;
@@ -102,10 +107,60 @@ class _ChatPageState extends State<ChatPage> {
     _typingResetTimer?.cancel();
     _typingSendTimer?.cancel();
     _input.removeListener(_onInputChanged);
+    _scroll.removeListener(_onScroll);
     _realtimeSub?.cancel();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    // 接近顶部时加载更早的消息
+    if (_scroll.position.pixels <= 80 && _hasMore && !_loadingMore) {
+      _loadMore();
+    }
+  }
+
+  /// 向上翻：用最早一条消息的 created_at 作为 before 游标
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore || _messages.isEmpty) return;
+    final oldestAt = _messages.first['created_at'] as String?;
+    if (oldestAt == null || oldestAt.isEmpty) {
+      setState(() => _hasMore = false);
+      return;
+    }
+
+    setState(() => _loadingMore = true);
+    final oldMaxExtent = _scroll.hasClients ? _scroll.position.maxScrollExtent : 0.0;
+    try {
+      final older = await widget.session.loadMessages(
+        widget.conversationId,
+        before: oldestAt,
+        limit: _pageSize,
+      );
+      if (!mounted) return;
+
+      // 去重后插到头部
+      final known = _messages.map((m) => m['id']).toSet();
+      final fresh = older.where((m) => !known.contains(m['id'])).toList();
+      setState(() {
+        _messages.insertAll(0, fresh);
+        _hasMore = older.length >= _pageSize;
+      });
+
+      // 保持当前阅读位置，避免跳动
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_scroll.hasClients) return;
+        final newMaxExtent = _scroll.position.maxScrollExtent;
+        _scroll.jumpTo(_scroll.position.pixels + (newMaxExtent - oldMaxExtent));
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
+    }
   }
 
   Future<void> _load() async {
@@ -114,11 +169,15 @@ class _ChatPageState extends State<ChatPage> {
       _error = null;
     });
     try {
-      final messages = await widget.session.loadMessages(widget.conversationId);
+      final messages = await widget.session.loadMessages(
+        widget.conversationId,
+        limit: _pageSize,
+      );
       setState(() {
         _messages
           ..clear()
           ..addAll(messages);
+        _hasMore = messages.length >= _pageSize;
       });
       _scrollToBottom();
     } catch (e) {
@@ -428,9 +487,35 @@ class _ChatPageState extends State<ChatPage> {
                     : ListView.builder(
                         controller: _scroll,
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                        itemCount: _messages.length,
+                        itemCount: _messages.length + 1,
                         itemBuilder: (context, index) {
-                          final msg = _messages[index];
+                          if (index == 0) {
+                            if (_loadingMore) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                ),
+                              );
+                            }
+                            if (!_hasMore && _messages.isNotEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Center(
+                                  child: Text(
+                                    '没有更多历史消息了',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          }
+                          final msg = _messages[index - 1];
                           final isMine = me != null && msg['sender_id'] == me;
                           final content = msg['content'] as String? ?? '';
                           return Align(

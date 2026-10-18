@@ -42,6 +42,25 @@ class _FakeApi extends NeoChatApi {
     };
   }
 
+  String? lastBefore;
+  int? lastLimit;
+
+  @override
+  Future<dynamic> getChatConversationsIdMessages({
+    required String id,
+    String? before,
+    int? limit,
+  }) async {
+    lastBefore = before;
+    lastLimit = limit;
+    return {
+      'success': true,
+      'data': [
+        {'id': 'm1', 'content': '历史消息'},
+      ],
+    };
+  }
+
   @override
   Future<dynamic> postChatMessages({required Map<String, dynamic> body}) async {
     return {'success': true, 'data': body};
@@ -217,6 +236,21 @@ void main() {
       isImage: true,
     );
     expect(ok, isTrue);
+  });
+
+  test('消息分页参数透传', () async {
+    final api = _FakeApi();
+    final session = NeoChatSession(api: api, enableRealtime: false);
+
+    final messages = await session.loadMessages(
+      'conv-1',
+      before: '2026-10-01T00:00:00Z',
+      limit: 20,
+    );
+
+    expect(messages, hasLength(1));
+    expect(api.lastBefore, '2026-10-01T00:00:00Z');
+    expect(api.lastLimit, 20);
   });
 
   test('登出后清空状态', () async {
