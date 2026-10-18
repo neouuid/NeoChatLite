@@ -161,6 +161,7 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			chatGroup.PUT("/conversations/:id/messages/:message_id", deps.ChatHandler.EditMessage)
 			chatGroup.DELETE("/conversations/:id/messages/:message_id", deps.ChatHandler.DeleteMessage)
 
+			chatGroup.POST("/messages", deps.ChatHandler.SendMessage)
 			chatGroup.PUT("/messages/:id", deps.ChatHandler.EditMessage)
 			chatGroup.DELETE("/messages/:id", deps.ChatHandler.DeleteMessage)
 

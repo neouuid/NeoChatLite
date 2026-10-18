@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	_ "github.com/neochat/backend/docs" // Swagger 生成的文档（swag init 产物）
 	"github.com/neochat/backend/internal/auth"
 	"github.com/neochat/backend/internal/chat"
 	"github.com/neochat/backend/internal/user"
@@ -22,6 +23,15 @@ import (
 	"github.com/neochat/backend/pkg/redis"
 )
 
+// @title NeoChat API
+// @version 1.0
+// @description NeoChat 跨平台聊天服务端 API。客户端在 Authorization 头里携带 "Bearer {token}"。
+// @contact.name NeoChat
+// @host localhost:8080
+// @BasePath /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	// 加载配置
 	cfg := config.Load()
