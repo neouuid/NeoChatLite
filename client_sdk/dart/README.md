@@ -126,3 +126,14 @@ cd client_app && flutter build web     # Web 产物可编译
 | `GET /friends/requests` | `data: {pending, sent}`；pending 项是 Friend 记录（`user_id` 为请求者，`user` 字段是请求者的用户信息） |
 | `GET /friends` | `data` 直接是用户数组（不是 Friend 记录） |
 | `POST /friends/requests/:id/accept` | 路径参数是**请求记录 id**，不是用户 id |
+
+## 音视频消息（不支持音视频通话，只支持消息）
+
+| 环节 | 约定 |
+|---|---|
+| 上传 | `POST /upload` 的 `type` 支持 `image` / `file` / `audio` / `video` |
+| 校验 | 服务端按 part 的 Content-Type 校验白名单；audio 默认 20MB、video 默认 200MB 上限 |
+| 消息 | 发送时 `type` 用 `audio` / `video`，正文留空，`media_url` 填上传返回的 url |
+| 渲染 | 客户端用 `just_audio` 播放语音、`video_player` 内嵌播放视频 |
+
+服务端默认白名单：audio = mpeg/mp4/aac/wav/ogg/webm；video = mp4/quicktime/webm/x-matroska。

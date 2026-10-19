@@ -14,6 +14,23 @@ String mimeTypeOf(String filename) {
       return 'image/gif';
     case 'webp':
       return 'image/webp';
+    case 'mp3':
+      return 'audio/mpeg';
+    case 'm4a':
+    case 'aac':
+      return 'audio/mp4';
+    case 'wav':
+      return 'audio/wav';
+    case 'ogg':
+      return 'audio/ogg';
+    case 'mp4':
+      return 'video/mp4';
+    case 'mov':
+      return 'video/quicktime';
+    case 'webm':
+      return 'video/webm';
+    case 'mkv':
+      return 'video/x-matroska';
     case 'pdf':
       return 'application/pdf';
     case 'txt':

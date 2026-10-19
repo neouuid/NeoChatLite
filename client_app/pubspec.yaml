@@ -12,6 +12,11 @@ dependencies:
   neochat_api:
     path: ../client_sdk/dart
   file_picker: ^8.0.0
+  path_provider: ^2.1.4
+  video_player: ^2.9.2
+  just_audio: ^0.9.42
+  record: ^5.1.2
+  cross_file: ^0.3.4
 
 dev_dependencies:
   flutter_test:

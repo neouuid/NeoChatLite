@@ -293,7 +293,7 @@ void main() {
       conversationId: 'conv-1',
       bytes: [1, 2, 3],
       filename: 'tiny.png',
-      isImage: true,
+      kind: 'image',
     );
     expect(ok, isTrue);
   });

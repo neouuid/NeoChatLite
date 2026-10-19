@@ -153,13 +153,64 @@ func (h *UploadHandler) validateFile(header *multipart.FileHeader, uploadType st
 			mimeType = "application/x-7z-compressed"
 		case ".txt":
 			mimeType = "text/plain"
+		case ".mp3":
+			mimeType = "audio/mpeg"
+		case ".m4a", ".aac":
+			mimeType = "audio/mp4"
+		case ".wav":
+			mimeType = "audio/wav"
+		case ".ogg":
+			mimeType = "audio/ogg"
+		case ".mp4":
+			mimeType = "video/mp4"
+		case ".mov":
+			mimeType = "video/quicktime"
+		case ".webm":
+			mimeType = "video/webm"
+		case ".mkv":
+			mimeType = "video/x-matroska"
 		default:
 			mimeType = "application/octet-stream"
 		}
 	}
 
 	// 验证大小和类型
-	if uploadType == "image" {
+	if uploadType == "audio" {
+		maxSize := h.cfg.Storage.MaxAudioSize
+		if maxSize == 0 {
+			maxSize = 20 * 1024 * 1024 // 默认 20MB
+		}
+		if fileSize > maxSize {
+			return fmt.Errorf("audio too large, max size is %d MB", maxSize/(1024*1024))
+		}
+
+		allowedTypes := h.cfg.Storage.AllowedAudioTypes
+		if len(allowedTypes) == 0 {
+			allowedTypes = []string{
+				"audio/mpeg", "audio/mp4", "audio/aac", "audio/wav",
+				"audio/x-wav", "audio/ogg", "audio/webm",
+			}
+		}
+		if !isAllowedType(mimeType, allowedTypes) {
+			return fmt.Errorf("unsupported audio type: %s", mimeType)
+		}
+	} else if uploadType == "video" {
+		maxSize := h.cfg.Storage.MaxVideoSize
+		if maxSize == 0 {
+			maxSize = 200 * 1024 * 1024 // 默认 200MB
+		}
+		if fileSize > maxSize {
+			return fmt.Errorf("video too large, max size is %d MB", maxSize/(1024*1024))
+		}
+
+		allowedTypes := h.cfg.Storage.AllowedVideoTypes
+		if len(allowedTypes) == 0 {
+			allowedTypes = []string{"video/mp4", "video/quicktime", "video/webm", "video/x-matroska"}
+		}
+		if !isAllowedType(mimeType, allowedTypes) {
+			return fmt.Errorf("unsupported video type: %s", mimeType)
+		}
+	} else if uploadType == "image" {
 		maxSize := h.cfg.Storage.MaxImageSize
 		if maxSize == 0 {
 			maxSize = 10 * 1024 * 1024 // 默认10MB

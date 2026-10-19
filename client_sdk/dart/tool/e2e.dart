@@ -641,6 +641,112 @@ Future<void> main(List<String> args) async {
     fail('好友流程失败: $e');
   }
 
+  step('19. 语音 / 视频消息上传与发送');
+  try {
+    api.token = tokenA;
+
+    // 构造一个最小 WAV（44 字节头 + 少量静音采样）
+    final wav = <int>[
+      ...'RIFF'.codeUnits, 0x24, 0x00, 0x00, 0x00, ...'WAVE'.codeUnits,
+      ...'fmt '.codeUnits, 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
+      0x40, 0x1F, 0x00, 0x00, 0x80, 0x3E, 0x00, 0x00, 0x02, 0x00, 0x10, 0x00,
+      ...'data'.codeUnits, 0x00, 0x00, 0x00, 0x00,
+    ];
+
+    final audio = await uploadWithUploader(
+      uploader: TransportUploader(),
+      baseUrl: baseUrl,
+      bytes: wav,
+      filename: 'voice.wav',
+      type: 'audio',
+      token: tokenA,
+    );
+    final audioUrl = (audio['url'] ?? '') as String;
+    if (audioUrl.isEmpty) {
+      fail('语音上传失败: $audio');
+    } else {
+      await api.postChatMessages(
+        body: {
+          'conversation_id': convId,
+          'type': 'audio',
+          'content': '',
+          'media_url': audioUrl,
+          'file_name': 'voice.wav',
+          'file_size': wav.length,
+        },
+      );
+      final msgs = _list(await api.getChatConversationsIdMessages(id: convId));
+      final audioOk = msgs.whereType<Map>().any(
+            (m) => m['type'] == 'audio' && m['media_url'] == audioUrl,
+          );
+      if (audioOk) {
+        ok('语音消息已发送: $audioUrl');
+      } else {
+        fail('消息列表里没有语音消息');
+      }
+    }
+
+    // 视频：服务端只校验 MIME 与大小，这里用小段字节模拟
+    final videoBytes = List<int>.generate(2048, (i) => i % 256);
+    final video = await uploadWithUploader(
+      uploader: TransportUploader(),
+      baseUrl: baseUrl,
+      bytes: videoBytes,
+      filename: 'clip.mp4',
+      type: 'video',
+      token: tokenA,
+    );
+    final videoUrl = (video['url'] ?? '') as String;
+    if (videoUrl.isEmpty) {
+      fail('视频上传失败: $video');
+    } else {
+      await api.postChatMessages(
+        body: {
+          'conversation_id': convId,
+          'type': 'video',
+          'content': '',
+          'media_url': videoUrl,
+          'file_name': 'clip.mp4',
+          'file_size': videoBytes.length,
+        },
+      );
+      final msgs = _list(await api.getChatConversationsIdMessages(id: convId));
+      final videoOk = msgs.whereType<Map>().any(
+            (m) => m['type'] == 'video' && m['media_url'] == videoUrl,
+          );
+      if (videoOk) {
+        ok('视频消息已发送: $videoUrl');
+      } else {
+        fail('消息列表里没有视频消息');
+      }
+
+      final req = await HttpClient().getUrl(Uri.parse('$baseUrl$videoUrl'));
+      final resp = await req.close();
+      if (resp.statusCode == 200) {
+        ok('视频附件可访问（HTTP 200）');
+      } else {
+        fail('视频附件访问失败: ${resp.statusCode}');
+      }
+    }
+
+    // 不合法的音视频类型应被服务端拒绝
+    try {
+      await uploadWithUploader(
+        uploader: TransportUploader(),
+        baseUrl: baseUrl,
+        bytes: [1, 2, 3],
+        filename: 'bad.flac',
+        type: 'audio',
+        token: tokenA,
+      );
+      fail('非白名单音频类型竟然上传成功');
+    } on UploadException catch (e) {
+      ok('非白名单类型被拒绝（${e.statusCode}）');
+    }
+  } catch (e) {
+    fail('语音/视频验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

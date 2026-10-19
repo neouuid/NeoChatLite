@@ -443,17 +443,18 @@ class NeoChatSession extends ChangeNotifier {
     }
   }
 
-  /// 上传并发送一条图片/文件消息
+  /// 上传并发送一条附件消息。
+  /// [kind] 取值：image / file / audio / video，与消息 type 一致。
   Future<bool> sendAttachment({
     required String conversationId,
     required List<int> bytes,
     required String filename,
-    required bool isImage,
+    String kind = 'file',
   }) async {
     final uploaded = await uploadAttachment(
       bytes: bytes,
       filename: filename,
-      type: isImage ? 'image' : 'file',
+      type: kind,
     );
     if (uploaded == null) return false;
 
@@ -466,13 +467,42 @@ class NeoChatSession extends ChangeNotifier {
 
     final ok = await sendMessagePayload({
       'conversation_id': conversationId,
-      'type': isImage ? 'image' : 'file',
-      'content': isImage ? '' : filename,
+      'type': kind,
+      // 图片/语音/视频不需要把文件名当正文；普通文件展示文件名
+      'content': kind == 'file' ? filename : '',
       'media_url': url,
       'file_name': _asString(uploaded['file_name']) ?? filename,
       'file_size': uploaded['file_size'] ?? bytes.length,
     });
     return ok;
+  }
+
+  /// 发送语音消息
+  Future<bool> sendVoice({
+    required String conversationId,
+    required List<int> bytes,
+    String filename = 'voice.m4a',
+  }) {
+    return sendAttachment(
+      conversationId: conversationId,
+      bytes: bytes,
+      filename: filename,
+      kind: 'audio',
+    );
+  }
+
+  /// 发送视频消息
+  Future<bool> sendVideo({
+    required String conversationId,
+    required List<int> bytes,
+    required String filename,
+  }) {
+    return sendAttachment(
+      conversationId: conversationId,
+      bytes: bytes,
+      filename: filename,
+      kind: 'video',
+    );
   }
 
   /// 发送一条自定义消息体（附件等场景复用）

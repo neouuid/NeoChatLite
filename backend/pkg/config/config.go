@@ -26,15 +26,15 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Driver         string // "postgres" or "sqlite"
-	Host           string
-	Port           int
-	User           string
-	Password       string
-	DBName         string
-	SSLMode        string
-	MaxIdleConns   int // 最大空闲连接数
-	MaxOpenConns   int // 最大打开连接数
+	Driver          string // "postgres" or "sqlite"
+	Host            string
+	Port            int
+	User            string
+	Password        string
+	DBName          string
+	SSLMode         string
+	MaxIdleConns    int // 最大空闲连接数
+	MaxOpenConns    int // 最大打开连接数
 	ConnMaxLifetime int // 连接最大生存时间（秒）
 	ConnMaxIdleTime int // 连接最大空闲时间（秒）
 }
@@ -67,8 +67,12 @@ type StorageConfig struct {
 	UploadDir         string
 	MaxFileSize       int64
 	MaxImageSize      int64
+	MaxAudioSize      int64
+	MaxVideoSize      int64
 	AllowedImageTypes []string
 	AllowedFileTypes  []string
+	AllowedAudioTypes []string
+	AllowedVideoTypes []string
 }
 
 type EmailConfig struct {
@@ -109,15 +113,15 @@ func Load() *Config {
 			},
 		},
 		Database: DatabaseConfig{
-			Driver:         viper.GetString("database.driver"),
-			Host:           viper.GetString("database.host"),
-			Port:           viper.GetInt("database.port"),
-			User:           viper.GetString("database.user"),
-			Password:       viper.GetString("database.password"),
-			DBName:         viper.GetString("database.dbname"),
-			SSLMode:        viper.GetString("database.sslmode"),
-			MaxIdleConns:   viper.GetInt("database.max_idle_conns"),
-			MaxOpenConns:   viper.GetInt("database.max_open_conns"),
+			Driver:          viper.GetString("database.driver"),
+			Host:            viper.GetString("database.host"),
+			Port:            viper.GetInt("database.port"),
+			User:            viper.GetString("database.user"),
+			Password:        viper.GetString("database.password"),
+			DBName:          viper.GetString("database.dbname"),
+			SSLMode:         viper.GetString("database.sslmode"),
+			MaxIdleConns:    viper.GetInt("database.max_idle_conns"),
+			MaxOpenConns:    viper.GetInt("database.max_open_conns"),
 			ConnMaxLifetime: viper.GetInt("database.conn_max_lifetime"),
 			ConnMaxIdleTime: viper.GetInt("database.conn_max_idle_time"),
 		},
@@ -140,8 +144,12 @@ func Load() *Config {
 			UploadDir:         viper.GetString("storage.upload_dir"),
 			MaxFileSize:       viper.GetInt64("storage.max_file_size"),
 			MaxImageSize:      viper.GetInt64("storage.max_image_size"),
+			MaxAudioSize:      viper.GetInt64("storage.max_audio_size"),
+			MaxVideoSize:      viper.GetInt64("storage.max_video_size"),
 			AllowedImageTypes: viper.GetStringSlice("storage.allowed_image_types"),
 			AllowedFileTypes:  viper.GetStringSlice("storage.allowed_file_types"),
+			AllowedAudioTypes: viper.GetStringSlice("storage.allowed_audio_types"),
+			AllowedVideoTypes: viper.GetStringSlice("storage.allowed_video_types"),
 		},
 		Email: EmailConfig{
 			Host:     viper.GetString("email.host"),
@@ -200,6 +208,14 @@ func setDefaults() {
 		"image/gif",
 		"image/webp",
 	})
+	viper.SetDefault("storage.max_audio_size", 20971520)
+	viper.SetDefault("storage.max_video_size", 209715200)
+	viper.SetDefault("storage.allowed_audio_types", []string{
+		"audio/mpeg", "audio/mp4", "audio/aac", "audio/wav", "audio/x-wav", "audio/ogg", "audio/webm",
+	})
+	viper.SetDefault("storage.allowed_video_types", []string{
+		"video/mp4", "video/quicktime", "video/webm", "video/x-matroska",
+	})
 	viper.SetDefault("storage.allowed_file_types", []string{
 		"image/jpeg",
 		"image/jpg",
@@ -255,10 +271,10 @@ func TestConfig() *Config {
 			},
 		},
 		Database: DatabaseConfig{
-			Driver:         "sqlite",
-			DBName:         ":memory:",
-			MaxIdleConns:   2,
-			MaxOpenConns:   5,
+			Driver:          "sqlite",
+			DBName:          ":memory:",
+			MaxIdleConns:    2,
+			MaxOpenConns:    5,
 			ConnMaxLifetime: 300,
 			ConnMaxIdleTime: 60,
 		},
@@ -276,6 +292,10 @@ func TestConfig() *Config {
 			UploadDir:         "./test_uploads",
 			MaxFileSize:       104857600,
 			MaxImageSize:      10485760,
+			MaxAudioSize:      20971520,
+			MaxVideoSize:      209715200,
+			AllowedAudioTypes: []string{"audio/mpeg", "audio/wav"},
+			AllowedVideoTypes: []string{"video/mp4"},
 			AllowedImageTypes: []string{"image/jpeg", "image/png"},
 			AllowedFileTypes:  []string{"image/jpeg", "image/png"},
 		},

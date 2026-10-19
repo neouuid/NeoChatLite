@@ -20,6 +20,8 @@ const (
 	MessageTypeText   = "text"
 	MessageTypeImage  = "image"
 	MessageTypeFile   = "file"
+	MessageTypeAudio  = "audio"
+	MessageTypeVideo  = "video"
 	MessageTypeSystem = "system"
 )
 
@@ -59,16 +61,16 @@ const (
 )
 
 type Conversation struct {
-	ID           uuid.UUID              `gorm:"type:uuid;primary_key" json:"id"`
-	Type         string                 `gorm:"type:varchar(20);not null;index:idx_conv_type" json:"type"` // single, group
-	Name         string                 `gorm:"type:varchar(100)" json:"name"`
-	Avatar       string                 `gorm:"type:varchar(500)" json:"avatar"`
-	LastMessage  string                 `gorm:"type:text" json:"last_message"`
-	LastMsgAt    *time.Time             `gorm:"index:idx_conv_last_msg_at" json:"last_msg_at"`
-	CreatedBy    uuid.UUID              `gorm:"type:uuid;index:idx_conv_created_by" json:"created_by"`
-	CreatedAt    time.Time              `gorm:"index:idx_conv_created_at" json:"created_at"`
-	UpdatedAt    time.Time              `gorm:"index:idx_conv_updated_at" json:"updated_at"`
-	DeletedAt    gorm.DeletedAt         `gorm:"index:idx_conv_deleted_at" json:"-"`
+	ID          uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	Type        string         `gorm:"type:varchar(20);not null;index:idx_conv_type" json:"type"` // single, group
+	Name        string         `gorm:"type:varchar(100)" json:"name"`
+	Avatar      string         `gorm:"type:varchar(500)" json:"avatar"`
+	LastMessage string         `gorm:"type:text" json:"last_message"`
+	LastMsgAt   *time.Time     `gorm:"index:idx_conv_last_msg_at" json:"last_msg_at"`
+	CreatedBy   uuid.UUID      `gorm:"type:uuid;index:idx_conv_created_by" json:"created_by"`
+	CreatedAt   time.Time      `gorm:"index:idx_conv_created_at" json:"created_at"`
+	UpdatedAt   time.Time      `gorm:"index:idx_conv_updated_at" json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index:idx_conv_deleted_at" json:"-"`
 
 	// Associations
 	Members []*ConversationMember `gorm:"foreignKey:ConversationID" json:"members,omitempty"`
@@ -196,7 +198,7 @@ type CallRecord struct {
 	CallerID       uuid.UUID      `gorm:"type:uuid;index:idx_call_caller_id;not null" json:"caller_id"`
 	CalleeID       uuid.UUID      `gorm:"type:uuid;index:idx_call_callee_id;not null" json:"callee_id"`
 	ConversationID *uuid.UUID     `gorm:"type:uuid;index:idx_call_conv_id" json:"conversation_id"`
-	Type           string         `gorm:"type:varchar(20);not null;index:idx_call_type" json:"type"` // video, voice
+	Type           string         `gorm:"type:varchar(20);not null;index:idx_call_type" json:"type"`     // video, voice
 	Status         string         `gorm:"type:varchar(20);not null;index:idx_call_status" json:"status"` // calling, in_progress, completed, missed, rejected, cancelled
 	StartedAt      *time.Time     `json:"started_at"`
 	AnsweredAt     *time.Time     `json:"answered_at"`
@@ -220,12 +222,12 @@ func (cr *CallRecord) BeforeCreate(tx *gorm.DB) error {
 
 // Mention @提及模型
 type Mention struct {
-	ID        uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	MessageID uuid.UUID      `gorm:"type:uuid;index:idx_mention_msg_id;not null" json:"message_id"`
-	UserID    uuid.UUID      `gorm:"type:uuid;index:idx_mention_user_id;not null" json:"user_id"`
-	HasRead   bool           `gorm:"default:false;index:idx_mention_unread" json:"has_read"`
-	ReadAt    *time.Time     `gorm:"index:idx_mention_read_at" json:"read_at"`
-	CreatedAt time.Time      `gorm:"index:idx_mention_created_at" json:"created_at"`
+	ID        uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
+	MessageID uuid.UUID  `gorm:"type:uuid;index:idx_mention_msg_id;not null" json:"message_id"`
+	UserID    uuid.UUID  `gorm:"type:uuid;index:idx_mention_user_id;not null" json:"user_id"`
+	HasRead   bool       `gorm:"default:false;index:idx_mention_unread" json:"has_read"`
+	ReadAt    *time.Time `gorm:"index:idx_mention_read_at" json:"read_at"`
+	CreatedAt time.Time  `gorm:"index:idx_mention_created_at" json:"created_at"`
 
 	// Associations
 	Message *Message   `gorm:"foreignKey:MessageID" json:"message,omitempty"`
@@ -251,12 +253,12 @@ type SignalMessage struct {
 
 // 通话邀请消息
 type CallInvitePayload struct {
-	CallID        uuid.UUID `json:"call_id"`
-	CallerID      uuid.UUID `json:"caller_id"`
-	CalleeID      uuid.UUID `json:"callee_id"`
-	Type          string    `json:"type"`           // video, voice
-	CallerName    string    `json:"caller_name"`    // 呼叫者名称
-	CallerAvatar  string    `json:"caller_avatar"`  // 呼叫者头像
+	CallID       uuid.UUID `json:"call_id"`
+	CallerID     uuid.UUID `json:"caller_id"`
+	CalleeID     uuid.UUID `json:"callee_id"`
+	Type         string    `json:"type"`          // video, voice
+	CallerName   string    `json:"caller_name"`   // 呼叫者名称
+	CallerAvatar string    `json:"caller_avatar"` // 呼叫者头像
 }
 
 // SDP 载荷

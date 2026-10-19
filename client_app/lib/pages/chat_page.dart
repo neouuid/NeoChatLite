@@ -1,11 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 import 'package:flutter/services.dart';
 import 'package:neochat_api/neochat_api.dart';
 
 import '../state/session.dart';
+import '../widgets/audio_bubble.dart';
+import '../widgets/video_bubble.dart';
 import 'group_info_page.dart';
 
 /// 聊天页：GET /api/v1/chat/conversations/:id/messages + POST /api/v1/chat/messages
@@ -221,6 +226,14 @@ class _ChatPageState extends State<ChatPage> {
       );
     }
 
+    if (type == 'audio' && mediaUrl.isNotEmpty) {
+      return AudioBubble(url: '${widget.session.baseUrl}$mediaUrl');
+    }
+
+    if (type == 'video' && mediaUrl.isNotEmpty) {
+      return VideoBubble(url: '${widget.session.baseUrl}$mediaUrl');
+    }
+
     if (type == 'file') {
       final fileName = msg['file_name'] as String? ?? '文件';
       final size = msg['file_size'];
@@ -288,17 +301,36 @@ class _ChatPageState extends State<ChatPage> {
               title: const Text('发送文件'),
               onTap: () => Navigator.pop(sheetContext, 'file'),
             ),
+            ListTile(
+              leading: const Icon(Icons.mic_none),
+              title: const Text('语音消息'),
+              onTap: () => Navigator.pop(sheetContext, 'voice'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: const Text('视频消息'),
+              onTap: () => Navigator.pop(sheetContext, 'video'),
+            ),
           ],
         ),
       ),
     );
     if (!mounted || choice == null) return;
-    await _pickAndSend(isImage: choice == 'image');
+    if (choice == 'voice') {
+      await _recordVoice();
+      return;
+    }
+    await _pickAndSend(kind: choice);
   }
 
-  Future<void> _pickAndSend({required bool isImage}) async {
+  Future<void> _pickAndSend({required String kind}) async {
+    final fileType = switch (kind) {
+      'image' => FileType.image,
+      'video' => FileType.video,
+      _ => FileType.any,
+    };
     final result = await FilePicker.platform.pickFiles(
-      type: isImage ? FileType.image : FileType.any,
+      type: fileType,
       withData: true,
     );
     if (result == null || result.files.isEmpty) return;
@@ -327,7 +359,7 @@ class _ChatPageState extends State<ChatPage> {
       conversationId: widget.conversationId,
       bytes: bytes,
       filename: file.name,
-      isImage: isImage,
+      kind: kind,
     );
     if (!mounted) return;
     if (ok) {
@@ -335,6 +367,28 @@ class _ChatPageState extends State<ChatPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(widget.session.error ?? '发送失败')),
+      );
+    }
+  }
+
+  Future<void> _recordVoice() async {
+    final bytes = await showModalBottomSheet<Uint8List>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _VoiceRecorderSheet(),
+    );
+    if (!mounted || bytes == null || bytes.isEmpty) return;
+
+    final ok = await widget.session.sendVoice(
+      conversationId: widget.conversationId,
+      bytes: bytes,
+    );
+    if (!mounted) return;
+    if (ok) {
+      await _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.session.error ?? '发送语音失败')),
       );
     }
   }
@@ -597,6 +651,128 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 录音面板：开始录音 → 停止后返回音频字节
+class _VoiceRecorderSheet extends StatefulWidget {
+  const _VoiceRecorderSheet();
+
+  @override
+  State<_VoiceRecorderSheet> createState() => _VoiceRecorderSheetState();
+}
+
+class _VoiceRecorderSheetState extends State<_VoiceRecorderSheet> {
+  final _recorder = AudioRecorder();
+  Timer? _ticker;
+  int _seconds = 0;
+  bool _recording = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    _recorder.dispose();
+    super.dispose();
+  }
+
+  Future<void> _start() async {
+    try {
+      if (!await _recorder.hasPermission()) {
+        setState(() => _error = '没有麦克风权限');
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final path =
+          '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      await _recorder.start(
+        const RecordConfig(encoder: AudioEncoder.aacLc),
+        path: path,
+      );
+      setState(() {
+        _recording = true;
+        _seconds = 0;
+        _error = null;
+      });
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        setState(() => _seconds++);
+      });
+    } catch (e) {
+      setState(() => _error = '录音启动失败：$e');
+    }
+  }
+
+  Future<void> _stopAndSend() async {
+    try {
+      final path = await _recorder.stop();
+      _ticker?.cancel();
+      if (!mounted) return;
+      setState(() => _recording = false);
+
+      if (path == null) {
+        setState(() => _error = '没有录到音频');
+        return;
+      }
+      final bytes = await XFile(path).readAsBytes();
+      if (!mounted) return;
+      Navigator.of(context).pop(bytes);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = '停止录音失败：$e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = _seconds ~/ 60;
+    final seconds = _seconds % 60;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _recording
+                  ? '$minutes:${seconds.toString().padLeft(2, '0')}'
+                  : '语音消息',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            if (_error != null)
+              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            const SizedBox(height: 20),
+            if (!_recording)
+              FilledButton.icon(
+                onPressed: _start,
+                icon: const Icon(Icons.mic),
+                label: const Text('开始录音'),
+              )
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  OutlinedButton(
+                    onPressed: () async {
+                      await _recorder.cancel();
+                      _ticker?.cancel();
+                      if (!context.mounted) return;
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('取消'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: _stopAndSend,
+                    icon: const Icon(Icons.send),
+                    label: const Text('停止并发送'),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
