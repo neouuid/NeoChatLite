@@ -137,3 +137,11 @@ cd client_app && flutter build web     # Web 产物可编译
 | 渲染 | 客户端用 `just_audio` 播放语音、`video_player` 内嵌播放视频 |
 
 服务端默认白名单：audio = mpeg/mp4/aac/wav/ogg/webm；video = mp4/quicktime/webm/x-matroska。
+
+## 引用回复与免打扰
+
+- 引用回复：发送时带上 `reply_to_id`，读取消息时服务端会回填 `reply_to`（原消息对象）
+- 免打扰：`PUT /chat/conversations/:id/mute`，body `{"muted": true|false}`；
+  状态存在 `conversation.members[].muted`，**按用户区分**，只影响本人
+- 注意：免打扰/改名/增删成员这类写操作都会让 `convs:{userID}` 缓存失效，
+  否则客户端会读到旧状态（已用回归测试锁住）

@@ -1193,6 +1193,43 @@ paths:
       summary: 获取会话消息
       tags:
       - chat
+  /api/v1/chat/conversations/{id}/mute:
+    put:
+      consumes:
+      - application/json
+      description: 开启或关闭当前用户对该会话的免打扰
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'muted: true|false'
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 设置免打扰
+      tags:
+      - chat
   /api/v1/chat/conversations/{id}/read:
     post:
       consumes:

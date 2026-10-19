@@ -38,6 +38,7 @@ class _ChatPageState extends State<ChatPage> {
   final List<Map<String, dynamic>> _messages = [];
   bool _loading = true;
   bool _loadingMore = false;
+  Map<String, dynamic>? _replyTo;
   bool _hasMore = true;
   String? _error;
   bool _peerTyping = false;
@@ -196,7 +197,11 @@ class _ChatPageState extends State<ChatPage> {
     final text = _input.text.trim();
     if (text.isEmpty) return;
     _input.clear();
-    final ok = await widget.session.sendMessage(widget.conversationId, text);
+    final ok = await widget.session.sendMessage(
+      widget.conversationId,
+      text,
+      replyToId: _replyTo?['id'] as String?,
+    );
     if (!ok) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -205,6 +210,39 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
     await _load();
+  }
+
+  static String _quotePreview(Map<String, dynamic> msg) {
+    final sender = msg['sender'] is Map
+        ? (msg['sender'] as Map)['nickname'] ??
+            (msg['sender'] as Map)['username'] ??
+            '对方'
+        : '对方';
+    final text = (msg['content'] as String?) ?? '';
+    return '$sender：${text.isEmpty ? '[媒体消息]' : text}';
+  }
+
+  Widget? _buildQuoteBlock(Map<String, dynamic> msg) {
+    final replyTo = msg['reply_to'];
+    if (replyTo is! Map) return null;
+    final quote = Map<String, dynamic>.from(replyTo);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(6),
+        border: Border(
+          left: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+        ),
+      ),
+      child: Text(
+        _quotePreview(quote),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    );
   }
 
   Widget _buildBubbleContent(Map<String, dynamic> msg, String content) {
@@ -226,6 +264,23 @@ class _ChatPageState extends State<ChatPage> {
       );
     }
 
+    final quote = _buildQuoteBlock(msg);
+    if (quote != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [quote, _buildMediaOrText(msg, content, type, mediaUrl)],
+      );
+    }
+    return _buildMediaOrText(msg, content, type, mediaUrl);
+  }
+
+  Widget _buildMediaOrText(
+    Map<String, dynamic> msg,
+    String content,
+    String type,
+    String mediaUrl,
+  ) {
     if (type == 'audio' && mediaUrl.isNotEmpty) {
       return AudioBubble(url: '${widget.session.baseUrl}$mediaUrl');
     }

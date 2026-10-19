@@ -154,13 +154,13 @@ func (h *Handler) SendMessage(c *gin.Context) {
 	}
 
 	var req struct {
-		ConversationID string      `json:"conversation_id"`
-		Type           string      `json:"type"`
-		Content        string      `json:"content"`
-		MediaURL       string      `json:"media_url"`
-		FileName       string      `json:"file_name"`
-		FileSize       int64       `json:"file_size"`
-		ReplyToID      *string     `json:"reply_to_id"`
+		ConversationID string  `json:"conversation_id"`
+		Type           string  `json:"type"`
+		Content        string  `json:"content"`
+		MediaURL       string  `json:"media_url"`
+		FileName       string  `json:"file_name"`
+		FileSize       int64   `json:"file_size"`
+		ReplyToID      *string `json:"reply_to_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "invalid request body")
@@ -251,6 +251,48 @@ func (h *Handler) GetConversationMessages(c *gin.Context) {
 	}
 
 	response.Success(c, msgs)
+}
+
+// SetConversationMuted 设置会话免打扰
+// @Summary 设置免打扰
+// @Description 开启或关闭当前用户对该会话的免打扰
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "会话ID"
+// @Param request body object true "muted: true|false"
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/conversations/{id}/mute [put]
+func (h *Handler) SetConversationMuted(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	convID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "invalid conversation id")
+		return
+	}
+
+	var req struct {
+		Muted bool `json:"muted"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if err := h.service.SetConversationMuted(convID, userID, req.Muted); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"conversation_id": convID, "muted": req.Muted})
 }
 
 // SyncOfflineMessages 离线消息增量同步
@@ -1280,205 +1322,203 @@ func (h *Handler) GetUserCallRecords(c *gin.Context) {
 	response.Success(c, records)
 }
 
+// ==================== Search Handlers ====================
 
-	// ==================== Search Handlers ====================
-
-	// SearchMessages 搜索消息
-	// @Summary 搜索消息
-	// @Description 在用户参与的会话中搜索消息内容
-	// @Tags chat
-	// @Accept json
-	// @Produce json
-	// @Security BearerAuth
-	// @Param q query string true "搜索关键词"
-	// @Param limit query int false "结果数量限制" default(50)
-	// @Success 200 {object} response.ApiResponse{data=[]Message}
-	// @Failure 400 {object} response.ApiResponse
-	// @Failure 401 {object} response.ApiResponse
-	// @Router /api/v1/chat/search/messages [get]
-	func (h *Handler) SearchMessages(c *gin.Context) {
-		userID, err := GetUserIDFromContext(c)
-		if err != nil || userID == uuid.Nil {
-			response.Unauthorized(c, "unauthorized")
-			return
-		}
-
-		query := c.Query("q")
-		if query == "" {
-			response.BadRequest(c, "search query is required")
-			return
-		}
-
-		limit := 50
-		if limitStr := c.Query("limit"); limitStr != "" {
-			_, _ = fmt.Sscanf(limitStr, "%d", &limit)
-		}
-
-		msgs, err := h.service.SearchMessages(userID, query, limit)
-		if err != nil {
-			response.InternalServerError(c, "failed to search messages")
-			return
-		}
-
-		response.Success(c, msgs)
+// SearchMessages 搜索消息
+// @Summary 搜索消息
+// @Description 在用户参与的会话中搜索消息内容
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param q query string true "搜索关键词"
+// @Param limit query int false "结果数量限制" default(50)
+// @Success 200 {object} response.ApiResponse{data=[]Message}
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/search/messages [get]
+func (h *Handler) SearchMessages(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
 	}
 
-	// SearchGroups 搜索群组
-	// @Summary 搜索群组
-	// @Description 在用户加入的群组中搜索
-	// @Tags chat
-	// @Accept json
-	// @Produce json
-	// @Security BearerAuth
-	// @Param q query string true "搜索关键词"
-	// @Param limit query int false "结果数量限制" default(50)
-	// @Success 200 {object} response.ApiResponse{data=[]Group}
-	// @Failure 400 {object} response.ApiResponse
-	// @Failure 401 {object} response.ApiResponse
-	// @Router /api/v1/chat/search/groups [get]
-	func (h *Handler) SearchGroups(c *gin.Context) {
-		userID, err := GetUserIDFromContext(c)
-		if err != nil || userID == uuid.Nil {
-			response.Unauthorized(c, "unauthorized")
-			return
-		}
-
-		query := c.Query("q")
-		if query == "" {
-			response.BadRequest(c, "search query is required")
-			return
-		}
-
-		limit := 50
-		if limitStr := c.Query("limit"); limitStr != "" {
-			_, _ = fmt.Sscanf(limitStr, "%d", &limit)
-		}
-
-		groups, err := h.service.SearchGroups(userID, query, limit)
-		if err != nil {
-			response.InternalServerError(c, "failed to search groups")
-			return
-		}
-
-		response.Success(c, groups)
+	query := c.Query("q")
+	if query == "" {
+		response.BadRequest(c, "search query is required")
+		return
 	}
 
-	// ==================== Mention Handlers ====================
-
-	// GetUserMentions 获取用户提及列表
-	// @Summary 获取提及列表
-	// @Description 获取当前用户被@的消息列表
-	// @Tags chat
-	// @Accept json
-	// @Produce json
-	// @Security BearerAuth
-	// @Param limit query int false "结果数量限制" default(50)
-	// @Success 200 {object} response.ApiResponse{data=[]Mention}
-	// @Failure 401 {object} response.ApiResponse
-	// @Router /api/v1/chat/mentions [get]
-	func (h *Handler) GetUserMentions(c *gin.Context) {
-		userID, err := GetUserIDFromContext(c)
-		if err != nil || userID == uuid.Nil {
-			response.Unauthorized(c, "unauthorized")
-			return
-		}
-
-		limit := 50
-		if limitStr := c.Query("limit"); limitStr != "" {
-			_, _ = fmt.Sscanf(limitStr, "%d", &limit)
-		}
-
-		mentions, err := h.service.GetUserMentions(userID, limit)
-		if err != nil {
-			response.InternalServerError(c, "failed to get mentions")
-			return
-		}
-
-		response.Success(c, mentions)
+	limit := 50
+	if limitStr := c.Query("limit"); limitStr != "" {
+		_, _ = fmt.Sscanf(limitStr, "%d", &limit)
 	}
 
-	// MarkMentionAsRead 标记提及为已读
-	// @Summary 标记提及为已读
-	// @Description 将指定提及标记为已读
-	// @Tags chat
-	// @Accept json
-	// @Produce json
-	// @Security BearerAuth
-	// @Param id path string true "提及ID"
-	// @Success 200 {object} response.ApiResponse
-	// @Failure 400 {object} response.ApiResponse
-	// @Failure 401 {object} response.ApiResponse
-	// @Router /api/v1/chat/mention/{id}/read [post]
-	func (h *Handler) MarkMentionAsRead(c *gin.Context) {
-		userID, err := GetUserIDFromContext(c)
-		if err != nil || userID == uuid.Nil {
-			response.Unauthorized(c, "unauthorized")
-			return
-		}
-
-		idStr := c.Param("id")
-		mentionID, err := uuid.Parse(idStr)
-		if err != nil {
-			response.BadRequest(c, "invalid mention id")
-			return
-		}
-
-		if err := h.service.MarkMentionAsRead(mentionID, userID); err != nil {
-			response.BadRequest(c, err.Error())
-			return
-		}
-
-		response.Success(c, nil)
+	msgs, err := h.service.SearchMessages(userID, query, limit)
+	if err != nil {
+		response.InternalServerError(c, "failed to search messages")
+		return
 	}
 
-	// MarkAllMentionsAsRead 标记所有提及为已读
-	// @Summary 标记所有提及为已读
-	// @Description 将当前用户的所有提及标记为已读
-	// @Tags chat
-	// @Accept json
-	// @Produce json
-	// @Security BearerAuth
-	// @Success 200 {object} response.ApiResponse
-	// @Failure 401 {object} response.ApiResponse
-	// @Router /api/v1/chat/mentions/read-all [post]
-	func (h *Handler) MarkAllMentionsAsRead(c *gin.Context) {
-		userID, err := GetUserIDFromContext(c)
-		if err != nil || userID == uuid.Nil {
-			response.Unauthorized(c, "unauthorized")
-			return
-		}
+	response.Success(c, msgs)
+}
 
-		if err := h.service.MarkUserMentionsAsRead(userID); err != nil {
-			response.InternalServerError(c, "failed to mark all mentions as read")
-			return
-		}
-
-		response.Success(c, nil)
+// SearchGroups 搜索群组
+// @Summary 搜索群组
+// @Description 在用户加入的群组中搜索
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param q query string true "搜索关键词"
+// @Param limit query int false "结果数量限制" default(50)
+// @Success 200 {object} response.ApiResponse{data=[]Group}
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/search/groups [get]
+func (h *Handler) SearchGroups(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
 	}
 
-	// GetUnreadMentionCount 获取未读提及数量
-	// @Summary 获取未读提及数量
-	// @Description 获取当前用户的未读提及数量
-	// @Tags chat
-	// @Accept json
-	// @Produce json
-	// @Security BearerAuth
-	// @Success 200 {object} response.ApiResponse{data=int64}
-	// @Failure 401 {object} response.ApiResponse
-	// @Router /api/v1/chat/mentions/unread-count [get]
-	func (h *Handler) GetUnreadMentionCount(c *gin.Context) {
-		userID, err := GetUserIDFromContext(c)
-		if err != nil || userID == uuid.Nil {
-			response.Unauthorized(c, "unauthorized")
-			return
-		}
-
-		count, err := h.service.GetUnreadMentionCount(userID)
-		if err != nil {
-			response.InternalServerError(c, "failed to get unread mention count")
-			return
-		}
-
-		response.Success(c, gin.H{"count": count})
+	query := c.Query("q")
+	if query == "" {
+		response.BadRequest(c, "search query is required")
+		return
 	}
 
+	limit := 50
+	if limitStr := c.Query("limit"); limitStr != "" {
+		_, _ = fmt.Sscanf(limitStr, "%d", &limit)
+	}
+
+	groups, err := h.service.SearchGroups(userID, query, limit)
+	if err != nil {
+		response.InternalServerError(c, "failed to search groups")
+		return
+	}
+
+	response.Success(c, groups)
+}
+
+// ==================== Mention Handlers ====================
+
+// GetUserMentions 获取用户提及列表
+// @Summary 获取提及列表
+// @Description 获取当前用户被@的消息列表
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param limit query int false "结果数量限制" default(50)
+// @Success 200 {object} response.ApiResponse{data=[]Mention}
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/mentions [get]
+func (h *Handler) GetUserMentions(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	limit := 50
+	if limitStr := c.Query("limit"); limitStr != "" {
+		_, _ = fmt.Sscanf(limitStr, "%d", &limit)
+	}
+
+	mentions, err := h.service.GetUserMentions(userID, limit)
+	if err != nil {
+		response.InternalServerError(c, "failed to get mentions")
+		return
+	}
+
+	response.Success(c, mentions)
+}
+
+// MarkMentionAsRead 标记提及为已读
+// @Summary 标记提及为已读
+// @Description 将指定提及标记为已读
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "提及ID"
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/mention/{id}/read [post]
+func (h *Handler) MarkMentionAsRead(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	idStr := c.Param("id")
+	mentionID, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "invalid mention id")
+		return
+	}
+
+	if err := h.service.MarkMentionAsRead(mentionID, userID); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, nil)
+}
+
+// MarkAllMentionsAsRead 标记所有提及为已读
+// @Summary 标记所有提及为已读
+// @Description 将当前用户的所有提及标记为已读
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/mentions/read-all [post]
+func (h *Handler) MarkAllMentionsAsRead(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	if err := h.service.MarkUserMentionsAsRead(userID); err != nil {
+		response.InternalServerError(c, "failed to mark all mentions as read")
+		return
+	}
+
+	response.Success(c, nil)
+}
+
+// GetUnreadMentionCount 获取未读提及数量
+// @Summary 获取未读提及数量
+// @Description 获取当前用户的未读提及数量
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.ApiResponse{data=int64}
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/mentions/unread-count [get]
+func (h *Handler) GetUnreadMentionCount(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	count, err := h.service.GetUnreadMentionCount(userID)
+	if err != nil {
+		response.InternalServerError(c, "failed to get unread mention count")
+		return
+	}
+
+	response.Success(c, gin.H{"count": count})
+}

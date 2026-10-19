@@ -62,6 +62,8 @@ class _FakeApi extends NeoChatApi {
   }
 
   Map<String, dynamic>? lastFriendRequestBody;
+  Map<String, dynamic>? lastMessageBody;
+  Map<String, dynamic>? lastMuteBody;
 
   @override
   Future<dynamic> getUsersSearch({String? keyword, int? page, int? pageSize}) async {
@@ -123,7 +125,17 @@ class _FakeApi extends NeoChatApi {
 
   @override
   Future<dynamic> postChatMessages({required Map<String, dynamic> body}) async {
+    lastMessageBody = body;
     return {'success': true, 'data': body};
+  }
+
+  @override
+  Future<dynamic> putChatConversationsIdMute({
+    required String id,
+    required Map<String, dynamic> body,
+  }) async {
+    lastMuteBody = body;
+    return {'success': true, 'data': {'muted': body['muted']}};
   }
 
   @override
@@ -243,6 +255,31 @@ void main() {
 
     expect(count, 2);
     expect(session.lastSyncAt, '2026-10-18T10:00:00Z');
+  });
+
+  test('引用回复会带上 reply_to_id', () async {
+    final api = _FakeApi();
+    final session = NeoChatSession(api: api, enableRealtime: false);
+
+    expect(
+      await session.sendMessage('conv-1', '收到', replyToId: 'msg-9'),
+      isTrue,
+    );
+    expect(api.lastMessageBody?['reply_to_id'], 'msg-9');
+
+    await session.sendMessage('conv-1', '普通消息');
+    expect(api.lastMessageBody?.containsKey('reply_to_id'), isFalse);
+  });
+
+  test('免打扰开关下发 muted 字段', () async {
+    final api = _FakeApi();
+    final session = NeoChatSession(api: api, enableRealtime: false);
+
+    expect(await session.setConversationMuted('conv-1', true), isTrue);
+    expect(api.lastMuteBody, {'muted': true});
+
+    expect(await session.setConversationMuted('conv-1', false), isTrue);
+    expect(api.lastMuteBody, {'muted': false});
   });
 
   test('发送消息成功返回 true', () async {

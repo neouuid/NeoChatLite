@@ -747,6 +747,115 @@ Future<void> main(List<String> args) async {
     fail('语音/视频验证失败: $e');
   }
 
+  step('20. 引用回复：reply_to_id 与 reply_to 回填');
+  try {
+    api.token = tokenA;
+    await api.postChatMessages(
+      body: {
+        'conversation_id': convId,
+        'type': 'text',
+        'content': '这条是原始消息',
+      },
+    );
+
+    final before = _list(await api.getChatConversationsIdMessages(id: convId));
+    final target = before.whereType<Map>().firstWhere(
+          (m) => m['content'] == '这条是原始消息',
+          orElse: () => <String, dynamic>{},
+        );
+    final targetId = (target['id'] ?? '') as String;
+
+    if (targetId.isEmpty) {
+      fail('没找到原始消息');
+    } else {
+      await api.postChatMessages(
+        body: {
+          'conversation_id': convId,
+          'type': 'text',
+          'content': '这条是引用回复',
+          'reply_to_id': targetId,
+        },
+      );
+
+      final after = _list(await api.getChatConversationsIdMessages(id: convId));
+      final reply = after.whereType<Map>().firstWhere(
+            (m) => m['content'] == '这条是引用回复',
+            orElse: () => <String, dynamic>{},
+          );
+      final replyTo = reply['reply_to'];
+      if (replyTo is Map && replyTo['content'] == '这条是原始消息') {
+        ok('引用关系已回填（reply_to 指向原消息）');
+      } else {
+        fail('引用关系缺失: $replyTo');
+      }
+    }
+  } catch (e) {
+    fail('引用回复验证失败: $e');
+  }
+
+  step('21. 免打扰：按用户生效并可关闭');
+  try {
+    api.token = tokenA;
+    var res = await api.putChatConversationsIdMute(
+      id: convId,
+      body: {'muted': true},
+    );
+    if (res['success'] == true) {
+      ok('已开启免打扰');
+    } else {
+      fail('开启免打扰失败: $res');
+    }
+
+    final convs = _list(await api.getChatConversations());
+    var mutedFlag = false;
+    for (final c in convs.whereType<Map>()) {
+      if (c['id'] != convId) continue;
+      for (final m in (c['members'] as List? ?? const [])) {
+        if (m is Map && m['user_id'] == idA) mutedFlag = m['muted'] == true;
+      }
+    }
+    if (mutedFlag) {
+      ok('会话列表显示 A 已免打扰');
+    } else {
+      fail('会话列表未体现免打扰状态');
+    }
+
+    // B 不应受影响
+    api.token = tokenB;
+    final bConvs = _list(await api.getChatConversations());
+    var bMuted = false;
+    for (final c in bConvs.whereType<Map>()) {
+      if (c['id'] != convId) continue;
+      for (final m in (c['members'] as List? ?? const [])) {
+        if (m is Map && m['user_id'] == idB) bMuted = m['muted'] == true;
+      }
+    }
+    if (!bMuted) {
+      ok('免打扰只影响 A，B 不受影响');
+    } else {
+      fail('B 也被误设为免打扰');
+    }
+
+    // 关闭
+    api.token = tokenA;
+    await api.putChatConversationsIdMute(id: convId, body: {'muted': false});
+    final convs2 = _list(await api.getChatConversations());
+    var closed = true;
+    for (final c in convs2.whereType<Map>()) {
+      if (c['id'] != convId) continue;
+      for (final m in (c['members'] as List? ?? const [])) {
+        if (m is Map && m['user_id'] == idA && m['muted'] == true) closed = false;
+      }
+    }
+    if (closed) {
+      ok('免打扰已关闭');
+    } else {
+      fail('关闭免打扰失败');
+    }
+  } catch (e) {
+    fail('免打扰验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

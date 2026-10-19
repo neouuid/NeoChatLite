@@ -189,6 +189,7 @@ func (s *Service) UpdateConversation(convID, userID uuid.UUID, name, avatar stri
 
 	// 失效缓存
 	_ = redis.InvalidateConversationCache(convID.String())
+	s.invalidateMemberListCaches(convID)
 
 	// 如果是群聊，同步更新群组信息
 	if conv.Type == ConversationTypeGroup {
@@ -428,6 +429,32 @@ func (s *Service) GetConversationMessages(convID, userID uuid.UUID, before *time
 	}
 
 	return s.repo.GetConversationMessages(convID, before, limit)
+}
+
+// invalidateMemberListCaches 失效该会话所有成员的「会话列表」缓存。
+// convs:{userID} 缓存里带着会话名、成员与未读数，
+// 任何会影响列表展示的写操作（改名、增删成员、退群、解散）都必须调用它。
+func (s *Service) invalidateMemberListCaches(convID uuid.UUID) {
+	members, err := s.repo.GetConversationMembers(convID)
+	if err != nil {
+		return
+	}
+	for _, m := range members {
+		_ = redis.Delete(redis.KeyPrefixConversations + m.UserID.String())
+	}
+}
+
+// SetConversationMuted 设置当前用户对该会话的免打扰状态
+func (s *Service) SetConversationMuted(convID, userID uuid.UUID, muted bool) error {
+	if _, err := s.repo.GetConversationMember(convID, userID); err != nil {
+		return errors.New("not a member of this conversation")
+	}
+	if err := s.repo.SetConversationMuted(convID, userID, muted); err != nil {
+		return err
+	}
+	// 免打扰状态挂在成员记录上，会体现在会话列表里，必须失效该用户的列表缓存
+	_ = redis.Delete(redis.KeyPrefixConversations + userID.String())
+	return nil
 }
 
 // GetOfflineMessages 补拉离线消息。
@@ -670,6 +697,9 @@ func (s *Service) CreateGroup(ownerID uuid.UUID, name, description, avatar strin
 		}
 	}
 
+	// 建群后立刻让所有成员的会话列表缓存失效，否则他们看不到新会话
+	s.invalidateMemberListCaches(groupID)
+
 	fullConv, err := s.repo.GetConversationByID(groupID)
 	if err != nil {
 		return nil, group, nil
@@ -745,6 +775,7 @@ func (s *Service) UpdateGroup(groupID, userID uuid.UUID, name, description, avat
 
 	// 失效会话缓存
 	_ = redis.InvalidateConversationCache(groupID.String())
+	s.invalidateMemberListCaches(groupID)
 
 	return group, nil
 }
@@ -776,6 +807,7 @@ func (s *Service) AddGroupMember(groupID, userID, newMemberID uuid.UUID) error {
 	if err == nil {
 		// 失效会话缓存
 		_ = redis.InvalidateConversationCache(groupID.String())
+		s.invalidateMemberListCaches(groupID)
 	}
 	return err
 }
@@ -806,6 +838,9 @@ func (s *Service) RemoveGroupMember(groupID, userID, targetUserID uuid.UUID) err
 			return errors.New("cannot remove other admins")
 		}
 	}
+
+	// 删除前先失效，这样被移除成员的列表缓存也会被清掉
+	s.invalidateMemberListCaches(groupID)
 
 	err = s.repo.RemoveConversationMember(groupID, targetUserID)
 	if err == nil {
@@ -858,6 +893,9 @@ func (s *Service) LeaveGroup(groupID, userID uuid.UUID) error {
 		return errors.New("owner cannot leave group, transfer ownership or disband first")
 	}
 
+	// 退出前先失效，退群者自己的列表也要刷新
+	s.invalidateMemberListCaches(groupID)
+
 	err = s.repo.RemoveConversationMember(groupID, userID)
 	if err == nil {
 		// 失效会话缓存
@@ -878,7 +916,9 @@ func (s *Service) DisbandGroup(groupID, userID uuid.UUID) error {
 		return errors.New("only group owner can disband group")
 	}
 
-	// 删除群组记录
+	// 删除群组记录前先失效（删除后查不到成员）
+	s.invalidateMemberListCaches(groupID)
+
 	if err := s.repo.DeleteGroup(groupID); err != nil {
 		return err
 	}

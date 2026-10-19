@@ -273,6 +273,13 @@ func (r *Repository) GetMessagesSince(userID uuid.UUID, since time.Time, limit i
 	return msgs, nil
 }
 
+// SetConversationMuted 设置会话免打扰
+func (r *Repository) SetConversationMuted(convID, userID uuid.UUID, muted bool) error {
+	return r.db.Model(&ConversationMember{}).
+		Where("conversation_id = ? AND user_id = ?", convID, userID).
+		UpdateColumn("muted", muted).Error
+}
+
 // GetUnreadCount 获取未读消息数
 func (r *Repository) GetUnreadCount(convID, userID uuid.UUID) (int64, error) {
 	member, err := r.GetConversationMember(convID, userID)

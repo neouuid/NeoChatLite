@@ -111,11 +111,20 @@ class NeoChatSession extends ChangeNotifier {
     return _asList(res['data']);
   }
 
-  /// 发送文本消息
-  Future<bool> sendMessage(String conversationId, String content) async {
+  /// 发送文本消息；[replyToId] 非空时作为引用回复
+  Future<bool> sendMessage(
+    String conversationId,
+    String content, {
+    String? replyToId,
+  }) async {
     try {
       await _api.postChatMessages(
-        body: {'conversation_id': conversationId, 'content': content, 'type': 'text'},
+        body: {
+          'conversation_id': conversationId,
+          'content': content,
+          'type': 'text',
+          if (replyToId != null && replyToId.isNotEmpty) 'reply_to_id': replyToId,
+        },
       );
       return true;
     } catch (e) {
@@ -222,6 +231,21 @@ class NeoChatSession extends ChangeNotifier {
       return true;
     } catch (e) {
       _error = '取消收藏失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 设置会话免打扰
+  Future<bool> setConversationMuted(String conversationId, bool muted) async {
+    try {
+      await _api.putChatConversationsIdMute(
+        id: conversationId,
+        body: {'muted': muted},
+      );
+      return true;
+    } catch (e) {
+      _error = '设置免打扰失败：$e';
       notifyListeners();
       return false;
     }
