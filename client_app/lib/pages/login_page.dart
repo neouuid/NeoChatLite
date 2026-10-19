@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../state/session.dart';
+import 'register_page.dart';
 
 /// 登录页：调用 POST /api/v1/auth/login，成功后由外层切换到会话列表。
 class LoginPage extends StatefulWidget {
@@ -80,7 +81,18 @@ class _LoginPageState extends State<LoginPage> {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => RegisterPage(session: widget.session),
+                      ),
+                    );
+                  },
+                  child: const Text('还没有账号？立即注册'),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   '服务端：${NeoChatSession.defaultBaseUrl}',
                   style: Theme.of(context).textTheme.bodySmall,

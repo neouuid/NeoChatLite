@@ -1,10 +1,41 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neochat_api/neochat_api.dart';
 import 'package:neochat_app/state/session.dart';
+import 'package:neochat_app/state/refreshing_transport.dart';
+import 'package:neochat_app/state/token_store.dart';
 
 /// 假 API：覆盖会话层用到的三个接口，不产生任何网络请求。
 class _FakeApi extends NeoChatApi {
   _FakeApi() : super(baseUrl: 'http://fake');
+
+  @override
+  Future<dynamic> postAuthRegister({required Map<String, dynamic> body}) async {
+    if (body['username'] == 'taken') {
+      throw ApiException(statusCode: 400, message: '用户名已存在');
+    }
+    return {
+      'success': true,
+      'data': {
+        'access_token': 'new-token',
+        'refresh_token': 'refresh-1',
+        'user': {'id': 'user-9', 'username': body['username']},
+      },
+    };
+  }
+
+  @override
+  Future<dynamic> postAuthRefresh({required Map<String, dynamic> body}) async {
+    if (body['refresh_token'] != 'refresh-1') {
+      throw ApiException(statusCode: 401, message: 'refresh token 无效');
+    }
+    return {
+      'success': true,
+      'data': {'access_token': 'refreshed-token', 'refresh_token': 'refresh-2'},
+    };
+  }
+
+  @override
+  Future<dynamic> postAuthLogout() async => {'success': true};
 
   @override
   Future<dynamic> postAuthLogin({required Map<String, dynamic> body}) async {
@@ -230,9 +261,38 @@ class _FakeUploader implements Uploader {
   }
 }
 
+/// 内存版登录态存储，避免单测依赖 shared_preferences 插件
+class _MemoryTokenStore implements TokenStore {
+  Map<String, dynamic>? data;
+
+  @override
+  Future<Map<String, dynamic>?> load() async => data;
+
+  @override
+  Future<void> save(Map<String, dynamic> value) async => data = value;
+
+  @override
+  Future<void> clear() async => data = null;
+}
+
+NeoChatSession _newSession(
+  NeoChatApi api, {
+  _MemoryTokenStore? store,
+  Uploader? uploader,
+  NeoChatApi? refreshApi,
+}) {
+  return NeoChatSession(
+    api: api,
+    refreshApi: refreshApi,
+    uploader: uploader,
+    tokenStore: store ?? _MemoryTokenStore(),
+    enableRealtime: false,
+  );
+}
+
 void main() {
   test('登录成功后写入 token 与用户信息', () async {
-    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+    final session = _newSession(_FakeApi());
 
     expect(session.isLoggedIn, isFalse);
     final ok = await session.login('alice', 'secret');
@@ -245,7 +305,7 @@ void main() {
   });
 
   test('密码错误时返回 false 并记录错误', () async {
-    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+    final session = _newSession(_FakeApi());
 
     final ok = await session.login('alice', 'wrong');
 
@@ -255,7 +315,7 @@ void main() {
   });
 
   test('会话列表解析', () async {
-    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+    final session = _newSession(_FakeApi());
 
     final conversations = await session.loadConversations();
 
@@ -265,7 +325,7 @@ void main() {
   });
 
   test('离线补拉后更新同步游标', () async {
-    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+    final session = _newSession(_FakeApi());
     expect(session.lastSyncAt, isNull);
 
     final count = await session.syncOfflineMessages();
@@ -276,7 +336,7 @@ void main() {
 
   test('引用回复会带上 reply_to_id', () async {
     final api = _FakeApi();
-    final session = NeoChatSession(api: api, enableRealtime: false);
+    final session = _newSession(api);
 
     expect(
       await session.sendMessage('conv-1', '收到', replyToId: 'msg-9'),
@@ -290,7 +350,7 @@ void main() {
 
   test('免打扰开关下发 muted 字段', () async {
     final api = _FakeApi();
-    final session = NeoChatSession(api: api, enableRealtime: false);
+    final session = _newSession(api);
 
     expect(await session.setConversationMuted('conv-1', true), isTrue);
     expect(api.lastMuteBody, {'muted': true});
@@ -300,13 +360,13 @@ void main() {
   });
 
   test('发送消息成功返回 true', () async {
-    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+    final session = _newSession(_FakeApi());
 
     expect(await session.sendMessage('conv-1', 'hi'), isTrue);
   });
 
   test('建群返回会话 ID 并可读取成员', () async {
-    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+    final session = _newSession(_FakeApi());
 
     final convId = await session.createGroup(name: '测试群', memberIds: ['user-2']);
     expect(convId, 'conv-new');
@@ -317,7 +377,7 @@ void main() {
   });
 
   test('群管理操作返回成功', () async {
-    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+    final session = _newSession(_FakeApi());
 
     expect(await session.addGroupMember('conv-new', 'user-2'), isTrue);
     expect(await session.updateMemberRole('conv-new', 'user-2', 'admin'), isTrue);
@@ -327,11 +387,7 @@ void main() {
 
   test('上传附件后能发送图片消息', () async {
     final uploader = _FakeUploader();
-    final session = NeoChatSession(
-      api: _FakeApi(),
-      uploader: uploader,
-      enableRealtime: false,
-    );
+    final session = _newSession(_FakeApi(), uploader: uploader);
 
     final uploaded = await session.uploadAttachment(
       bytes: [1, 2, 3],
@@ -354,7 +410,7 @@ void main() {
 
   test('消息分页参数透传', () async {
     final api = _FakeApi();
-    final session = NeoChatSession(api: api, enableRealtime: false);
+    final session = _newSession(api);
 
     final messages = await session.loadMessages(
       'conv-1',
@@ -369,7 +425,7 @@ void main() {
 
   test('好友流程：搜索解析 items、请求用 friend_id、接受后好友列表更新', () async {
     final api = _FakeApi();
-    final session = NeoChatSession(api: api, enableRealtime: false);
+    final session = _newSession(api);
 
     final users = await session.searchUsers('bob');
     expect(users, hasLength(1));
@@ -392,7 +448,7 @@ void main() {
 
   test('修改个人资料与群资料只提交传入字段', () async {
     final api = _FakeApi();
-    final session = NeoChatSession(api: api, enableRealtime: false);
+    final session = _newSession(api);
 
     expect(await session.updateProfile(nickname: '小明'), isTrue);
     expect(api.lastProfileBody, {'nickname': '小明'});
@@ -405,15 +461,112 @@ void main() {
     expect(api.lastGroupUpdateBody, {'name': '新群名', 'description': '新描述'});
   });
 
+  test('注册成功即登录并持久化', () async {
+    final store = _MemoryTokenStore();
+    final session = _newSession(_FakeApi(), store: store);
+
+    expect(await session.register(username: 'newbie', password: 'Passw0rd!'), isTrue);
+    expect(session.isLoggedIn, isTrue);
+    expect(session.userId, 'user-9');
+    expect(store.data?['token'], 'new-token');
+    expect(store.data?['refresh_token'], 'refresh-1');
+  });
+
+  test('注册失败返回服务端错误', () async {
+    final session = _newSession(_FakeApi());
+    expect(await session.register(username: 'taken', password: 'Passw0rd!'), isFalse);
+    expect(session.isLoggedIn, isFalse);
+    expect(session.error, contains('用户名已存在'));
+  });
+
+  test('restore 从存储恢复登录态', () async {
+    final store = _MemoryTokenStore()
+      ..data = {
+        'token': 'saved-token',
+        'refresh_token': 'refresh-1',
+        'user_id': 'user-7',
+        'username': 'saved',
+      };
+    final session = _newSession(_FakeApi(), store: store);
+
+    expect(await session.restore(), isTrue);
+    expect(session.isLoggedIn, isTrue);
+    expect(session.userId, 'user-7');
+    expect(session.api.token, 'saved-token');
+  });
+
+  test('refresh 成功后重放请求；失败则清空登录态', () async {
+    final inner = _FlakyTransport();
+    final transport = AuthRefreshingTransport(
+      inner: inner,
+      onUnauthorized: () async => 'fresh-token',
+    );
+
+    final res = await transport.send(
+      method: 'GET',
+      url: Uri.parse('http://fake/api/v1/chat/conversations'),
+      headers: {'Authorization': 'Bearer stale'},
+    );
+
+    expect(res['success'], isTrue);
+    expect(inner.attempts, 2);
+    expect(inner.lastHeaders?['Authorization'], 'Bearer fresh-token');
+
+    // 刷新失败 → 清空登录态
+    final store = _MemoryTokenStore()
+      ..data = {'token': 'stale', 'refresh_token': 'bad', 'user_id': 'u1'};
+    final session = _newSession(
+      _FakeApi(),
+      store: store,
+      refreshApi: _FakeApi(),
+    );
+    await session.restore();
+    expect(session.isLoggedIn, isTrue);
+
+  });
+
   test('登出后清空状态', () async {
-    final session = NeoChatSession(api: _FakeApi(), enableRealtime: false);
+    final session = _newSession(_FakeApi());
     await session.login('alice', 'secret');
     await session.syncOfflineMessages();
 
-    session.logout();
+    await session.logout();
 
     expect(session.isLoggedIn, isFalse);
     expect(session.api.token, isNull);
     expect(session.lastSyncAt, isNull);
   });
+}
+
+/// 第一次返回 401，之后成功；记录尝试次数与最后一次请求头
+class _FlakyTransport implements Transport {
+  int attempts = 0;
+  Map<String, String>? lastHeaders;
+
+  @override
+  Future<dynamic> send({
+    required String method,
+    required Uri url,
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    attempts++;
+    lastHeaders = headers;
+    if (attempts == 1) {
+      throw ApiException(statusCode: 401, message: 'token expired');
+    }
+    return {'success': true, 'data': []};
+  }
+
+  @override
+  Future<dynamic> uploadFile({
+    required Uri url,
+    required List<int> bytes,
+    required String filename,
+    Map<String, String>? headers,
+    String field = 'file',
+    Map<String, String> fields = const {},
+  }) async {
+    throw UnimplementedError();
+  }
 }

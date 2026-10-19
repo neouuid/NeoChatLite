@@ -21,6 +21,7 @@ class NeoChatApp extends StatefulWidget {
 
 class _NeoChatAppState extends State<NeoChatApp> {
   late final NeoChatSession _session = widget.session ?? NeoChatSession();
+  late final Future<bool> _restored = _session.restore();
 
   @override
   void dispose() {
@@ -39,13 +40,23 @@ class _NeoChatAppState extends State<NeoChatApp> {
         colorSchemeSeed: const Color(0xFF4C6FFF),
         brightness: Brightness.dark,
       ),
-      home: ListenableBuilder(
-        listenable: _session,
-        builder: (context, _) {
-          if (_session.isLoggedIn) {
-            return ConversationsPage(session: _session);
+      home: FutureBuilder<bool>(
+        future: _restored,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
-          return LoginPage(session: _session);
+          return ListenableBuilder(
+            listenable: _session,
+            builder: (context, _) {
+              if (_session.isLoggedIn) {
+                return ConversationsPage(session: _session);
+              }
+              return LoginPage(session: _session);
+            },
+          );
         },
       ),
     );

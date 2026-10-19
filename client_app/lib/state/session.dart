@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:neochat_api/neochat_api.dart';
 
+import 'refreshing_transport.dart';
+import 'token_store.dart';
+
 /// 客户端会话状态：登录态、当前用户、离线同步游标。
 ///
 /// 只依赖 `neochat_api`（纯 Dart），不直接依赖具体页面，便于单独测试。
@@ -10,15 +13,26 @@ class NeoChatSession extends ChangeNotifier {
   NeoChatSession({
     String? baseUrl,
     NeoChatApi? api,
+    NeoChatApi? refreshApi,
     Uploader? uploader,
+    TokenStore? tokenStore,
     bool enableRealtime = true,
   })  : _uploader = uploader ?? createDefaultUploader(),
-        _api = api ??
-            NeoChatApi(
-              baseUrl: baseUrl ?? defaultBaseUrl,
-            ),
+        _tokenStore = tokenStore ?? PrefsTokenStore(),
         _baseUrl = baseUrl ?? defaultBaseUrl,
-        _enableRealtime = enableRealtime;
+        _enableRealtime = enableRealtime {
+    // 传输层里的 401 回调需要引用 this，因此放在构造体里赋值
+    _api = api ??
+        NeoChatApi(
+          baseUrl: _baseUrl,
+          transport: AuthRefreshingTransport(
+            inner: createDefaultTransport(),
+            onUnauthorized: () => _refreshAccessToken(),
+          ),
+        );
+    _api.token = _token;
+    _refreshApi = refreshApi;
+  }
 
   /// 默认服务端地址，可通过 `--dart-define=NEOCHAT_BASE_URL=...` 覆盖
   static const String defaultBaseUrl = String.fromEnvironment(
@@ -26,11 +40,14 @@ class NeoChatSession extends ChangeNotifier {
     defaultValue: 'http://localhost:8080',
   );
 
-  final NeoChatApi _api;
+  late final NeoChatApi _api;
+  NeoChatApi? _refreshApi;
   NeoChatApi get api => _api;
 
   final String _baseUrl;
   final Uploader _uploader;
+  final TokenStore _tokenStore;
+  String? _refreshToken;
   final bool _enableRealtime;
 
   /// 服务端地址（拼接上传后的相对 URL 用）
@@ -68,26 +85,9 @@ class NeoChatSession extends ChangeNotifier {
       final res = await _api.postAuthLogin(
         body: {'identifier': identifier, 'password': password},
       );
-      final data = _asMap(res['data']);
-      final token = _asString(data['token']) ?? _asString(data['access_token']);
-      if (token == null) {
-        _error = '登录响应缺少 token';
-        return false;
-      }
-      _token = token;
-      _api.token = token;
-
-      final user = _asMap(data['user']);
-      _userId = _asString(user['id']);
-      _username = _asString(user['username']);
-      _nickname = _asString(user['nickname']);
-      _bio = _asString(user['bio']);
-      _avatar = _asString(user['avatar']);
-      _error = null;
-      if (_enableRealtime) {
-        unawaited(_connectRealtime(token));
-      }
-      return true;
+      final ok = await _applyAuth(_asMap(res['data']));
+      if (ok) _error = null;
+      return ok;
     } on ApiException catch (e) {
       _error = e.message;
       return false;
@@ -97,6 +97,165 @@ class NeoChatSession extends ChangeNotifier {
     } finally {
       _setBusy(false);
     }
+  }
+
+  /// 注册并直接进入已登录状态（服务端注册接口返回 token）
+  Future<bool> register({
+    required String username,
+    required String password,
+    String? email,
+    String? phone,
+    String? nickname,
+  }) async {
+    _setBusy(true);
+    try {
+      final res = await _api.postAuthRegister(
+        body: {
+          'username': username,
+          'password': password,
+          if (email != null && email.isNotEmpty) 'email': email,
+          if (phone != null && phone.isNotEmpty) 'phone': phone,
+          if (nickname != null && nickname.isNotEmpty) 'nickname': nickname,
+        },
+      );
+      final ok = await _applyAuth(_asMap(res['data']));
+      if (ok) _error = null;
+      return ok;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = '注册失败：$e';
+      return false;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
+  /// 启动时恢复登录态（token 落盘在 TokenStore）
+  Future<bool> restore() async {
+    try {
+      final saved = await _tokenStore.load();
+      if (saved == null) return false;
+
+      final token = _asString(saved['token']);
+      if (token == null || token.isEmpty) return false;
+
+      _token = token;
+      _api.token = token;
+      _refreshToken = _asString(saved['refresh_token']);
+      _userId = _asString(saved['user_id']);
+      _username = _asString(saved['username']);
+      _nickname = _asString(saved['nickname']);
+      _bio = _asString(saved['bio']);
+      _avatar = _asString(saved['avatar']);
+      _lastSyncAt = _asString(saved['last_sync_at']);
+      notifyListeners();
+
+      if (_enableRealtime) {
+        unawaited(_connectRealtime(token));
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 把服务端返回的鉴权信息写入内存并持久化
+  Future<bool> _applyAuth(Map<String, dynamic> data) async {
+    final token = _asString(data['token']) ?? _asString(data['access_token']);
+    if (token == null || token.isEmpty) {
+      _error = '鉴权响应缺少 token';
+      return false;
+    }
+
+    _token = token;
+    _api.token = token;
+    _refreshToken = _asString(data['refresh_token']);
+
+    final user = _asMap(data['user']);
+    _userId = _asString(user['id']);
+    _username = _asString(user['username']);
+    _nickname = _asString(user['nickname']);
+    _bio = _asString(user['bio']);
+    _avatar = _asString(user['avatar']);
+
+    if (_enableRealtime) {
+      unawaited(_connectRealtime(token));
+    }
+    await _persistAuth();
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> _persistAuth() async {
+    if (_token == null) return;
+    await _tokenStore.save({
+      'token': _token,
+      'refresh_token': _refreshToken,
+      'user_id': _userId,
+      'username': _username,
+      'nickname': _nickname,
+      'bio': _bio,
+      'avatar': _avatar,
+      'last_sync_at': _lastSyncAt,
+    });
+  }
+
+  /// 401 时由传输层调用：刷新 access token，失败则清空登录态
+  Future<String?> _refreshAccessToken() async {
+    final refresh = _refreshToken;
+    if (refresh == null || refresh.isEmpty) {
+      await _forceLogout();
+      return null;
+    }
+
+    try {
+      // 用不带刷新拦截的裸客户端，避免递归
+      final raw = _refreshApi ??= NeoChatApi(
+        baseUrl: _baseUrl,
+        transport: createDefaultTransport(),
+      );
+      final res = await raw.postAuthRefresh(
+        body: {'refresh_token': refresh},
+      );
+      final data = _asMap(res['data']);
+      final token = _asString(data['access_token']) ?? _asString(data['token']);
+      if (token == null || token.isEmpty) {
+        await _forceLogout();
+        return null;
+      }
+
+      _token = token;
+      _api.token = token;
+      _refreshToken = _asString(data['refresh_token']) ?? refresh;
+      await _persistAuth();
+      notifyListeners();
+
+      if (_enableRealtime) {
+        unawaited(_connectRealtime(token));
+      }
+      return token;
+    } catch (_) {
+      await _forceLogout();
+      return null;
+    }
+  }
+
+  /// 被动登出（刷新失败）：清状态并回到登录页
+  Future<void> _forceLogout() async {
+    await _tokenStore.clear();
+    _token = null;
+    _refreshToken = null;
+    _userId = null;
+    _username = null;
+    _nickname = null;
+    _bio = null;
+    _avatar = null;
+    _api.token = null;
+    _error = '登录已过期，请重新登录';
+    unawaited(_disposeRealtime());
+    notifyListeners();
   }
 
   /// 拉取会话列表（后端返回 [{...}]，这里统一成 Map 列表）
@@ -650,8 +809,15 @@ class NeoChatSession extends ChangeNotifier {
     await client?.dispose();
   }
 
-  void logout() {
+  Future<void> logout() async {
+    // 先通知服务端（失败也无所谓），再清本地
+    try {
+      await _api.postAuthLogout();
+    } catch (_) {}
+
+    final hadToken = _token;
     _token = null;
+    _refreshToken = null;
     _userId = null;
     _nickname = null;
     _bio = null;
@@ -660,8 +826,9 @@ class NeoChatSession extends ChangeNotifier {
     _lastSyncAt = null;
     _api.token = null;
     _error = null;
+    await _tokenStore.clear();
     unawaited(_disposeRealtime());
-    notifyListeners();
+    if (hadToken != null) notifyListeners();
   }
 
   void _setBusy(bool value) {

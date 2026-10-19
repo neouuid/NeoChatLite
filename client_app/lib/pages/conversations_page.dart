@@ -165,7 +165,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     ),
                   );
                 case 'logout':
-                  widget.session.logout();
+                  await widget.session.logout();
               }
             },
             itemBuilder: (context) => [

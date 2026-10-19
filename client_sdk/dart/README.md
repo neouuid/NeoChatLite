@@ -145,3 +145,20 @@ cd client_app && flutter build web     # Web 产物可编译
   状态存在 `conversation.members[].muted`，**按用户区分**，只影响本人
 - 注意：免打扰/改名/增删成员这类写操作都会让 `convs:{userID}` 缓存失效，
   否则客户端会读到旧状态（已用回归测试锁住）
+
+## 鉴权流程
+
+| 环节 | 约定 |
+|---|---|
+| 注册 | `POST /auth/register` **直接返回 `access_token` + `refresh_token` + `user`**，注册即可登录 |
+| 登录 | `POST /auth/login`，返回同上；`identifier` 支持用户名 / 邮箱 / 手机号 |
+| 刷新 | `POST /auth/refresh`，body `{refresh_token}`，返回新的 `access_token`（+ 可能的新 refresh_token） |
+| 登出 | `POST /auth/logout`（尽力而为），随后清除本地登录态 |
+
+客户端会把 token / refresh_token / 用户信息存到本地（`shared_preferences`），
+启动时 `restore()` 自动恢复登录态；任一请求返回 401 时，
+`AuthRefreshingTransport` 会自动用 refresh_token 换新 token 并重放一次请求，
+刷新失败则清空登录态回到登录页。
+
+> JWT 的 `exp` 是秒级：同一秒内连续刷新会得到完全相同的 token 串，属正常现象。
+> 生产环境建议把 token 存储换成 `flutter_secure_storage`（Keychain / Keystore / libsecret / DPAPI）。

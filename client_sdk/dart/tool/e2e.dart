@@ -894,6 +894,54 @@ Future<void> main(List<String> args) async {
     fail('资料修改验证失败: $e');
   }
 
+  step('23. 注册 + refresh token 换发');
+  try {
+    final ru = 'reg$suffix';
+    final regRes = _data(
+      await NeoChatApi(baseUrl: baseUrl).postAuthRegister(
+        body: {
+          'username': ru,
+          'password': 'Passw0rd!',
+          'email': '$ru@e2e.local',
+          'phone': '135${suffix.toString().padLeft(8, '0')}',
+          'nickname': '新注册用户',
+        },
+      ),
+    );
+    final regToken = (regRes['access_token'] ?? '') as String;
+    final regRefresh = (regRes['refresh_token'] ?? '') as String;
+    final regUser = ((regRes['user'] as Map?)?['username'] ?? '') as String;
+
+    if (regToken.isNotEmpty && regRefresh.isNotEmpty && regUser == ru) {
+      ok('注册即返回 token（用户 $regUser）');
+    } else {
+      fail('注册响应不完整: $regRes');
+    }
+
+    // 用 refresh token 换新 access token
+    final refreshed = _data(
+      await NeoChatApi(baseUrl: baseUrl).postAuthRefresh(
+        body: {'refresh_token': regRefresh},
+      ),
+    );
+    final newToken = (refreshed['access_token'] ?? '') as String;
+    if (newToken.isEmpty) {
+      fail('刷新响应缺少 access_token: $refreshed');
+    } else {
+      // JWT 的 exp 是秒级，同一秒内刷新会得到完全相同的串，因此不比对差异
+      // 新 token 必须真的能用
+      final client = NeoChatApi(baseUrl: baseUrl)..token = newToken;
+      final me = _data(await client.getUsersProfile());
+      if ((me['username'] ?? '') == ru) {
+        ok('新 access token 可用');
+      } else {
+        fail('新 token 请求失败: $me');
+      }
+    }
+  } catch (e) {
+    fail('注册/刷新验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

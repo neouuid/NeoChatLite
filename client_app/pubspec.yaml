@@ -17,6 +17,7 @@ dependencies:
   just_audio: ^0.9.42
   record: ^5.1.2
   cross_file: ^0.3.4
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:
