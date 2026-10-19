@@ -60,11 +60,39 @@ VERIFY_RESULT=PASS
 如果 `check` 卡住（超过 60 秒无输出），执行 `bash scripts/verify_web.sh stop` 后重试一次即可；
 这不是应用本身的问题（页面已成功加载、API 全链路已通过）。
 
+## Postgres（已验证通过）
+
+```bash
+bash scripts/e2e_postgres.sh          # 起容器 → 跑 E2E → 停容器
+bash scripts/e2e_postgres.sh --keep   # 跑完保留容器（端口 15432）
+```
+
+脚本用 Docker 起 `postgres:16-alpine`（端口 15432，密码 `neochat_dev_pw`，库 `neochat`），
+以 `driver: postgres` 启动后端，然后跑完整 E2E——与 SQLite 用的是同一套断言。
+
+实测结果（`✅ Postgres 上的 E2E 全部通过`）：
+
+```
+▶ 启动 PostgreSQL 16 容器（端口 15432）      数据库已就绪
+▶ 构建并启动后端（连接 Postgres）            后端已连接 Postgres
+▶ 在 Postgres 上执行完整 E2E                 HTTP 26/26 + 实时 7/7
+```
+
+这验证了此前只有 SQLite 覆盖的几处方言风险：
+`convs` 排序（`pinned DESC, updated_at DESC`）、大小写不敏感搜索（`LOWER(...) LIKE LOWER(...)`）、
+UUID 主键与时间戳比较、pgx 驱动下的连接池与迁移。
+
+**已知限制**：
+- Docker Hub 直连不通时会自动改用 `docker.m.daocloud.io` 镜像源并本地打 tag；
+  两者都不通时脚本会明确报错退出。
+- Go 单元测试仍跑在 SQLite 上（`TestConfig` 固定 sqlite）；
+  Postgres 只覆盖了端到端链路，未覆盖每个 handler 的单测。
+
 ## 尚未覆盖
 
 | 项 | 原因 |
 |---|---|
 | 真机录音/播放 | 需要麦克风与音频设备的人工确认 |
 | 系统级推送通知 | 需要 APNs / FCM 证书或平台通知插件 |
-| Postgres 生产库 | 本地只有 SQLite；SQL 已避免方言独占写法，但仍需真库验证 |
+| 压力/并发 | 未做压测，结论不覆盖性能与连接风暴 |
 | 高并发/长连接压测 | 未做，当前结论不覆盖性能 |
