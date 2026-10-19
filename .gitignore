@@ -144,3 +144,4 @@ client_sdk/dart/build/
 # 验证脚本产生的临时目录
 .multi-run/
 .web-verify/
+.pg-run/
