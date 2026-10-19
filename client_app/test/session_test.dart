@@ -64,6 +64,8 @@ class _FakeApi extends NeoChatApi {
   Map<String, dynamic>? lastFriendRequestBody;
   Map<String, dynamic>? lastMessageBody;
   Map<String, dynamic>? lastMuteBody;
+  Map<String, dynamic>? lastProfileBody;
+  Map<String, dynamic>? lastGroupUpdateBody;
 
   @override
   Future<dynamic> getUsersSearch({String? keyword, int? page, int? pageSize}) async {
@@ -127,6 +129,21 @@ class _FakeApi extends NeoChatApi {
   Future<dynamic> postChatMessages({required Map<String, dynamic> body}) async {
     lastMessageBody = body;
     return {'success': true, 'data': body};
+  }
+
+  @override
+  Future<dynamic> putUsersProfile({required Map<String, dynamic> body}) async {
+    lastProfileBody = body;
+    return {'success': true};
+  }
+
+  @override
+  Future<dynamic> putGroupsId({
+    required String id,
+    required Map<String, dynamic> body,
+  }) async {
+    lastGroupUpdateBody = body;
+    return {'success': true};
   }
 
   @override
@@ -371,6 +388,21 @@ void main() {
     final friends = await session.loadFriends();
     expect(friends, hasLength(1));
     expect(friends.first['id'], 'user-2');
+  });
+
+  test('修改个人资料与群资料只提交传入字段', () async {
+    final api = _FakeApi();
+    final session = NeoChatSession(api: api, enableRealtime: false);
+
+    expect(await session.updateProfile(nickname: '小明'), isTrue);
+    expect(api.lastProfileBody, {'nickname': '小明'});
+    expect(session.nickname, '小明');
+
+    expect(
+      await session.updateGroup('group-1', name: '新群名', description: '新描述'),
+      isTrue,
+    );
+    expect(api.lastGroupUpdateBody, {'name': '新群名', 'description': '新描述'});
   });
 
   test('登出后清空状态', () async {

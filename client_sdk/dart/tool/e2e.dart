@@ -856,6 +856,44 @@ Future<void> main(List<String> args) async {
     fail('免打扰验证失败: $e');
   }
 
+  step('22. 个人资料与群资料修改');
+  try {
+    api.token = tokenA;
+
+    // 修改昵称与签名
+    await api.putUsersProfile(
+      body: {'nickname': '改过的昵称', 'bio': '这是一句签名'},
+    );
+    final me = _data(await api.getUsersId(id: idA));
+    if (me['nickname'] == '改过的昵称' && me['bio'] == '这是一句签名') {
+      ok('个人资料已更新');
+    } else {
+      fail('个人资料未更新: $me');
+    }
+
+    // 改群名（A 是群主）
+    final groupData = _data(
+      await api.postGroups(body: {
+        'name': '待改名群 $suffix',
+        'member_ids': [idB],
+      }),
+    );
+    final renameConv =
+        ((groupData['conversation'] as Map?)?['id'] ?? '') as String;
+    await api.putGroupsId(
+      id: renameConv,
+      body: {'name': '改名后的群 $suffix', 'description': '群描述已更新'},
+    );
+    final group = _data(await api.getGroupsId(id: renameConv));
+    if ((group['name'] ?? '') == '改名后的群 $suffix') {
+      ok('群名称已更新');
+    } else {
+      fail('群名称未更新: $group');
+    }
+  } catch (e) {
+    fail('资料修改验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

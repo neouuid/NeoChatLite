@@ -50,6 +50,66 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   bool get _canManage => _myRole == 'owner' || _myRole == 'admin';
   bool get _isOwner => _myRole == 'owner';
 
+  Future<void> _editGroup() async {
+    final nameCtrl = TextEditingController(text: widget.title);
+    final descCtrl = TextEditingController();
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('修改群资料'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: '群名称'),
+              maxLength: 50,
+            ),
+            TextField(
+              controller: descCtrl,
+              decoration: const InputDecoration(labelText: '群描述'),
+              maxLength: 200,
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved != true) {
+      nameCtrl.dispose();
+      descCtrl.dispose();
+      return;
+    }
+
+    final name = nameCtrl.text.trim();
+    final desc = descCtrl.text.trim();
+    nameCtrl.dispose();
+    descCtrl.dispose();
+
+    final ok = await widget.session.updateGroup(
+      widget.groupId,
+      name: name.isEmpty ? null : name,
+      description: desc.isEmpty ? null : desc,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? '群资料已更新' : (widget.session.error ?? '更新失败'))),
+    );
+    if (ok) _reload();
+  }
+
   Future<void> _invite() async {
     final friends = await widget.session.loadFriends();
     if (!mounted) return;
@@ -227,6 +287,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
+          if (_canManage)
+            IconButton(
+              tooltip: '修改群资料',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: _editGroup,
+            ),
           if (_canManage)
             IconButton(
               tooltip: '邀请好友',

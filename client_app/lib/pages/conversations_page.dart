@@ -6,6 +6,7 @@ import 'package:neochat_api/neochat_api.dart';
 import '../state/session.dart';
 import 'chat_page.dart';
 import 'contacts_page.dart';
+import 'profile_page.dart';
 import 'create_group_page.dart';
 import 'favorites_page.dart';
 import 'mentions_page.dart';
@@ -135,6 +136,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     ),
                   );
                   _loadUnreadMentions();
+                case 'profile':
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ProfilePage(session: widget.session),
+                    ),
+                  );
                 case 'contacts':
                   await Navigator.of(context).push(
                     MaterialPageRoute(
@@ -173,6 +180,16 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       const SizedBox(width: 8),
                       Badge(label: Text('$_unreadMentions')),
                     ],
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline),
+                    SizedBox(width: 12),
+                    Text('我的资料'),
                   ],
                 ),
               ),

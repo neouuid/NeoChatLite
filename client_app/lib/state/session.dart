@@ -45,6 +45,9 @@ class NeoChatSession extends ChangeNotifier {
   String? _token;
   String? _userId;
   String? _username;
+  String? _nickname;
+  String? _bio;
+  String? _avatar;
   String? _lastSyncAt;
   bool _busy = false;
   String? _error;
@@ -52,6 +55,9 @@ class NeoChatSession extends ChangeNotifier {
   bool get isLoggedIn => _token != null && _token!.isNotEmpty;
   String? get userId => _userId;
   String? get username => _username;
+  String? get nickname => _nickname;
+  String? get bio => _bio;
+  String? get avatar => _avatar;
   String? get lastSyncAt => _lastSyncAt;
   bool get busy => _busy;
   String? get error => _error;
@@ -74,6 +80,9 @@ class NeoChatSession extends ChangeNotifier {
       final user = _asMap(data['user']);
       _userId = _asString(user['id']);
       _username = _asString(user['username']);
+      _nickname = _asString(user['nickname']);
+      _bio = _asString(user['bio']);
+      _avatar = _asString(user['avatar']);
       _error = null;
       if (_enableRealtime) {
         unawaited(_connectRealtime(token));
@@ -231,6 +240,56 @@ class NeoChatSession extends ChangeNotifier {
       return true;
     } catch (e) {
       _error = '取消收藏失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 修改群资料（群名 / 描述 / 头像），仅群主与管理员可用
+  Future<bool> updateGroup(
+    String groupId, {
+    String? name,
+    String? description,
+    String? avatar,
+  }) async {
+    try {
+      await _api.putGroupsId(
+        id: groupId,
+        body: {
+          if (name != null) 'name': name,
+          if (description != null) 'description': description,
+          if (avatar != null) 'avatar': avatar,
+        },
+      );
+      return true;
+    } catch (e) {
+      _error = '修改群资料失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 修改个人资料（昵称 / 签名 / 头像）
+  Future<bool> updateProfile({
+    String? nickname,
+    String? bio,
+    String? avatar,
+  }) async {
+    try {
+      await _api.putUsersProfile(
+        body: {
+          if (nickname != null) 'nickname': nickname,
+          if (bio != null) 'bio': bio,
+          if (avatar != null) 'avatar': avatar,
+        },
+      );
+      if (nickname != null) _nickname = nickname;
+      if (bio != null) _bio = bio;
+      if (avatar != null) _avatar = avatar;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = '修改资料失败：$e';
       notifyListeners();
       return false;
     }
@@ -594,6 +653,9 @@ class NeoChatSession extends ChangeNotifier {
   void logout() {
     _token = null;
     _userId = null;
+    _nickname = null;
+    _bio = null;
+    _avatar = null;
     _username = null;
     _lastSyncAt = null;
     _api.token = null;
