@@ -423,6 +423,36 @@ class NeoChatSession extends ChangeNotifier {
     }
   }
 
+  /// 编辑自己发送的文本消息
+  Future<bool> editMessage(String messageId, String content) async {
+    try {
+      await _api.putChatMessagesId(id: messageId, body: {'content': content});
+      return true;
+    } catch (e) {
+      _error = '编辑消息失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 查看他人资料
+  Future<Map<String, dynamic>?> loadUserProfile(String userId) async {
+    try {
+      final res = await _api.getUsersId(id: userId);
+      return _asMap(res['data']);
+    } catch (e) {
+      _error = '加载用户资料失败：$e';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// 搜索群（按群名）
+  Future<List<Map<String, dynamic>>> searchGroups(String keyword) async {
+    final res = await _api.getChatSearchGroups(q: keyword);
+    return _asList(res['data']);
+  }
+
   /// 修改群资料（群名 / 描述 / 头像），仅群主与管理员可用
   Future<bool> updateGroup(
     String groupId, {

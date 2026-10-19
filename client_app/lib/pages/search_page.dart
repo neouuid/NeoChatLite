@@ -16,6 +16,7 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final _query = TextEditingController();
   List<Map<String, dynamic>> _results = const [];
+  List<Map<String, dynamic>> _groups = const [];
   bool _loading = false;
   String? _error;
 
@@ -34,8 +35,12 @@ class _SearchPageState extends State<SearchPage> {
     });
     try {
       final results = await widget.session.searchMessages(q);
+      final groups = await widget.session.searchGroups(q);
       if (!mounted) return;
-      setState(() => _results = results);
+      setState(() {
+        _results = results;
+        _groups = groups;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '$e');
@@ -70,13 +75,48 @@ class _SearchPageState extends State<SearchPage> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(child: Text('搜索失败：$_error'))
-              : _results.isEmpty
-                  ? const Center(child: Text('输入关键词搜索聊天记录'))
+              : (_results.isEmpty && _groups.isEmpty)
+                  ? const Center(child: Text('输入关键词搜索聊天记录或群聊'))
                   : ListView.separated(
-                      itemCount: _results.length,
+                      itemCount: _results.length + (_groups.isEmpty ? 0 : _groups.length + 1),
                       separatorBuilder: (_, __) => const Divider(height: 1),
                       itemBuilder: (context, index) {
-                        final msg = _results[index];
+                        // 群结果排在前面，带一个分组标题
+                        if (_groups.isNotEmpty) {
+                          if (index == 0) {
+                            return const Padding(
+                              padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+                              child: Text('群聊'),
+                            );
+                          }
+                          if (index <= _groups.length) {
+                            final group = _groups[index - 1];
+                            final name = (group['name'] ?? '未命名群') as String;
+                            final desc = (group['description'] ?? '') as String;
+                            return ListTile(
+                              leading: const Icon(Icons.groups),
+                              title: Text(name),
+                              subtitle: desc.isEmpty ? null : Text(desc, maxLines: 1),
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => ChatPage(
+                                      session: widget.session,
+                                      conversationId: (group['id'] ?? '') as String,
+                                      title: name,
+                                      isGroup: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          }
+                        }
+                        final msgIndex = index - (_groups.isEmpty ? 0 : _groups.length + 1);
+                        if (msgIndex >= _results.length) {
+                          return const SizedBox.shrink();
+                        }
+                        final msg = _results[msgIndex];
                         final convId = msg['conversation_id'] as String? ?? '';
                         final content = msg['content'] as String? ?? '';
                         final createdAt = msg['created_at'] as String? ?? '';

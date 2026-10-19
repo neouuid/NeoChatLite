@@ -156,6 +156,39 @@ class _FakeApi extends NeoChatApi {
     return {'success': true, 'data': []};
   }
 
+  Map<String, dynamic>? lastEditBody;
+  String? lastProfileUserId;
+  String? lastGroupQuery;
+
+  @override
+  Future<dynamic> putChatMessagesId({
+    required String id,
+    required Map<String, dynamic> body,
+  }) async {
+    lastEditBody = body;
+    return {'success': true, 'data': {'id': id, 'content': body['content'], 'is_edited': true}};
+  }
+
+  @override
+  Future<dynamic> getUsersId({required String id}) async {
+    lastProfileUserId = id;
+    return {
+      'success': true,
+      'data': {'id': id, 'username': 'bob', 'nickname': 'Bob', 'bio': '签名'},
+    };
+  }
+
+  @override
+  Future<dynamic> getChatSearchGroups({String? q, int? limit}) async {
+    lastGroupQuery = q;
+    return {
+      'success': true,
+      'data': [
+        {'id': 'group-1', 'name': '测试群', 'description': '群描述'},
+      ],
+    };
+  }
+
   @override
   Future<dynamic> postChatMessages({required Map<String, dynamic> body}) async {
     lastMessageBody = body;
@@ -542,6 +575,23 @@ void main() {
     expect(results.every((token) => token != null), isTrue);
     expect(refreshApi.calls, 1, reason: '三个并发请求只应触发一次刷新');
     expect(session.isLoggedIn, isTrue);
+  });
+
+  test('编辑消息 / 查看他人资料 / 搜索群', () async {
+    final api = _FakeApi();
+    final session = _newSession(api);
+
+    expect(await session.editMessage('msg-1', '改过的内容'), isTrue);
+    expect(api.lastEditBody, {'content': '改过的内容'});
+
+    final profile = await session.loadUserProfile('user-2');
+    expect(profile?['nickname'], 'Bob');
+    expect(api.lastProfileUserId, 'user-2');
+
+    final groups = await session.searchGroups('测试');
+    expect(groups, hasLength(1));
+    expect(groups.first['name'], '测试群');
+    expect(api.lastGroupQuery, '测试');
   });
 
   test('登出后清空状态', () async {

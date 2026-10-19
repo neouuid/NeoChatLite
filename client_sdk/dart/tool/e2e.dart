@@ -1023,6 +1023,80 @@ Future<void> main(List<String> args) async {
     fail('登录锁定/密码策略验证失败: $e');
   }
 
+  step('25. 编辑消息 / 他人资料 / 群搜索');
+  try {
+    api.token = tokenA;
+    await api.postChatMessages(
+      body: {
+        'conversation_id': convId,
+        'type': 'text',
+        'content': '待编辑的消息',
+      },
+    );
+    final before = _list(await api.getChatConversationsIdMessages(id: convId));
+    final target = before.whereType<Map>().firstWhere(
+          (m) => m['content'] == '待编辑的消息',
+          orElse: () => <String, dynamic>{},
+        );
+    final msgId = (target['id'] ?? '') as String;
+
+    if (msgId.isEmpty) {
+      fail('没找到待编辑的消息');
+    } else {
+      await api.putChatMessagesId(
+        id: msgId,
+        body: {'content': '编辑后的内容'},
+      );
+      final after = _list(await api.getChatConversationsIdMessages(id: convId));
+      final edited = after.whereType<Map>().firstWhere(
+            (m) => m['id'] == msgId,
+            orElse: () => <String, dynamic>{},
+          );
+      if (edited['content'] == '编辑后的内容' && edited['is_edited'] == true) {
+        ok('消息已编辑且带 is_edited 标记');
+      } else {
+        fail('编辑未生效: $edited');
+      }
+
+      // 非发送者不能编辑
+      api.token = tokenB;
+      try {
+        await api.putChatMessagesId(id: msgId, body: {'content': '越权修改'});
+        fail('B 竟然能编辑 A 的消息');
+      } on ApiException catch (e) {
+        ok('非发送者编辑被拒绝（HTTP ${e.statusCode}）');
+      }
+    }
+
+    // 他人资料
+    api.token = tokenA;
+    final profile = _data(await api.getUsersId(id: idB));
+    if ((profile['id'] ?? '') == idB && (profile['username'] ?? '') == userB) {
+      ok('可以读取他人资料');
+    } else {
+      fail('他人资料不匹配: $profile');
+    }
+
+    // 群搜索
+    final gsName = '可搜索群 $suffix';
+    final gsData = _data(
+      await api.postGroups(body: {
+        'name': gsName,
+        'member_ids': [idB],
+      }),
+    );
+    final gsConv = ((gsData['conversation'] as Map?)?['id'] ?? '') as String;
+    final groups = _list(await api.getChatSearchGroups(q: gsName));
+    final hit = groups.whereType<Map>().any((g) => g['id'] == gsConv);
+    if (hit) {
+      ok('群搜索命中新建的群');
+    } else {
+      fail('群搜索没有命中: ${groups.length} 条结果');
+    }
+  } catch (e) {
+    fail('编辑/资料/群搜索验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

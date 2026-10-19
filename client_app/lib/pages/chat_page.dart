@@ -5,12 +5,14 @@ import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:neochat_api/neochat_api.dart';
 
 import '../state/session.dart';
 import '../widgets/audio_bubble.dart';
 import '../widgets/video_bubble.dart';
+import 'user_profile_page.dart';
 import 'group_info_page.dart';
 
 /// 聊天页：GET /api/v1/chat/conversations/:id/messages + POST /api/v1/chat/messages
@@ -293,7 +295,9 @@ class _ChatPageState extends State<ChatPage> {
       final fileName = msg['file_name'] as String? ?? '文件';
       final size = msg['file_size'];
       final sizeLabel = size is int ? _formatSize(size) : '';
-      return Row(
+      return GestureDetector(
+        onTap: mediaUrl.isEmpty ? null : () => _openAttachment(mediaUrl),
+        child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.insert_drive_file, size: 20),
@@ -310,6 +314,7 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
         ],
+      ),
       );
     }
 
@@ -448,6 +453,77 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  static String _senderName(Map<String, dynamic> msg) {
+    final sender = msg['sender'];
+    if (sender is Map) {
+      return (sender['nickname'] ?? sender['username'] ?? '对方') as String;
+    }
+    return '对方';
+  }
+
+  Future<void> _openUserProfile(Map<String, dynamic> msg) async {
+    final senderId = msg['sender_id'] as String?;
+    if (senderId == null || senderId.isEmpty) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UserProfilePage(
+          session: widget.session,
+          userId: senderId,
+          fallbackName: _senderName(msg),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editMessage(Map<String, dynamic> msg) async {
+    final controller =
+        TextEditingController(text: (msg['content'] as String?) ?? '');
+    final saved = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('编辑消息'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: null,
+          decoration: const InputDecoration(hintText: '输入新的内容'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    if (saved == null || saved.isEmpty) return;
+    final ok = await widget.session.editMessage(msg['id'] as String, saved);
+    if (!mounted) return;
+    if (ok) {
+      await _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.session.error ?? '编辑失败')),
+      );
+    }
+  }
+
+  Future<void> _openAttachment(String mediaUrl) async {
+    final uri = Uri.parse('${widget.session.baseUrl}$mediaUrl');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('无法打开文件')),
+      );
+    }
+  }
+
   Future<void> _showMessageActions(Map<String, dynamic> msg) async {
     final messageId = msg['id'] as String? ?? '';
     final isMine = widget.session.userId != null &&
@@ -460,6 +536,15 @@ class _ChatPageState extends State<ChatPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (isMine && (msg['type'] ?? 'text') == 'text')
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('编辑'),
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  await _editMessage(msg);
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.copy),
               title: const Text('复制'),
@@ -647,7 +732,34 @@ class _ChatPageState extends State<ChatPage> {
                                     : Theme.of(context).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                                child: _buildBubbleContent(msg, content),
+                                child: Column(
+                                  crossAxisAlignment: isMine
+                                      ? CrossAxisAlignment.end
+                                      : CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (!isMine)
+                                      GestureDetector(
+                                        onTap: () => _openUserProfile(msg),
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(bottom: 2),
+                                          child: Text(
+                                            _senderName(msg),
+                                            style: Theme.of(context).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                      ),
+                                    _buildBubbleContent(msg, content),
+                                    if (msg['is_edited'] == true)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          '已编辑',
+                                          style: Theme.of(context).textTheme.bodySmall,
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
