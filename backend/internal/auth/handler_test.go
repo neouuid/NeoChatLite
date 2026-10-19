@@ -24,6 +24,7 @@ func TestAuthIntegration(t *testing.T) {
 		&user.Friend{},
 		&user.Blocklist{},
 		&VerificationToken{},
+		&RefreshToken{},
 		&chat.Conversation{},
 		&chat.ConversationMember{},
 		&chat.Message{},

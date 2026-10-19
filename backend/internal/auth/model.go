@@ -14,6 +14,19 @@ const (
 	TokenTypePhoneVerification = "phone_verification"
 )
 
+// RefreshToken 刷新令牌的服务端状态。
+//
+// JWT 本身自包含、无法吊销，因此额外落库：存 SHA-256 哈希，
+// 刷新时校验「存在 + 未吊销 + 未过期」，随后吊销旧令牌并签发新令牌（轮换）。
+type RefreshToken struct {
+	ID        uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
+	UserID    uuid.UUID  `gorm:"type:uuid;index:idx_refresh_user;not null" json:"user_id"`
+	TokenHash string     `gorm:"type:varchar(64);uniqueIndex:idx_refresh_hash;not null" json:"-"`
+	ExpiresAt time.Time  `gorm:"index:idx_refresh_expires" json:"expires_at"`
+	RevokedAt *time.Time `json:"revoked_at,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
 // VerificationToken 验证令牌模型
 type VerificationToken struct {
 	ID        uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`

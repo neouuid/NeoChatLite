@@ -937,9 +937,90 @@ Future<void> main(List<String> args) async {
       } else {
         fail('新 token 请求失败: $me');
       }
+
+      // 轮换：旧 refresh token 必须失效
+      try {
+        await NeoChatApi(baseUrl: baseUrl).postAuthRefresh(
+          body: {'refresh_token': regRefresh},
+        );
+        fail('旧 refresh token 竟然还能用（未轮换）');
+      } on ApiException catch (e) {
+        ok('旧 refresh token 已失效（HTTP ${e.statusCode}）');
+      }
+
+      // access token 不能当 refresh token 用
+      try {
+        await NeoChatApi(baseUrl: baseUrl).postAuthRefresh(
+          body: {'refresh_token': newToken},
+        );
+        fail('access token 被当成 refresh token 接受了');
+      } on ApiException catch (e) {
+        ok('access token 不能用于刷新（HTTP ${e.statusCode}）');
+      }
     }
   } catch (e) {
     fail('注册/刷新验证失败: $e');
+  }
+
+  step('24. 登录失败锁定与密码策略');
+  try {
+    final lu = 'lock$suffix';
+    await NeoChatApi(baseUrl: baseUrl).postAuthRegister(
+      body: {
+        'username': lu,
+        'password': 'Passw0rd!',
+        'email': '$lu@e2e.local',
+        'phone': '136${suffix.toString().padLeft(8, '0')}',
+      },
+    );
+
+    // 连续 5 次错误密码
+    for (var i = 0; i < 5; i++) {
+      try {
+        await NeoChatApi(baseUrl: baseUrl).postAuthLogin(
+          body: {'identifier': lu, 'password': 'wrong-$i'},
+        );
+        fail('第 ${i + 1} 次错误密码竟然登录成功');
+        break;
+      } on ApiException {
+        // 预期失败
+      }
+    }
+
+    // 第 6 次即使密码正确也应被锁定
+    try {
+      await NeoChatApi(baseUrl: baseUrl).postAuthLogin(
+        body: {'identifier': lu, 'password': 'Passw0rd!'},
+      );
+      fail('连续失败后仍能登录，账号未被锁定');
+    } on ApiException catch (e) {
+      if (e.message.contains('too many failed attempts')) {
+        ok('连续失败后账号被锁定');
+      } else {
+        fail('锁定提示不符合预期: ${e.message}');
+      }
+    }
+
+    // 密码太短应被拒绝
+    try {
+      await NeoChatApi(baseUrl: baseUrl).postAuthRegister(
+        body: {
+          'username': 'shortpw$suffix',
+          'password': '1234567',
+          'email': 'shortpw$suffix@e2e.local',
+          'phone': '137${suffix.toString().padLeft(8, '0')}',
+        },
+      );
+      fail('过短的密码竟然注册成功');
+    } on ApiException catch (e) {
+      if (e.message.contains('at least 8')) {
+        ok('过短密码被拒绝');
+      } else {
+        fail('密码策略提示不符: ${e.message}');
+      }
+    }
+  } catch (e) {
+    fail('登录锁定/密码策略验证失败: $e');
   }
 
   print('');

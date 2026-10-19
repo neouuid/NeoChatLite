@@ -37,6 +37,9 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 	// 添加性能监控中间件
 	r.Use(middleware.MetricsMiddleware())
 
+	// 基础安全响应头
+	r.Use(middleware.SecurityHeaders())
+
 	// 健康检查和监控
 	r.GET("/health", healthHandler)
 	r.GET("/health/db", dbHealthHandler)
@@ -64,7 +67,12 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 		})
 
 		// 认证路由
-		authGroup := api.Group("/auth")
+		// 认证接口是撞库的主要目标，按 IP 限流
+		authLimit := deps.Cfg.Server.AuthRateLimitPerMinute
+		if authLimit <= 0 {
+			authLimit = 20
+		}
+		authGroup := api.Group("/auth", middleware.RateLimitByIP(authLimit, time.Minute))
 		{
 			authGroup.POST("/register", deps.AuthHandler.Register)
 			authGroup.POST("/login", deps.AuthHandler.Login)

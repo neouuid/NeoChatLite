@@ -525,6 +525,25 @@ void main() {
 
   });
 
+  test('并发 401 只触发一次刷新（refresh token 一次性）', () async {
+    final refreshApi = _CountingRefreshApi();
+    final store = _MemoryTokenStore()
+      ..data = {'token': 'stale', 'refresh_token': 'r-1', 'user_id': 'u1'};
+    final session = _newSession(_FakeApi(), store: store, refreshApi: refreshApi);
+    await session.restore();
+
+    // 通过公开入口能观察到的行为：并发的刷新不应报错、也不应清空登录态
+    final results = await Future.wait([
+      session.refreshAccessTokenForTest(),
+      session.refreshAccessTokenForTest(),
+      session.refreshAccessTokenForTest(),
+    ]);
+
+    expect(results.every((token) => token != null), isTrue);
+    expect(refreshApi.calls, 1, reason: '三个并发请求只应触发一次刷新');
+    expect(session.isLoggedIn, isTrue);
+  });
+
   test('登出后清空状态', () async {
     final session = _newSession(_FakeApi());
     await session.login('alice', 'secret');
@@ -568,5 +587,22 @@ class _FlakyTransport implements Transport {
     Map<String, String> fields = const {},
   }) async {
     throw UnimplementedError();
+  }
+}
+
+/// 计数版刷新客户端：用于验证并发刷新只触发一次
+class _CountingRefreshApi extends NeoChatApi {
+  _CountingRefreshApi() : super(baseUrl: 'http://fake');
+
+  int calls = 0;
+
+  @override
+  Future<dynamic> postAuthRefresh({required Map<String, dynamic> body}) async {
+    calls++;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    return {
+      'success': true,
+      'data': {'access_token': 'fresh-token', 'refresh_token': 'r-2'},
+    };
   }
 }

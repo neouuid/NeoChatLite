@@ -202,8 +202,27 @@ class NeoChatSession extends ChangeNotifier {
     });
   }
 
-  /// 401 时由传输层调用：刷新 access token，失败则清空登录态
-  Future<String?> _refreshAccessToken() async {
+  /// 仅供测试：显式触发一次刷新（并发调用应只真正刷新一次）
+  @visibleForTesting
+  Future<String?> refreshAccessTokenForTest() => _refreshAccessToken();
+
+  /// 刷新中的 Future：并发 401 只触发一次刷新。
+  /// 刷新令牌是一次性的，多个请求同时刷新会被服务端判为重放并吊销全部令牌。
+  Future<String?>? _refreshInFlight;
+
+  Future<String?> _refreshAccessToken() {
+    final inFlight = _refreshInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _doRefreshAccessToken();
+    _refreshInFlight = future;
+    future.whenComplete(() {
+      if (identical(_refreshInFlight, future)) _refreshInFlight = null;
+    });
+    return future;
+  }
+
+  Future<String?> _doRefreshAccessToken() async {
     final refresh = _refreshToken;
     if (refresh == null || refresh.isEmpty) {
       await _forceLogout();

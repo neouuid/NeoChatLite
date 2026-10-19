@@ -18,10 +18,17 @@ type Service struct {
 	repo         *Repository
 	config       *config.Config
 	emailService *email.Service
+	// guard 登录失败计数：5 次失败锁 15 分钟
+	guard *attemptGuard
 }
 
 func NewService(repo *Repository, cfg *config.Config, emailService *email.Service) *Service {
-	return &Service{repo: repo, config: cfg, emailService: emailService}
+	return &Service{
+		repo:         repo,
+		config:       cfg,
+		emailService: emailService,
+		guard:        newAttemptGuard(5, 15*time.Minute, 15*time.Minute),
+	}
 }
 
 // GenerateToken 生成访问令牌（用于测试）
@@ -101,6 +108,9 @@ type AuthResponse struct {
 
 // Register 用户注册
 func (s *Service) Register(req *RegisterRequest) (*AuthResponse, error) {
+	if err := validatePassword(req.Password); err != nil {
+		return nil, err
+	}
 	// 检查用户名是否存在
 	exists, err := s.repo.CheckUsernameExists(req.Username)
 	if err != nil {
@@ -163,16 +173,26 @@ func (s *Service) Register(req *RegisterRequest) (*AuthResponse, error) {
 
 // Login 用户登录
 func (s *Service) Login(req *LoginRequest) (*AuthResponse, error) {
+	// 账号被锁定时直接拒绝，避免在线撞库
+	if blocked, wait := s.guard.Blocked(req.Identifier); blocked {
+		return nil, errLocked(wait)
+	}
+
 	// 查找用户
 	u, err := s.repo.GetUserByUsernameOrEmailOrPhone(req.Identifier)
 	if err != nil {
+		s.guard.Fail(req.Identifier)
 		return nil, errors.New("invalid credentials")
 	}
 
 	// 验证密码
 	if !utils.CheckPasswordHash(req.Password, u.Password) {
+		s.guard.Fail(req.Identifier)
 		return nil, errors.New("invalid credentials")
 	}
+
+	// 登录成功，清除失败计数
+	s.guard.Reset(req.Identifier)
 
 	// 更新用户状态为在线
 	u.Status = user.StatusOnline
@@ -184,15 +204,34 @@ func (s *Service) Login(req *LoginRequest) (*AuthResponse, error) {
 	return s.generateAuthResponse(u)
 }
 
-// RefreshToken 刷新令牌
+// RefreshToken 刷新令牌。
+//
+// 安全要点：
+//   - 只接受 typ=refresh 的令牌（access token 不能用来续期）
+//   - 令牌必须存在于服务端记录中，且未被吊销、未过期
+//   - 每次刷新都吊销旧令牌并签发新令牌（轮换）；重放已吊销的令牌
+//     会被视为令牌泄露，吊销该用户全部刷新令牌
 func (s *Service) RefreshToken(refreshToken string) (*AuthResponse, error) {
-	// 解析刷新令牌
-	claims, err := utils.ParseToken(refreshToken, s.config)
+	claims, err := utils.ParseRefreshToken(refreshToken, s.config)
 	if err != nil {
 		return nil, errors.New("invalid refresh token")
 	}
 
-	// 查找用户
+	record, err := s.repo.GetRefreshTokenByHash(hashToken(refreshToken))
+	if err != nil {
+		return nil, errors.New("invalid refresh token")
+	}
+
+	if record.RevokedAt != nil {
+		// 已用过的令牌被再次使用：可能是重放攻击，全部吊销
+		_ = s.repo.RevokeAllRefreshTokens(record.UserID)
+		return nil, errors.New("refresh token already used")
+	}
+
+	if time.Now().After(record.ExpiresAt) {
+		return nil, errors.New("refresh token expired")
+	}
+
 	u, err := s.repo.GetUserByID(claims.UserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -201,8 +240,16 @@ func (s *Service) RefreshToken(refreshToken string) (*AuthResponse, error) {
 		return nil, err
 	}
 
-	// 生成新的令牌
+	// 轮换：先吊销旧令牌，再签发新令牌
+	if err := s.repo.RevokeRefreshToken(record.ID); err != nil {
+		return nil, err
+	}
 	return s.generateAuthResponse(u)
+}
+
+// Logout 吊销该用户全部刷新令牌（access token 到期自然失效）
+func (s *Service) Logout(userID uuid.UUID) error {
+	return s.repo.RevokeAllRefreshTokens(userID)
 }
 
 // GetUser 获取用户信息
@@ -259,6 +306,10 @@ func (s *Service) ForgotPassword(req *ForgotPasswordRequest) (string, error) {
 
 // ResetPassword 重置密码
 func (s *Service) ResetPassword(req *ResetPasswordRequest) error {
+	if err := validatePassword(req.NewPassword); err != nil {
+		return err
+	}
+
 	// 获取验证令牌
 	vt, err := s.repo.GetVerificationToken(req.Token, TokenTypePasswordReset)
 	if err != nil {
@@ -291,12 +342,19 @@ func (s *Service) ResetPassword(req *ResetPasswordRequest) error {
 		return err
 	}
 
+	// 密码已变更：吊销所有刷新令牌，旧会话必须重新登录
+	_ = s.repo.RevokeAllRefreshTokens(u.ID)
+
 	// 删除已使用的令牌
 	return s.repo.DeleteVerificationToken(vt.ID)
 }
 
 // ChangePassword 修改密码
 func (s *Service) ChangePassword(userID uuid.UUID, req *ChangePasswordRequest) error {
+	if err := validatePassword(req.NewPassword); err != nil {
+		return err
+	}
+
 	// 获取用户
 	u, err := s.repo.GetUserByID(userID)
 	if err != nil {
@@ -316,7 +374,12 @@ func (s *Service) ChangePassword(userID uuid.UUID, req *ChangePasswordRequest) e
 
 	// 更新密码
 	u.Password = hashedPassword
-	return s.repo.UpdateUser(u)
+	if err := s.repo.UpdateUser(u); err != nil {
+		return err
+	}
+
+	// 改密后吊销所有刷新令牌（其它设备需要重新登录）
+	return s.repo.RevokeAllRefreshTokens(u.ID)
 }
 
 // SendEmailVerification 发送邮箱验证邮件
@@ -390,6 +453,21 @@ func (s *Service) generateAuthResponse(u *user.User) (*AuthResponse, error) {
 
 	refreshToken, err := utils.GenerateRefreshToken(u.ID, s.config)
 	if err != nil {
+		return nil, err
+	}
+
+	// 刷新令牌必须在服务端留痕，否则无法吊销/轮换
+	claims, err := utils.ParseRefreshToken(refreshToken, s.config)
+	if err != nil {
+		return nil, err
+	}
+	record := &RefreshToken{
+		ID:        uuid.MustParse(claims.ID),
+		UserID:    u.ID,
+		TokenHash: hashToken(refreshToken),
+		ExpiresAt: time.Unix(claims.ExpiresAt.Unix(), 0),
+	}
+	if err := s.repo.CreateRefreshToken(record); err != nil {
 		return nil, err
 	}
 

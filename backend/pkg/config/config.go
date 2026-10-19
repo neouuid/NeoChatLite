@@ -1,8 +1,11 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -23,6 +26,8 @@ type ServerConfig struct {
 	WriteTimeout int
 	LogLevel     string
 	CORS         CORSConfig
+	// AuthRateLimitPerMinute 认证接口每 IP 每分钟允许的请求数
+	AuthRateLimitPerMinute int
 }
 
 type DatabaseConfig struct {
@@ -102,10 +107,11 @@ func Load() *Config {
 
 	config := &Config{
 		Server: ServerConfig{
-			Port:         viper.GetInt("server.port"),
-			ReadTimeout:  viper.GetInt("server.read_timeout"),
-			WriteTimeout: viper.GetInt("server.write_timeout"),
-			LogLevel:     viper.GetString("server.log_level"),
+			Port:                   viper.GetInt("server.port"),
+			ReadTimeout:            viper.GetInt("server.read_timeout"),
+			WriteTimeout:           viper.GetInt("server.write_timeout"),
+			LogLevel:               viper.GetString("server.log_level"),
+			AuthRateLimitPerMinute: viper.GetInt("server.auth_rate_limit_per_minute"),
 			CORS: CORSConfig{
 				AllowOrigins: viper.GetStringSlice("server.cors.allow_origins"),
 				AllowMethods: viper.GetStringSlice("server.cors.allow_methods"),
@@ -198,6 +204,7 @@ func setDefaults() {
 	viper.SetDefault("jwt.secret", "neochat-secret-key-change-in-production")
 	viper.SetDefault("jwt.expiry_hour", 24)
 
+	viper.SetDefault("server.auth_rate_limit_per_minute", 20)
 	viper.SetDefault("storage.upload_dir", "./uploads")
 	viper.SetDefault("storage.max_file_size", 104857600)
 	viper.SetDefault("storage.max_image_size", 10485760)
@@ -260,10 +267,11 @@ func (c *DatabaseConfig) DSN() string {
 func TestConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port:         8080,
-			ReadTimeout:  30,
-			WriteTimeout: 30,
-			LogLevel:     "error",
+			Port:                   8080,
+			ReadTimeout:            30,
+			WriteTimeout:           30,
+			LogLevel:               "error",
+			AuthRateLimitPerMinute: 1000,
 			CORS: CORSConfig{
 				AllowOrigins: []string{"*"},
 				AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -312,4 +320,31 @@ func TestConfig() *Config {
 
 func (c *RedisConfig) Addr() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
+}
+
+// DefaultJWTSecret 是配置模板中的占位密钥，生产环境必须替换
+const DefaultJWTSecret = "neochat-secret-key-change-in-production"
+
+// IsProduction 判断当前是否生产环境（APP_ENV 或 GIN_MODE 任一为生产）
+func IsProduction() bool {
+	return strings.EqualFold(os.Getenv("APP_ENV"), "production") ||
+		strings.EqualFold(os.Getenv("GIN_MODE"), "release")
+}
+
+// ValidateJWTSecret 校验 JWT 密钥强度。
+//
+// 生产环境使用默认密钥或过短密钥属于高危配置，必须拒绝启动——
+// 否则任何人都能伪造任意用户的令牌。开发环境仅返回错误供调用方告警。
+func ValidateJWTSecret(cfg *Config) error {
+	secret := strings.TrimSpace(cfg.JWT.Secret)
+	if secret == "" {
+		return errors.New("jwt.secret is empty")
+	}
+	if secret == DefaultJWTSecret {
+		return errors.New("jwt.secret is still the default placeholder; set a unique secret")
+	}
+	if len(secret) < 32 {
+		return fmt.Errorf("jwt.secret is too short (%d chars); use at least 32", len(secret))
+	}
+	return nil
 }

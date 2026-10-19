@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -189,4 +190,34 @@ func (r *Repository) GetUserLoginHistory(userID uuid.UUID, page int, pageSize in
 
 	err = r.db.Where("user_id = ?", userID).Order("created_at DESC").Limit(pageSize).Offset(offset).Find(&history).Error
 	return history, total, err
+}
+
+// CreateRefreshToken 记录一个刷新令牌（存哈希）
+func (r *Repository) CreateRefreshToken(token *RefreshToken) error {
+	return r.db.Create(token).Error
+}
+
+// GetRefreshTokenByHash 按哈希查找刷新令牌记录
+func (r *Repository) GetRefreshTokenByHash(hash string) (*RefreshToken, error) {
+	var token RefreshToken
+	if err := r.db.Where("token_hash = ?", hash).First(&token).Error; err != nil {
+		return nil, err
+	}
+	return &token, nil
+}
+
+// RevokeRefreshToken 吊销单个刷新令牌
+func (r *Repository) RevokeRefreshToken(id uuid.UUID) error {
+	now := time.Now()
+	return r.db.Model(&RefreshToken{}).
+		Where("id = ? AND revoked_at IS NULL", id).
+		Update("revoked_at", now).Error
+}
+
+// RevokeAllRefreshTokens 吊销某个用户的全部刷新令牌（登出、改密时使用）
+func (r *Repository) RevokeAllRefreshTokens(userID uuid.UUID) error {
+	now := time.Now()
+	return r.db.Model(&RefreshToken{}).
+		Where("user_id = ? AND revoked_at IS NULL", userID).
+		Update("revoked_at", now).Error
 }

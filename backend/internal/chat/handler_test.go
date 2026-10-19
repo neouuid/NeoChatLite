@@ -22,7 +22,7 @@ func TestChatIntegration(t *testing.T) {
 		&user.User{},
 		&user.Friend{},
 		&user.Blocklist{},
-		&auth.VerificationToken{},
+		&auth.VerificationToken{}, &auth.RefreshToken{},
 		&auth.Device{},
 		&auth.LoginHistory{},
 		&Conversation{},

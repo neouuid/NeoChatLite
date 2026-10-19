@@ -71,6 +71,7 @@ func AutoMigrate() error {
 		&user.Friend{},
 		&user.Blocklist{},
 		&auth.VerificationToken{},
+		&auth.RefreshToken{},
 		&auth.Device{},
 		&auth.LoginHistory{},
 		&chat.Conversation{},

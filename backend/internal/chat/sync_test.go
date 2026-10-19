@@ -22,7 +22,7 @@ func TestGetOfflineMessages(t *testing.T) {
 	cfg := test.SetupTestConfig(t)
 	db := test.SetupTestDatabase(t, cfg,
 		&user.User{},
-		&auth.VerificationToken{}, &auth.Device{}, &auth.LoginHistory{},
+		&auth.VerificationToken{}, &auth.RefreshToken{}, &auth.Device{}, &auth.LoginHistory{},
 		&Conversation{}, &ConversationMember{}, &Message{}, &MessageRead{},
 		&Group{}, &Favorite{}, &CallRecord{}, &Mention{},
 	)

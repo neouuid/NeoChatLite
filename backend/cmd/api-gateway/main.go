@@ -38,6 +38,14 @@ func main() {
 
 	// 初始化日志
 	initLogger(cfg.Server.LogLevel)
+
+	// 校验 JWT 密钥：生产环境必须配置唯一且足够长的密钥
+	if err := config.ValidateJWTSecret(cfg); err != nil {
+		if config.IsProduction() {
+			logger.Fatalf("Insecure JWT configuration: %v", err)
+		}
+		logger.Warnf("Insecure JWT configuration (allowed only in development): %v", err)
+	}
 	logger.Info("Starting NeoChat API Gateway...")
 
 	// 初始化数据库

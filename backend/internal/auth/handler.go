@@ -590,7 +590,16 @@ func (h *Handler) GetDevices(c *gin.Context) {
 // @Success 200 {object} response.ApiResponse
 // @Router /api/v1/auth/logout [post]
 func (h *Handler) Logout(c *gin.Context) {
-	// 这里可以添加将 token 加入黑名单的逻辑
+	// 吊销该用户全部刷新令牌；access token 无状态，靠短有效期自然失效
+	if userIDStr, exists := c.Get("user_id"); exists {
+		if userID, err := uuid.Parse(userIDStr.(string)); err == nil {
+			if err := h.service.Logout(userID); err != nil {
+				response.InternalServerError(c, "failed to revoke refresh tokens")
+				return
+			}
+		}
+	}
+
 	response.Success(c, gin.H{
 		"message": "logged out successfully",
 	})

@@ -93,7 +93,7 @@ func (m *Middleware) WebSocketAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := utils.ParseToken(token, m.config)
+		claims, err := utils.ParseAccessToken(token, m.config)
 		if err != nil {
 			response.Unauthorized(c, "invalid or expired token")
 			c.Abort()
@@ -126,7 +126,7 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 		}
 
 		// 解析token
-		claims, err := utils.ParseToken(parts[1], m.config)
+		claims, err := utils.ParseAccessToken(parts[1], m.config)
 		if err != nil {
 			response.Unauthorized(c, "invalid or expired token")
 			c.Abort()
@@ -156,7 +156,7 @@ func (m *Middleware) OptionalAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := utils.ParseToken(parts[1], m.config)
+		claims, err := utils.ParseAccessToken(parts[1], m.config)
 		if err == nil {
 			c.Set("user_id", claims.UserID.String())
 			c.Set("username", claims.Username)

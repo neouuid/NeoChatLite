@@ -22,6 +22,7 @@ server:
   read_timeout: 30
   write_timeout: 30
   log_level: warn
+  auth_rate_limit_per_minute: 1000
   cors:
     allow_origins:
       - "*"

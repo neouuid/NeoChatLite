@@ -57,7 +57,7 @@ func setupTestContext() {
 		&user.User{},
 		&user.Friend{},
 		&user.Blocklist{},
-		&auth.VerificationToken{},
+		&auth.VerificationToken{}, &auth.RefreshToken{},
 		&chat.Conversation{},
 		&chat.ConversationMember{},
 		&chat.Message{},
