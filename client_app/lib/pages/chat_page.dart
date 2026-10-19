@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:neochat_api/neochat_api.dart';
 
+import '../state/message_cache.dart';
 import '../state/session.dart';
 import '../widgets/audio_bubble.dart';
 import '../widgets/video_bubble.dart';
@@ -23,9 +24,13 @@ class ChatPage extends StatefulWidget {
     required this.conversationId,
     required this.title,
     this.isGroup = false,
+    this.cache,
   });
 
   final NeoChatSession session;
+
+  /// 本地消息缓存（可注入，便于测试）
+  final MessageCache? cache;
   final String conversationId;
   final String title;
   final bool isGroup;
@@ -41,6 +46,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _loading = true;
   bool _loadingMore = false;
   Map<String, dynamic>? _replyTo;
+  late final MessageCache _cache = widget.cache ?? PrefsMessageCache();
   bool _hasMore = true;
   String? _error;
   bool _peerTyping = false;
@@ -55,6 +61,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    _loadCached();
     _load();
     _scroll.addListener(_onScroll);
     // 实时事件：新消息 / 对方正在输入 / 对方已读
@@ -156,6 +163,7 @@ class _ChatPageState extends State<ChatPage> {
         _messages.insertAll(0, fresh);
         _hasMore = older.length >= _pageSize;
       });
+      _cacheCurrent();
 
       // 保持当前阅读位置，避免跳动
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -169,6 +177,23 @@ class _ChatPageState extends State<ChatPage> {
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
+  }
+
+  /// 先用本地缓存渲染，避免弱网时白屏
+  Future<void> _loadCached() async {
+    final cached = await _cache.load(widget.conversationId);
+    if (!mounted || cached.isEmpty) return;
+    setState(() {
+      _messages
+        ..clear()
+        ..addAll(cached);
+      _loading = false;
+    });
+  }
+
+  void _cacheCurrent() {
+    if (_messages.isEmpty) return;
+    unawaited(_cache.save(widget.conversationId, _messages));
   }
 
   Future<void> _load() async {
@@ -187,6 +212,7 @@ class _ChatPageState extends State<ChatPage> {
           ..addAll(messages);
         _hasMore = messages.length >= _pageSize;
       });
+      _cacheCurrent();
       _scrollToBottom();
     } catch (e) {
       setState(() => _error = '$e');

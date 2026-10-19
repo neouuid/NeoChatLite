@@ -163,6 +163,7 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			chatGroup.DELETE("/conversations/:id", deps.ChatHandler.DeleteConversation)
 			chatGroup.POST("/conversations/:id/read", deps.ChatHandler.MarkConversationAsRead)
 			chatGroup.PUT("/conversations/:id/mute", deps.ChatHandler.SetConversationMuted)
+			chatGroup.PUT("/conversations/:id/pin", deps.ChatHandler.SetConversationPinned)
 
 			// 消息（会话下挂载，同时保留旧的扁平路径）
 			chatGroup.GET("/conversations/:id/messages", deps.ChatHandler.GetConversationMessages)

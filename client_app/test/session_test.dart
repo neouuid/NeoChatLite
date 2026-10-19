@@ -210,6 +210,17 @@ class _FakeApi extends NeoChatApi {
     return {'success': true};
   }
 
+  Map<String, dynamic>? lastPinBody;
+
+  @override
+  Future<dynamic> putChatConversationsIdPin({
+    required String id,
+    required Map<String, dynamic> body,
+  }) async {
+    lastPinBody = body;
+    return {'success': true, 'data': {'pinned': body['pinned']}};
+  }
+
   @override
   Future<dynamic> putChatConversationsIdMute({
     required String id,
@@ -592,6 +603,17 @@ void main() {
     expect(groups, hasLength(1));
     expect(groups.first['name'], '测试群');
     expect(api.lastGroupQuery, '测试');
+  });
+
+  test('置顶开关下发 pinned 字段', () async {
+    final api = _FakeApi();
+    final session = _newSession(api);
+
+    expect(await session.setConversationPinned('conv-1', true), isTrue);
+    expect(api.lastPinBody, {'pinned': true});
+
+    expect(await session.setConversationPinned('conv-1', false), isTrue);
+    expect(api.lastPinBody, {'pinned': false});
   });
 
   test('登出后清空状态', () async {

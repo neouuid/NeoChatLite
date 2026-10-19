@@ -467,6 +467,8 @@ class ConversationMember {
   String? lastReadAt;
   bool? muted;
   String? nickname;
+  bool? pinned;
+  String? pinnedAt;
   String? role;
   int? unreadCount;
   dynamic user;
@@ -479,6 +481,8 @@ class ConversationMember {
     this.lastReadAt,
     this.muted,
     this.nickname,
+    this.pinned,
+    this.pinnedAt,
     this.role,
     this.unreadCount,
     this.user,
@@ -499,6 +503,8 @@ class ConversationMember {
     obj.lastReadAt = map['last_read_at'] as String?;
     obj.muted = map['muted'] as bool?;
     obj.nickname = map['nickname'] as String?;
+    obj.pinned = map['pinned'] as bool?;
+    obj.pinnedAt = map['pinned_at'] as String?;
     obj.role = map['role'] as String?;
     obj.unreadCount = (map['unread_count'] as num?)?.toInt();
     obj.user = map['user'];
@@ -514,6 +520,8 @@ class ConversationMember {
     if (lastReadAt != null) map['last_read_at'] = lastReadAt;
     if (muted != null) map['muted'] = muted;
     if (nickname != null) map['nickname'] = nickname;
+    if (pinned != null) map['pinned'] = pinned;
+    if (pinnedAt != null) map['pinned_at'] = pinnedAt;
     if (role != null) map['role'] = role;
     if (unreadCount != null) map['unread_count'] = unreadCount;
     if (user != null) map['user'] = user;

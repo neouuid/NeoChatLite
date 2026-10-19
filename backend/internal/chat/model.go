@@ -92,6 +92,8 @@ type ConversationMember struct {
 	LastReadAt     *time.Time     `gorm:"index:idx_member_last_read" json:"last_read_at"`
 	UnreadCount    int            `gorm:"default:0;index:idx_member_unread" json:"unread_count"`
 	Muted          bool           `gorm:"default:false" json:"muted"`
+	Pinned         bool           `gorm:"default:false;index:idx_member_pinned" json:"pinned"`
+	PinnedAt       *time.Time     `json:"pinned_at,omitempty"`
 	JoinedAt       time.Time      `gorm:"index:idx_member_joined_at" json:"joined_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index:idx_member_deleted_at" json:"-"`
 

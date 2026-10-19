@@ -1097,6 +1097,81 @@ Future<void> main(List<String> args) async {
     fail('编辑/资料/群搜索验证失败: $e');
   }
 
+  step('26. 会话置顶：置顶后排在最前，取消后恢复');
+  try {
+    api.token = tokenA;
+
+    // 造三个会话，保证有可比较的顺序
+    final convB = ((_data(await api.postChatConversations(body: {'user_id': idB}))['id']) ?? '') as String;
+    // 用一个群会话作为第二个对照
+    final gData = _data(await api.postGroups(body: {
+      'name': '置顶对照群 $suffix',
+      'member_ids': [idB],
+    }));
+    final convC = ((gData['conversation'] as Map?)?['id'] ?? '') as String;
+
+    // 先给 convB 发消息，让它成为最近活跃
+    await api.postChatMessages(body: {
+      'conversation_id': convB,
+      'type': 'text',
+      'content': '让 B 会话最新',
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await api.postChatMessages(body: {
+      'conversation_id': convC,
+      'type': 'text',
+      'content': '让 C 会话最新',
+    });
+
+    var list = _list(await api.getChatConversations());
+    String? firstId;
+    for (final c in list.whereType<Map>()) {
+      if (c['id'] == convB || c['id'] == convC) {
+        firstId = c['id'] as String?;
+        break;
+      }
+    }
+    if (firstId == convC) {
+      ok('默认顺序：最近活跃的 C 在最前');
+    } else {
+      fail('默认顺序不符合预期，第一条是 $firstId');
+    }
+
+    // 置顶 B
+    await api.putChatConversationsIdPin(id: convB, body: {'pinned': true});
+    list = _list(await api.getChatConversations());
+    final top = list.whereType<Map>().first;
+    if (top['id'] == convB) {
+      ok('置顶后 B 排在最前');
+    } else {
+      fail('置顶未生效，第一条是 ${top['id']}');
+    }
+
+    // 置顶状态挂在成员记录上
+    final members = (top['members'] as List? ?? const []).whereType<Map>();
+    final meMember = members.firstWhere(
+      (m) => m['user_id'] == idA,
+      orElse: () => <String, dynamic>{},
+    );
+    if (meMember['pinned'] == true) {
+      ok('成员的 pinned 标记为 true');
+    } else {
+      fail('成员记录未体现置顶状态');
+    }
+
+    // 取消置顶
+    await api.putChatConversationsIdPin(id: convB, body: {'pinned': false});
+    list = _list(await api.getChatConversations());
+    final topAfter = list.whereType<Map>().first;
+    if (topAfter['id'] == convC) {
+      ok('取消置顶后顺序恢复');
+    } else {
+      fail('取消置顶后第一条是 ${topAfter['id']}');
+    }
+  } catch (e) {
+    fail('置顶验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

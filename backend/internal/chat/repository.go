@@ -52,7 +52,8 @@ func (r *Repository) GetUserConversations(userID uuid.UUID) ([]*Conversation, er
 	err := r.db.Joins("JOIN conversation_members ON conversation_members.conversation_id = conversations.id").
 		Where("conversation_members.user_id = ?", userID).
 		Preload("Members").Preload("Members.User").
-		Order("conversations.updated_at DESC").
+		// 置顶的排在最前，其余按最近活跃排序
+		Order("conversation_members.pinned DESC, conversations.updated_at DESC").
 		Find(&convs).Error
 	if err != nil {
 		return nil, err
@@ -271,6 +272,17 @@ func (r *Repository) GetMessagesSince(userID uuid.UUID, since time.Time, limit i
 	}
 
 	return msgs, nil
+}
+
+// SetConversationPinned 设置会话置顶
+func (r *Repository) SetConversationPinned(convID, userID uuid.UUID, pinned bool) error {
+	updates := map[string]interface{}{"pinned": pinned, "pinned_at": nil}
+	if pinned {
+		updates["pinned_at"] = time.Now()
+	}
+	return r.db.Model(&ConversationMember{}).
+		Where("conversation_id = ? AND user_id = ?", convID, userID).
+		Updates(updates).Error
 }
 
 // SetConversationMuted 设置会话免打扰

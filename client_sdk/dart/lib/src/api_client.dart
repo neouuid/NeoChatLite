@@ -222,6 +222,13 @@ class NeoChatApi {
     return transport.send(method: 'PUT', url: url, headers: _headers(), body: body);
   }
 
+  /// 设置置顶
+  Future<dynamic> putChatConversationsIdPin({required String id, required Map<String, dynamic> body}) async {
+    final path = '/api/v1/chat/conversations/${id}/pin';
+    final url = _uri(path);
+    return transport.send(method: 'PUT', url: url, headers: _headers(), body: body);
+  }
+
   /// 标记会话为已读
   Future<dynamic> postChatConversationsIdRead({required String id}) async {
     final path = '/api/v1/chat/conversations/${id}/read';

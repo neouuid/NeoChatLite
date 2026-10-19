@@ -444,6 +444,19 @@ func (s *Service) invalidateMemberListCaches(convID uuid.UUID) {
 	}
 }
 
+// SetConversationPinned 设置当前用户对该会话的置顶状态
+func (s *Service) SetConversationPinned(convID, userID uuid.UUID, pinned bool) error {
+	if _, err := s.repo.GetConversationMember(convID, userID); err != nil {
+		return errors.New("not a member of this conversation")
+	}
+	if err := s.repo.SetConversationPinned(convID, userID, pinned); err != nil {
+		return err
+	}
+	// 列表顺序会变，必须失效该用户的会话列表缓存
+	_ = redis.Delete(redis.KeyPrefixConversations + userID.String())
+	return nil
+}
+
 // SetConversationMuted 设置当前用户对该会话的免打扰状态
 func (s *Service) SetConversationMuted(convID, userID uuid.UUID, muted bool) error {
 	if _, err := s.repo.GetConversationMember(convID, userID); err != nil {

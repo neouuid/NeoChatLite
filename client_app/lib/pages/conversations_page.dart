@@ -27,6 +27,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Map<String, bool> _online = {};
   int _unreadMentions = 0;
+  // 非当前会话的新消息提醒
+  int _badge = 0;
+  String? _activeConvId;
+  List<Map<String, dynamic>> _data = const [];
 
   @override
   void initState() {
@@ -36,6 +40,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     // 实时事件：新消息刷新列表；在线状态更新头像上的小圆点
     _realtimeSub = widget.session.realtimeEvents?.listen((event) {
       if (event.type == 'new_message') {
+        _maybeNotify(event);
         _reload();
         return;
       }
@@ -56,11 +61,90 @@ class _ConversationsPageState extends State<ConversationsPage> {
     super.dispose();
   }
 
+  Future<void> _openChat(String convId, String title) async {
+    final conv = _data.firstWhere(
+      (c) => c['id'] == convId,
+      orElse: () => <String, dynamic>{},
+    );
+    _activeConvId = convId;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatPage(
+          session: widget.session,
+          conversationId: convId,
+          title: title,
+          isGroup: conv['type'] == 'group',
+        ),
+      ),
+    );
+    _activeConvId = null;
+    await _reload();
+  }
+
   Future<void> _reload() async {
     setState(() {
       _future = widget.session.loadConversations();
     });
-    await _future;
+    final data = await _future;
+    if (mounted) setState(() => _data = data);
+  }
+
+  /// 非当前会话的新消息：弹提醒 + 累计角标（免打扰会话跳过）
+  void _maybeNotify(RealtimeEvent event) {
+    final convId = event.convId ?? '';
+    if (convId.isEmpty || convId == _activeConvId) return;
+
+    final data = event.data;
+    final msg = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+    final senderId = (msg['sender_id'] ?? event.fromId ?? '') as String;
+    if (senderId.isNotEmpty && senderId == widget.session.userId) return;
+    if (_isMuted(convId)) return;
+    if (!mounted) return;
+
+    setState(() => _badge++);
+
+    final sender = msg['sender'] is Map
+        ? ((msg['sender'] as Map)['nickname'] ??
+            (msg['sender'] as Map)['username'] ??
+            '新消息')
+        : '新消息';
+    final preview = (msg['content'] as String? ?? '').trim();
+    final text = preview.isEmpty ? '$sender 发来一条消息' : '$sender：$preview';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: '查看',
+          onPressed: () => _openChat(convId, _titleOf(convId)),
+        ),
+      ),
+    );
+  }
+
+  bool _isMuted(String convId) {
+    for (final conv in _data) {
+      if (conv['id'] != convId) continue;
+      final members = conv['members'];
+      if (members is List) {
+        for (final m in members) {
+          if (m is Map && m['user_id'] == widget.session.userId) {
+            return m['muted'] == true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  String _titleOf(String convId) {
+    for (final conv in _data) {
+      if (conv['id'] == convId) {
+        return (conv['name'] ?? '会话') as String;
+      }
+    }
+    return '会话';
   }
 
   /// 当前用户在该会话的未读数（服务端把 unread_count 挂在 members 上）
@@ -103,6 +187,15 @@ class _ConversationsPageState extends State<ConversationsPage> {
       appBar: AppBar(
         title: const Text('会话'),
         actions: [
+          if (_badge > 0)
+            IconButton(
+              tooltip: '有新消息（点击清除）',
+              onPressed: () => setState(() => _badge = 0),
+              icon: Badge(
+                label: Text('$_badge'),
+                child: const Icon(Icons.notifications_active_outlined),
+              ),
+            ),
           IconButton(
             tooltip: '搜索聊天记录',
             icon: const Icon(Icons.search),
@@ -291,18 +384,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                   trailing: unread > 0
                       ? Badge(label: Text('$unread'))
                       : null,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ChatPage(
-                          session: widget.session,
-                          conversationId: id,
-                          title: title,
-                          isGroup: conv['type'] == 'group',
-                        ),
-                      ),
-                    );
-                  },
+                  onTap: () => _openChat(id, title),
                 );
               },
             );

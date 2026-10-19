@@ -253,6 +253,48 @@ func (h *Handler) GetConversationMessages(c *gin.Context) {
 	response.Success(c, msgs)
 }
 
+// SetConversationPinned 设置会话置顶
+// @Summary 设置置顶
+// @Description 置顶或取消置顶当前用户的会话（置顶会话排在列表最前）
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "会话ID"
+// @Param request body object true "pinned: true|false"
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/chat/conversations/{id}/pin [put]
+func (h *Handler) SetConversationPinned(c *gin.Context) {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil || userID == uuid.Nil {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	convID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "invalid conversation id")
+		return
+	}
+
+	var req struct {
+		Pinned bool `json:"pinned"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+
+	if err := h.service.SetConversationPinned(convID, userID, req.Pinned); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"conversation_id": convID, "pinned": req.Pinned})
+}
+
 // SetConversationMuted 设置会话免打扰
 // @Summary 设置免打扰
 // @Description 开启或关闭当前用户对该会话的免打扰

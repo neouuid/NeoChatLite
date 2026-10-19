@@ -503,6 +503,21 @@ class NeoChatSession extends ChangeNotifier {
     }
   }
 
+  /// 设置会话置顶（置顶会话排在列表最前）
+  Future<bool> setConversationPinned(String conversationId, bool pinned) async {
+    try {
+      await _api.putChatConversationsIdPin(
+        id: conversationId,
+        body: {'pinned': pinned},
+      );
+      return true;
+    } catch (e) {
+      _error = '设置置顶失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// 设置会话免打扰
   Future<bool> setConversationMuted(String conversationId, bool muted) async {
     try {

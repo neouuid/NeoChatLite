@@ -1465,6 +1465,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/chat/conversations/{id}/pin": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "置顶或取消置顶当前用户的会话（置顶会话排在列表最前）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "设置置顶",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "pinned: true|false",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_neochat_backend_pkg_response.ApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_neochat_backend_pkg_response.ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_neochat_backend_pkg_response.ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/chat/conversations/{id}/read": {
             "post": {
                 "security": [
@@ -3855,6 +3913,12 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "nickname": {
+                    "type": "string"
+                },
+                "pinned": {
+                    "type": "boolean"
+                },
+                "pinned_at": {
                     "type": "string"
                 },
                 "role": {

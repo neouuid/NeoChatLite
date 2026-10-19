@@ -73,6 +73,7 @@ func TestCanonicalRoutesRegistered(t *testing.T) {
 		"DELETE /api/v1/chat/conversations/:id",
 		"POST /api/v1/chat/conversations/:id/read",
 		"PUT /api/v1/chat/conversations/:id/mute",
+		"PUT /api/v1/chat/conversations/:id/pin",
 		"GET /api/v1/chat/conversations/:id/messages",
 		"POST /api/v1/chat/conversations/:id/messages",
 		"PUT /api/v1/chat/conversations/:id/messages/:message_id",
