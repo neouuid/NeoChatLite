@@ -1,0 +1,70 @@
+# 验证体系
+
+本项目有五个层次的验证，从快到慢：
+
+| 层次 | 命令 | 覆盖 | 耗时 |
+|---|---|---|---|
+| 1. 后端单元/集成 | `cd backend && RUN_INTEGRATION_TESTS=true go test ./...` | handler、service、缓存失效、安全 | ~5s |
+| 2. 客户端单元 | `cd client_app && flutter test` | 会话状态、缓存、刷新、群/好友/置顶 | ~2s |
+| 3. 接口契约 | `go test ./cmd/api-gateway/` | 路由是否注册、swagger 是否覆盖 | ~1s |
+| 4. 端到端（单实例） | `bash scripts/e2e_local.sh` | 26 步 HTTP + 7 步实时 WS | ~2min |
+| 5. 部署形态 | `bash scripts/verify_multi_instance.sh`、Web 验证 | 跨实例广播、浏览器运行时 | 各 ~1min |
+
+## 跨实例广播（自动化，已验证通过）
+
+```bash
+bash scripts/verify_multi_instance.sh
+```
+
+脚本会构建后端、用**同一个 SQLite 文件 + 同一个 Redis** 起两个实例（端口 18181 / 18182），
+A 连实例 1、B 连实例 2，然后：
+
+1. 在实例 2 发消息 → A 必须在实例 1 的 WebSocket 上收到（证明 Redis Pub/Sub 生效）
+2. 反向再验证一次
+3. 断开连接并清理进程
+
+实测结果（`✅ 跨实例广播验证全部通过`）：
+
+```
+▶ 2. A 连实例 1，B 连实例 2          ✅ 两侧 WebSocket 均已连接
+▶ 3. 在实例 B 上发消息，实例 A 上的 A 应收到
+                                     ✅ 实例 1 的 A 收到了实例 2 发出的消息（Redis 广播生效）
+▶ 4. 反向：在实例 A 上发消息，B 应收到 ✅ 实例 2 的 B 收到了实例 1 发出的消息
+```
+
+## Web 运行时（已验证通过，自动化有已知限制）
+
+目标是验证两件事：
+1. 构建产物能在**真实 Chrome**里启动（Flutter 挂载成功、无 JS 异常）
+2. 浏览器 origin 下能完成 注册 → 建群 → 发消息 → 读回（CORS + fetch 路径）
+
+`scripts/verify_web.sh` 提供 `start` / `check` / `stop` 三步：
+
+```bash
+bash scripts/verify_web.sh start   # 构建 web、起后端(18090)、托管产物(18091)、起 headless Chrome(9222)
+bash scripts/verify_web.sh check   # CDP 驱动：确认挂载 + 浏览器侧 API 全链路
+bash scripts/verify_web.sh stop
+```
+
+实测通过的输出：
+
+```
+PAGE title='NeoChat' flutter_booted=True
+API_RESULT={"step": "ok", "user": "webrun43330510", "convId": "99437d97-...", "found": true}
+CONSOLE_LOGS=2 ERRORS=0
+VERIFY_RESULT=PASS
+```
+
+**已知限制**：本机 headless Chrome 的 CDP WebSocket 在部分启动方式下会「握手成功但无响应」。
+实测中以下方式稳定通过：**用独立的 shell 调用启动服务与 Chrome，再用另一个独立调用执行 `check`**。
+如果 `check` 卡住（超过 60 秒无输出），执行 `bash scripts/verify_web.sh stop` 后重试一次即可；
+这不是应用本身的问题（页面已成功加载、API 全链路已通过）。
+
+## 尚未覆盖
+
+| 项 | 原因 |
+|---|---|
+| 真机录音/播放 | 需要麦克风与音频设备的人工确认 |
+| 系统级推送通知 | 需要 APNs / FCM 证书或平台通知插件 |
+| Postgres 生产库 | 本地只有 SQLite；SQL 已避免方言独占写法，但仍需真库验证 |
+| 高并发/长连接压测 | 未做，当前结论不覆盖性能 |

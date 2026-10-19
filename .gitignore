@@ -140,3 +140,7 @@ client_sdk/dart/build/
 
 # 本地 E2E 运行目录
 .e2e-run/
+
+# 验证脚本产生的临时目录
+.multi-run/
+.web-verify/
