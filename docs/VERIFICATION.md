@@ -60,6 +60,21 @@ VERIFY_RESULT=PASS
 如果 `check` 卡住（超过 60 秒无输出），执行 `bash scripts/verify_web.sh stop` 后重试一次即可；
 这不是应用本身的问题（页面已成功加载、API 全链路已通过）。
 
+## 依赖服务（Docker）
+
+本机不再用 brew 安装中间件，统一用 Docker 管理，端口与项目默认配置一致：
+
+| 服务 | 容器名 | 端口 | 管理命令 |
+|---|---|---|---|
+| Redis | `neochat-redis` | 6379 | `bash scripts/redis_docker.sh {start\|stop\|status\|logs}` |
+| PostgreSQL | `neochat-pg` | 15432 | `bash scripts/e2e_postgres.sh [--keep]` |
+
+Redis 容器使用命名卷 `neochat-redis-data` 与 AOF 持久化，重启策略 `unless-stopped`。
+Docker Hub 直连不通时脚本会自动改用 `docker.m.daocloud.io` 镜像源。
+
+跨实例广播验证（`scripts/verify_multi_instance.sh`）就是跑在这个 Docker Redis 上的，
+双向广播均通过。
+
 ## Postgres（已验证通过）
 
 ```bash
