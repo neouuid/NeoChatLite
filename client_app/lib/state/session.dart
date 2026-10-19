@@ -327,6 +327,100 @@ class NeoChatSession extends ChangeNotifier {
     }
   }
 
+  /// 搜索用户（加好友用）
+  Future<List<Map<String, dynamic>>> searchUsers(String keyword) async {
+    final res = await _api.getUsersSearch(keyword: keyword);
+    // 搜索接口返回分页信封：data = {items, total, page, page_size, has_more}
+    final data = _asMap(res['data']);
+    return _asList(data['items']);
+  }
+
+  /// 发送好友请求
+  Future<bool> sendFriendRequest(String userId) async {
+    try {
+      await _api.postFriendsRequests(body: {'friend_id': userId});
+      return true;
+    } catch (e) {
+      _error = '发送好友请求失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 收到的好友请求
+  Future<List<Map<String, dynamic>>> loadFriendRequests() async {
+    final res = await _api.getFriendsRequests();
+    // 返回 {pending: [...], sent: [...]}，这里只取收到的请求
+    final data = _asMap(res['data']);
+    return _asList(data['pending']);
+  }
+
+  /// 接受好友请求
+  Future<bool> acceptFriendRequest(String requestId) async {
+    try {
+      await _api.postFriendsRequestsIdAccept(id: requestId);
+      return true;
+    } catch (e) {
+      _error = '接受请求失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 拒绝好友请求
+  Future<bool> rejectFriendRequest(String requestId) async {
+    try {
+      await _api.postFriendsRequestsIdReject(id: requestId);
+      return true;
+    } catch (e) {
+      _error = '拒绝请求失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 删除好友
+  Future<bool> deleteFriend(String userId) async {
+    try {
+      await _api.deleteFriendsId(id: userId);
+      return true;
+    } catch (e) {
+      _error = '删除好友失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 黑名单
+  Future<List<Map<String, dynamic>>> loadBlocklist() async {
+    final res = await _api.getBlocklist();
+    return _asList(res['data']);
+  }
+
+  /// 拉黑用户
+  Future<bool> blockUser(String userId) async {
+    try {
+      await _api.postBlocklist(body: {'user_id': userId});
+      return true;
+    } catch (e) {
+      _error = '拉黑失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 移出黑名单
+  Future<bool> unblockUser(String userId) async {
+    try {
+      await _api.deleteBlocklistId(id: userId);
+      return true;
+    } catch (e) {
+      _error = '解除拉黑失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// 上传附件，返回服务端 data（含 url）
   Future<Map<String, dynamic>?> uploadAttachment({
     required List<int> bytes,

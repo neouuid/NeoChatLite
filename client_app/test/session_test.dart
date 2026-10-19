@@ -61,6 +61,66 @@ class _FakeApi extends NeoChatApi {
     };
   }
 
+  Map<String, dynamic>? lastFriendRequestBody;
+
+  @override
+  Future<dynamic> getUsersSearch({String? keyword, int? page, int? pageSize}) async {
+    // 真实接口返回分页信封：{items, total, ...}
+    return {
+      'success': true,
+      'data': {
+        'items': [
+          {'id': 'user-2', 'username': 'bob', 'nickname': 'Bob'},
+        ],
+        'total': 1,
+      },
+    };
+  }
+
+  @override
+  Future<dynamic> postFriendsRequests({required Map<String, dynamic> body}) async {
+    lastFriendRequestBody = body;
+    return {'success': true};
+  }
+
+  @override
+  Future<dynamic> getFriendsRequests() async {
+    return {
+      'success': true,
+      'data': {
+        'pending': [
+          {
+            'id': 'req-1',
+            'user_id': 'user-2',
+            'friend_id': 'user-1',
+            'user': {'id': 'user-2', 'username': 'bob'},
+          },
+        ],
+        'sent': [],
+      },
+    };
+  }
+
+  @override
+  Future<dynamic> postFriendsRequestsIdAccept({required String id}) async {
+    return {'success': true};
+  }
+
+  @override
+  Future<dynamic> getFriends() async {
+    return {
+      'success': true,
+      'data': [
+        {'id': 'user-2', 'username': 'bob'},
+      ],
+    };
+  }
+
+  @override
+  Future<dynamic> getBlocklist() async {
+    return {'success': true, 'data': []};
+  }
+
   @override
   Future<dynamic> postChatMessages({required Map<String, dynamic> body}) async {
     return {'success': true, 'data': body};
@@ -251,6 +311,29 @@ void main() {
     expect(messages, hasLength(1));
     expect(api.lastBefore, '2026-10-01T00:00:00Z');
     expect(api.lastLimit, 20);
+  });
+
+  test('好友流程：搜索解析 items、请求用 friend_id、接受后好友列表更新', () async {
+    final api = _FakeApi();
+    final session = NeoChatSession(api: api, enableRealtime: false);
+
+    final users = await session.searchUsers('bob');
+    expect(users, hasLength(1));
+    expect(users.first['id'], 'user-2');
+
+    expect(await session.sendFriendRequest('user-2'), isTrue);
+    expect(api.lastFriendRequestBody, {'friend_id': 'user-2'});
+
+    final requests = await session.loadFriendRequests();
+    expect(requests, hasLength(1));
+    expect(requests.first['id'], 'req-1');
+    expect((requests.first['user'] as Map)['id'], 'user-2');
+
+    expect(await session.acceptFriendRequest('req-1'), isTrue);
+
+    final friends = await session.loadFriends();
+    expect(friends, hasLength(1));
+    expect(friends.first['id'], 'user-2');
   });
 
   test('登出后清空状态', () async {

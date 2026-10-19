@@ -575,6 +575,72 @@ Future<void> main(List<String> args) async {
     fail('分页验证失败: $e');
   }
 
+  step('18. 好友流程：搜索 → 请求 → 接受 → 互为好友');
+  try {
+    api.token = tokenA;
+    // 1) A 搜索 B
+    final searchRes = await api.getUsersSearch(keyword: userB);
+    final searchData = (searchRes is Map && searchRes['data'] is Map)
+        ? Map<String, dynamic>.from(searchRes['data'] as Map)
+        : <String, dynamic>{};
+    final found = (searchData['items'] as List?) ?? const [];
+    final target = found.whereType<Map>().firstWhere(
+          (u) => u['id'] == idB,
+          orElse: () => <String, dynamic>{},
+        );
+    if (target.isEmpty) {
+      fail('搜索没有找到用户 B');
+    } else {
+      ok('搜索到用户 B');
+
+      // 2) A 发送好友请求
+      await api.postFriendsRequests(body: {'friend_id': idB});
+      ok('好友请求已发送');
+
+      // 3) B 查看请求并接受
+      api.token = tokenB;
+      final reqRes = await api.getFriendsRequests();
+      final reqData = (reqRes is Map && reqRes['data'] is Map)
+          ? Map<String, dynamic>.from(reqRes['data'] as Map)
+          : <String, dynamic>{};
+      final requests = (reqData['pending'] as List?) ?? const [];
+      String? requestId;
+      for (final req in requests.whereType<Map>()) {
+        // pending 项是 Friend 记录：user_id 是请求者
+        if (req['user_id'] == idA) {
+          requestId = req['id'] as String?;
+          break;
+        }
+      }
+      if (requestId == null) {
+        fail('B 没有收到 A 的好友请求');
+      } else {
+        await api.postFriendsRequestsIdAccept(id: requestId);
+        ok('B 已接受请求');
+
+        // 4) 双方好友列表互相包含
+        final bFriends = _list(await api.getFriends());
+        final bHasA = bFriends.whereType<Map>().any((f) {
+          final info = f['friend'] is Map ? f['friend'] as Map : f;
+          return info['id'] == idA || f['friend_id'] == idA;
+        });
+        api.token = tokenA;
+        final aFriends = _list(await api.getFriends());
+        final aHasB = aFriends.whereType<Map>().any((f) {
+          final info = f['friend'] is Map ? f['friend'] as Map : f;
+          return info['id'] == idB || f['friend_id'] == idB;
+        });
+        if (bHasA && aHasB) {
+          ok('双方好友列表中已互为好友（A 有 ${aFriends.length}，B 有 ${bFriends.length}）');
+        } else {
+          fail('好友关系未建立: aHasB=$aHasB bHasA=$bHasA');
+        }
+      }
+    }
+  } catch (e) {
+    fail('好友流程失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

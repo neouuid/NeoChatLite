@@ -116,3 +116,13 @@ cd client_app && flutter build web     # Web 产物可编译
 
 > 注意：Web 端浏览器无法自定义 WebSocket 请求头，token 通过 `?token=` 传递；
 > 服务端仅对 `/chat/ws` 接受该方式。
+
+## 好友相关接口的实际结构（E2E 确认）
+
+| 接口 | 约定 |
+|---|---|
+| `GET /users/search?keyword=` | 返回分页信封 `data: {items, total, page, page_size, has_more}`，用户数组在 `data.items` |
+| `POST /friends/requests` | body 是 `{friend_id}`，**不是** `user_id` |
+| `GET /friends/requests` | `data: {pending, sent}`；pending 项是 Friend 记录（`user_id` 为请求者，`user` 字段是请求者的用户信息） |
+| `GET /friends` | `data` 直接是用户数组（不是 Friend 记录） |
+| `POST /friends/requests/:id/accept` | 路径参数是**请求记录 id**，不是用户 id |
