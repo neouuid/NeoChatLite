@@ -261,16 +261,18 @@ def gen_api(paths: dict, name_map: dict[str, str]) -> str:
                 interpolated = interpolated.replace(
                     "{" + p["name"] + "}", "${" + camel(p["name"]) + "}"
                 )
-            lines.append(f"    final path = '{interpolated}';")
+            # 用 requestPath 而不是 path：路径参数本身可能就叫 path
+            # （例如 /api/v1/files/{path}），同名会编译不过
+            lines.append(f"    final requestPath = '{interpolated}';")
 
             if query_params:
                 entries = ", ".join(
                     f"'{p['name']}': {camel(p['name'])}" for p in query_params
                 )
                 lines.append(f"    final query = <String, dynamic>{{{entries}}};")
-                lines.append("    final url = _uri(path, query);")
+                lines.append("    final url = _uri(requestPath, query);")
             else:
-                lines.append("    final url = _uri(path);")
+                lines.append("    final url = _uri(requestPath);")
 
             body_arg = "body" if body_param is not None else None
             if body_arg:

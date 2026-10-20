@@ -281,6 +281,19 @@ Authorization: Bearer <token>
 
 ---
 
+#### 1.y 账号安全
+
+| 接口 | 说明 |
+|---|---|
+| `POST /auth/change-password` | 需 `old_password`；成功后**吊销全部 refresh token** |
+| `POST /auth/forgot-password` | 按邮箱发重置令牌；**不暴露邮箱是否注册**，响应恒为成功 |
+| `POST /auth/reset-password` | 用重置令牌设置新密码，令牌一次性、1 小时过期 |
+| `POST /auth/delete-account` | 需密码确认；软删除账号并吊销令牌 |
+
+`forgot-password` 默认**不在响应里返回令牌**。只有同时满足
+「`server.expose_reset_token: true`」且非生产环境时才会回传，
+用于本地没有 SMTP 时联调；生产环境即使误开也会被强制关闭。
+
 ### 2. 用户模块 (Users)
 
 #### 2.1 搜索用户

@@ -386,6 +386,38 @@ paths:
       summary: 修改密码
       tags:
       - auth
+  /api/v1/auth/delete-account:
+    post:
+      consumes:
+      - application/json
+      description: 需密码确认；账号软删除，登录态全部失效
+      parameters:
+      - description: password
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 注销账号
+      tags:
+      - auth
   /api/v1/auth/forgot-password:
     post:
       consumes:

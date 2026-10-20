@@ -72,7 +72,7 @@ func setupTestContext() {
 	authRepo := auth.NewRepository(db)
 	emailService := email.NewService(cfg)
 	authService := auth.NewService(authRepo, cfg, emailService)
-	authHandler := auth.NewHandler(authService)
+	authHandler := auth.NewHandler(authService, cfg)
 	authMiddleware := auth.NewMiddleware(cfg)
 
 	userRepo := user.NewRepository(db)

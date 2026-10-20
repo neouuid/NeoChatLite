@@ -211,6 +211,50 @@ class _FakeApi extends NeoChatApi {
   }
 
   Map<String, dynamic>? lastPinBody;
+  Map<String, dynamic>? lastChangePasswordBody;
+  Map<String, dynamic>? lastResetBody;
+  Map<String, dynamic>? lastDeleteBody;
+  String? lastForgotEmail;
+  bool exposeResetToken = true;
+
+  @override
+  Future<dynamic> postAuthChangePassword({required Map<String, dynamic> body}) async {
+    if (body['old_password'] != 'Passw0rd!') {
+      throw ApiException(statusCode: 401, message: 'invalid old password');
+    }
+    lastChangePasswordBody = body;
+    return {'success': true};
+  }
+
+  @override
+  Future<dynamic> postAuthForgotPassword({required Map<String, dynamic> body}) async {
+    lastForgotEmail = body['email'] as String?;
+    return {
+      'success': true,
+      'data': {
+        'message': 'sent',
+        if (exposeResetToken) 'token': 'reset-token-1',
+      },
+    };
+  }
+
+  @override
+  Future<dynamic> postAuthResetPassword({required Map<String, dynamic> body}) async {
+    if (body['token'] != 'reset-token-1') {
+      throw ApiException(statusCode: 400, message: 'invalid or expired token');
+    }
+    lastResetBody = body;
+    return {'success': true};
+  }
+
+  @override
+  Future<dynamic> postAuthDeleteAccount({required Map<String, dynamic> body}) async {
+    if (body['password'] != 'Passw0rd!') {
+      throw ApiException(statusCode: 401, message: 'invalid password');
+    }
+    lastDeleteBody = body;
+    return {'success': true};
+  }
 
   @override
   Future<dynamic> putChatConversationsIdPin({
@@ -614,6 +658,75 @@ void main() {
 
     expect(await session.setConversationPinned('conv-1', false), isTrue);
     expect(api.lastPinBody, {'pinned': false});
+  });
+
+  test('修改密码成功后清空登录态', () async {
+    final api = _FakeApi();
+    final session = _newSession(api);
+    await session.login('alice', 'secret');
+    expect(session.isLoggedIn, isTrue);
+
+    expect(
+      await session.changePassword(
+        oldPassword: 'Passw0rd!',
+        newPassword: 'NewPassw0rd!',
+      ),
+      isTrue,
+    );
+    expect(api.lastChangePasswordBody?['new_password'], 'NewPassw0rd!');
+    expect(session.isLoggedIn, isFalse, reason: '改密后应清空登录态');
+  });
+
+  test('旧密码错误时改密失败且保持登录', () async {
+    final api = _FakeApi();
+    final session = _newSession(api);
+    await session.login('alice', 'secret');
+
+    expect(
+      await session.changePassword(oldPassword: 'wrong', newPassword: 'NewPassw0rd!'),
+      isFalse,
+    );
+    expect(session.isLoggedIn, isTrue);
+    expect(session.error, contains('invalid old password'));
+  });
+
+  test('忘记密码：开发模式返回令牌，生产模式返回 null', () async {
+    final api = _FakeApi();
+    final session = _newSession(api);
+
+    expect(await session.requestPasswordReset('a@b.com'), 'reset-token-1');
+    expect(api.lastForgotEmail, 'a@b.com');
+
+    api.exposeResetToken = false;
+    expect(await session.requestPasswordReset('a@b.com'), isNull);
+  });
+
+  test('用令牌重置密码', () async {
+    final api = _FakeApi();
+    final session = _newSession(api);
+
+    expect(
+      await session.resetPassword(token: 'reset-token-1', newPassword: 'NewPassw0rd!'),
+      isTrue,
+    );
+    expect(api.lastResetBody?['token'], 'reset-token-1');
+
+    expect(
+      await session.resetPassword(token: 'bad', newPassword: 'NewPassw0rd!'),
+      isFalse,
+    );
+  });
+
+  test('注销账号需要正确密码并清空登录态', () async {
+    final api = _FakeApi();
+    final session = _newSession(api);
+    await session.login('alice', 'secret');
+
+    expect(await session.deleteAccount('wrong'), isFalse);
+    expect(session.isLoggedIn, isTrue);
+
+    expect(await session.deleteAccount('Passw0rd!'), isTrue);
+    expect(session.isLoggedIn, isFalse);
   });
 
   test('登出后清空状态', () async {

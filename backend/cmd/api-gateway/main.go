@@ -91,7 +91,7 @@ func main() {
 	emailService := email.NewService(cfg)
 	authRepo := auth.NewRepository(database.DB)
 	authService := auth.NewService(authRepo, cfg, emailService)
-	authHandler := auth.NewHandler(authService)
+	authHandler := auth.NewHandler(authService, cfg)
 	authMiddleware := auth.NewMiddleware(cfg)
 
 	userRepo := user.NewRepository(database.DB)

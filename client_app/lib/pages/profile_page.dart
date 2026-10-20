@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../state/session.dart';
+import 'account_security_page.dart';
 
 /// 我的资料：昵称 / 签名 / 头像
 class ProfilePage extends StatefulWidget {
@@ -154,6 +155,22 @@ class _ProfilePageState extends State<ProfilePage> {
             maxLines: 3,
           ),
           const SizedBox(height: 12),
+          const Divider(height: 24),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.lock_outline),
+            title: const Text('账号安全'),
+            subtitle: const Text('修改密码、注销账号'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => AccountSecurityPage(session: widget.session),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 24),
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('用户名'),

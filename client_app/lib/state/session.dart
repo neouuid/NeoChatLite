@@ -439,6 +439,69 @@ class NeoChatSession extends ChangeNotifier {
     }
   }
 
+  /// 修改密码。成功后服务端会吊销全部 refresh token，
+  /// 因此客户端也主动清空登录态，要求用新密码重新登录。
+  Future<bool> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _api.postAuthChangePassword(
+        body: {'old_password': oldPassword, 'new_password': newPassword},
+      );
+      await logout();
+      return true;
+    } catch (e) {
+      _error = '修改密码失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 请求密码重置。开发环境（未配置 SMTP）服务端会回传 token，
+  /// 生产环境只发邮件、响应里没有 token。
+  Future<String?> requestPasswordReset(String email) async {
+    try {
+      final res = await _api.postAuthForgotPassword(body: {'email': email});
+      final data = _asMap(res['data']);
+      return _asString(data['token']);
+    } catch (e) {
+      _error = '发送重置请求失败：$e';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// 用重置令牌设置新密码
+  Future<bool> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await _api.postAuthResetPassword(
+        body: {'token': token, 'new_password': newPassword},
+      );
+      return true;
+    } catch (e) {
+      _error = '重置密码失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 注销账号（软删除）。需要密码确认。
+  Future<bool> deleteAccount(String password) async {
+    try {
+      await _api.postAuthDeleteAccount(body: {'password': password});
+      await logout();
+      return true;
+    } catch (e) {
+      _error = '注销失败：$e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// 编辑自己发送的文本消息
   Future<bool> editMessage(String messageId, String content) async {
     try {

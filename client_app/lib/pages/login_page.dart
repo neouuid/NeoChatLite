@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../state/session.dart';
+import 'forgot_password_page.dart';
 import 'register_page.dart';
 
 /// 登录页：调用 POST /api/v1/auth/login，成功后由外层切换到会话列表。
@@ -82,15 +83,31 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => RegisterPage(session: widget.session),
-                      ),
-                    );
-                  },
-                  child: const Text('还没有账号？立即注册'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ForgotPasswordPage(session: widget.session),
+                          ),
+                        );
+                      },
+                      child: const Text('忘记密码？'),
+                    ),
+                    const Text('|'),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => RegisterPage(session: widget.session),
+                          ),
+                        );
+                      },
+                      child: const Text('注册账号'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(

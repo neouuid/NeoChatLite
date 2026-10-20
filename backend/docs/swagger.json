@@ -62,6 +62,57 @@
                 }
             }
         },
+        "/api/v1/auth/delete-account": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "需密码确认；账号软删除，登录态全部失效",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "注销账号",
+                "parameters": [
+                    {
+                        "description": "password",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_neochat_backend_pkg_response.ApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_neochat_backend_pkg_response.ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_neochat_backend_pkg_response.ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/forgot-password": {
             "post": {
                 "description": "发送验证码到邮箱以重置密码",

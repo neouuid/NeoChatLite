@@ -6,15 +6,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"github.com/neochat/backend/pkg/config"
 	"github.com/neochat/backend/pkg/response"
 )
 
 type Handler struct {
 	service *Service
+	config  *config.Config
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *Service, cfg *config.Config) *Handler {
+	return &Handler{service: service, config: cfg}
 }
 
 // Register 注册接口
@@ -186,17 +188,22 @@ func (h *Handler) ForgotPassword(c *gin.Context) {
 	token, err := h.service.ForgotPassword(&req)
 	if err != nil {
 		if err.Error() == "email not found" {
-			response.NotFound(c, err.Error())
-		} else {
-			response.BadRequest(c, err.Error())
+			// 不暴露邮箱是否存在，统一返回「已发送」，
+			// 否则攻击者可以用这个接口枚举注册过的邮箱。
+			response.Success(c, gin.H{"message": "if the email exists, a reset link has been sent"})
+			return
 		}
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	response.Success(c, gin.H{
-		"message": "verification code sent to email",
-		"token":   token, // 仅用于测试，生产环境应移除
-	})
+	payload := gin.H{"message": "if the email exists, a reset link has been sent"}
+	// 没有 SMTP 的本地开发环境才回传令牌；生产环境即使误开也会被这里强制关闭
+	if h.config != nil && h.config.Server.ExposeResetToken && !config.IsProduction() {
+		payload["token"] = token
+		payload["dev_note"] = "开发模式：SMTP 未配置，直接把重置令牌返回给调用方"
+	}
+	response.Success(c, payload)
 }
 
 // ResetPassword 重置密码接口
@@ -357,7 +364,18 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 	})
 }
 
-// DeleteAccount 删除账户
+// DeleteAccount 注销账号
+// @Summary 注销账号
+// @Description 需密码确认；账号软删除，登录态全部失效
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object true "password"
+// @Success 200 {object} response.ApiResponse
+// @Failure 400 {object} response.ApiResponse
+// @Failure 401 {object} response.ApiResponse
+// @Router /api/v1/auth/delete-account [post]
 func (h *Handler) DeleteAccount(c *gin.Context) {
 	userIDStr, exists := c.Get("user_id")
 	if !exists {

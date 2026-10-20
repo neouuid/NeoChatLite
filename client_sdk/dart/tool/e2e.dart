@@ -1253,6 +1253,114 @@ Future<void> main(List<String> args) async {
     fail('限流验证失败: $e');
   }
 
+  step('28. 账号安全（修改密码 / 找回密码 / 注销账号）');
+  try {
+    // --- 修改密码 ---
+    api.token = tokenA;
+    await api.postAuthChangePassword(body: {
+      'old_password': 'Passw0rd!',
+      'new_password': 'Changed0rd!',
+    });
+
+    // 旧密码应登录失败
+    try {
+      await api.postAuthLogin(
+        body: {'identifier': userA, 'password': 'Passw0rd!'},
+      );
+      fail('旧密码仍然可以登录');
+    } on ApiException catch (e) {
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        ok('修改密码后旧密码登录被拒（${e.statusCode}）');
+      } else {
+        fail('预期 401，实际 ${e.statusCode}');
+      }
+    }
+
+    // 新密码可以登录
+    final relogin = await api.postAuthLogin(
+      body: {'identifier': userA, 'password': 'Changed0rd!'},
+    );
+    tokenA = _data(relogin)['access_token'] as String;
+    ok('新密码登录成功');
+
+    // --- 找回密码 ---
+    final forgot = await api.postAuthForgotPassword(
+      body: {'email': '$userA@e2e.local'},
+    );
+    final resetToken = _data(forgot)['token'] as String?;
+    if (resetToken == null || resetToken.isEmpty) {
+      fail('E2E 需要服务端配置 expose_reset_token: true 才能拿到重置令牌');
+    } else {
+      ok('拿到重置令牌（开发模式）');
+
+      await api.postAuthResetPassword(body: {
+        'token': resetToken,
+        'new_password': 'Reset0rd!',
+      });
+      ok('密码已重置');
+
+      // 重置后旧密码失效、新密码可用
+      try {
+        await api.postAuthLogin(
+          body: {'identifier': userA, 'password': 'Changed0rd!'},
+        );
+        fail('重置前的密码仍可登录');
+      } on ApiException {
+        ok('重置前的密码已失效');
+      }
+      final afterReset = await api.postAuthLogin(
+        body: {'identifier': userA, 'password': 'Reset0rd!'},
+      );
+      tokenA = _data(afterReset)['access_token'] as String;
+      ok('重置后的密码登录成功');
+    }
+
+    // --- 注销账号（用一次性账号验证，避免影响上面的 A/B）---
+    final userD = 'dave$suffix';
+    final d = await api.postAuthRegister(
+      body: {
+        'username': userD,
+        'password': 'Passw0rd!',
+        'nickname': 'Dave',
+        'email': '$userD@e2e.local',
+        'phone': '137${suffix.toString().padLeft(8, '0')}',
+      },
+    );
+    final tokenD = _data(d)['access_token'] as String;
+    api.token = tokenD;
+
+    // 密码错误不能注销
+    try {
+      await api.postAuthDeleteAccount(body: {'password': 'wrong'});
+      fail('错误密码竟然能注销账号');
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        ok('密码错误时注销被拒（401）');
+      } else {
+        fail('预期 401，实际 ${e.statusCode}');
+      }
+    }
+
+    await api.postAuthDeleteAccount(body: {'password': 'Passw0rd!'});
+    ok('账号已注销');
+
+    // 注销后无法登录
+    try {
+      await api.postAuthLogin(
+        body: {'identifier': userD, 'password': 'Passw0rd!'},
+      );
+      fail('已注销账号仍可登录');
+    } on ApiException catch (e) {
+      if (e.statusCode == 401 || e.statusCode == 404) {
+        ok('已注销账号无法登录（${e.statusCode}）');
+      } else {
+        fail('预期 401/404，实际 ${e.statusCode}');
+      }
+    }
+  } catch (e) {
+    fail('账号安全验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

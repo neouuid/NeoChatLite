@@ -25,6 +25,7 @@ server:
   auth_rate_limit_per_minute: 1000
   message_rate_limit_per_10s: 20
   upload_rate_limit_per_minute: 10
+  expose_reset_token: true
   cors:
     allow_origins:
       - "*"

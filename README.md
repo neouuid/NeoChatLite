@@ -12,7 +12,7 @@
 | 消息 | 文本 / 图片 / 文件 / 语音 / 视频，引用回复、编辑、转发、撤回、收藏、历史分页 |
 | 群聊 | 建群、拉人、设管理员、踢人、退群、解散、改群资料 |
 | 关系 | 好友请求、好友列表、黑名单、免打扰、会话置顶 |
-| 验证 | 端到端 27 步（SQLite + Postgres 双跑）、实时 7 步、跨实例双向广播、真实 Chrome 运行时、离线缓存 |
+| 验证 | 端到端 28 步（SQLite + Postgres 双跑）、实时 7 步、跨实例双向广播、真实 Chrome 运行时、离线缓存 |
 
 ## 一张图看懂
 
@@ -84,7 +84,7 @@ flowchart TB
 | 客户端单元 | `cd client_app && flutter test` | 25 个用例：会话状态、消息缓存、刷新、群/好友/置顶 | ✅ 25/25 |
 | SDK | `cd client_sdk/dart && dart test` | Web 传输层（MockClient，无需浏览器） | ✅ 3/3 |
 | 接口契约 | `cd backend && go test ./cmd/api-gateway/` | 路由是否注册、swagger 是否覆盖 | ✅ |
-| 端到端（SQLite） | `bash scripts/e2e_local.sh` | 27 步 HTTP（63 断言）+ 7 步实时（8 断言） | ✅ 全通过 |
+| 端到端（SQLite） | `bash scripts/e2e_local.sh` | 28 步 HTTP（80 断言）+ 7 步实时（8 断言） | ✅ 全通过 |
 | 端到端（Postgres） | `bash scripts/e2e_postgres.sh` | 同一套断言跑在真 Postgres 上 | ✅ 全通过 |
 | 端到端（容器） | `docker compose up -d` 后跑 E2E | 容器内的生产配置（PG + Redis + 非 root） | ✅ 全通过 |
 | 跨实例广播 | `bash scripts/verify_multi_instance.sh` | 两实例双向 WebSocket 投递（真 Redis） | ✅ 双向通过 |

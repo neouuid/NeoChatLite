@@ -40,7 +40,7 @@ func TestAuthIntegration(t *testing.T) {
 	authRepo := NewRepository(db)
 	emailService := email.NewService(cfg)
 	authService := NewService(authRepo, cfg, emailService)
-	authHandler := NewHandler(authService)
+	authHandler := NewHandler(authService, cfg)
 	authMiddleware := NewMiddleware(cfg)
 
 	userRepo := user.NewRepository(db)
