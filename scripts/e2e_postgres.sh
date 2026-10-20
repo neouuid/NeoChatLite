@@ -11,10 +11,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUN_DIR="$ROOT/.pg-run"
 CONTAINER=neochat-pg
-PG_PORT=15432
-APP_PORT=18085
-PG_PASSWORD=neochat_dev_pw
-PG_DB=neochat
+APP_PORT="${APP_PORT:-18085}"
 KEEP=0
 EXTERNAL=0
 for arg in "$@"; do
@@ -22,15 +19,21 @@ for arg in "$@"; do
   [ "$arg" = "--external" ] && EXTERNAL=1
 done
 
-# 外部模式下由环境变量提供连接信息（CI 的 service container 就是这种用法）
-PG_HOST="${PG_HOST:-127.0.0.1}"
-PG_USER="${PG_USER:-postgres}"
-PG_DB="${PG_DB:-neochat}"
-export PGPASSWORD="${PG_PASSWORD:-$PG_PASSWORD}"
+# 连接信息全部可被环境变量覆盖：
+#   - Docker 模式默认 127.0.0.1:15432（容器映射端口）
+#   - --external 模式默认 127.0.0.1:5432（CI 的 service container 直接映射）
 if [ "$EXTERNAL" = "1" ]; then
+  PG_HOST="${PG_HOST:-127.0.0.1}"
   PG_PORT="${PG_PORT:-5432}"
+  PG_USER="${PG_USER:-postgres}"
   PG_PASSWORD="${PG_PASSWORD:-postgres}"
+else
+  PG_HOST="${PG_HOST:-127.0.0.1}"
+  PG_PORT="${PG_PORT:-15432}"
+  PG_USER="${PG_USER:-postgres}"
+  PG_PASSWORD="${PG_PASSWORD:-neochat_dev_pw}"
 fi
+PG_DB="${PG_DB:-neochat}"
 SERVER_PID=""
 
 cleanup() {
@@ -143,7 +146,7 @@ curl -sf -m 3 "http://127.0.0.1:$APP_PORT/health" >/dev/null || {
   echo "❌ 后端未就绪"; tail -25 "$RUN_DIR/server.log"; exit 1; }
 
 echo
-echo "▶ 在 Postgres 上执行完整 E2E（26 步 HTTP + 7 步实时）"
+echo "▶ 在 Postgres 上执行完整 E2E（27 步 HTTP + 7 步实时）"
 ( cd "$ROOT/client_sdk/dart" && dart run tool/e2e.dart "http://127.0.0.1:$APP_PORT" )
 HTTP_RESULT=$?
 ( cd "$ROOT/client_sdk/dart" && dart run tool/e2e_realtime.dart "http://127.0.0.1:$APP_PORT" )

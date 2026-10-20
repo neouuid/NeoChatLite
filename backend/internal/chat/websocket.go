@@ -529,9 +529,6 @@ func (c *Client) WritePump() {
 			}
 		}
 	}
-
-	// Channel is closed, send close message
-	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
 
 func (c *Client) handleMessage(msg WSMessage) {
