@@ -28,10 +28,8 @@
 backend/           Go 后端（cmd/api-gateway、internal/{auth,user,chat}、pkg/*）
 backend/Dockerfile 多阶段构建，运行镜像非 root
 client_sdk/dart/   由 OpenAPI 生成的 Dart SDK（含 realtime 与测试工具）
-client_app/        当前使用的 Flutter 客户端
-client_flutter/    历史客户端（不再维护，可忽略）
-demo_server/       早期演示服务（可忽略）
-docs/              架构、安全、验证、API 说明
+client_app/        Flutter 客户端
+docs/              架构、安全、验证、迁移、API 说明
 scripts/           E2E 与验证脚本
 docker-compose.yml Postgres + Redis + 后端 一键起
 ```

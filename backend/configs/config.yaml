@@ -32,10 +32,6 @@ redis:
   password: ""
   db: 0
 
-nats:
-  url: nats://localhost:4222
-  user: ""
-  pass: ""
 
 jwt:
   secret: neochat-secret-key-change-in-production-please

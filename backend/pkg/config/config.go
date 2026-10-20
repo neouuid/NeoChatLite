@@ -14,7 +14,6 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	Redis    RedisConfig
-	NATS     NATSConfig
 	JWT      JWTConfig
 	Storage  StorageConfig
 	Email    EmailConfig
@@ -49,12 +48,6 @@ type RedisConfig struct {
 	Port     int
 	Password string
 	DB       int
-}
-
-type NATSConfig struct {
-	URL  string
-	User string
-	Pass string
 }
 
 type JWTConfig struct {
@@ -143,11 +136,6 @@ func Load() *Config {
 			Password: viper.GetString("redis.password"),
 			DB:       viper.GetInt("redis.db"),
 		},
-		NATS: NATSConfig{
-			URL:  viper.GetString("nats.url"),
-			User: viper.GetString("nats.user"),
-			Pass: viper.GetString("nats.pass"),
-		},
 		JWT: JWTConfig{
 			Secret:     viper.GetString("jwt.secret"),
 			ExpiryHour: viper.GetInt("jwt.expiry_hour"),
@@ -202,10 +190,6 @@ func setDefaults() {
 	viper.SetDefault("redis.port", 6379)
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.db", 0)
-
-	viper.SetDefault("nats.url", "nats://localhost:4222")
-	viper.SetDefault("nats.user", "")
-	viper.SetDefault("nats.pass", "")
 
 	viper.SetDefault("jwt.secret", "neochat-secret-key-change-in-production")
 	viper.SetDefault("jwt.expiry_hour", 24)
