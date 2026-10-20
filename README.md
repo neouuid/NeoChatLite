@@ -174,6 +174,7 @@ bash scripts/e2e_local.sh                                 # 端到端（SQLite�
 | 文档 | 内容 |
 |---|---|
 | [docs/README.md](docs/README.md) | 文档索引（按角色分类） |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | 阶段结论：已完成、待验证、不做什么 |
 | [docs/MIGRATIONS.md](docs/MIGRATIONS.md) | 版本化迁移：目录结构、新增步骤、验证方式 |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | 五层验证体系与实测结果 |
 | [docs/SECURITY.md](docs/SECURITY.md) | 令牌模型、防护机制、上线检查清单 |

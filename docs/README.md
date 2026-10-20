@@ -31,6 +31,7 @@
 | [SECURITY.md](SECURITY.md) | 令牌模型、防护机制、上线检查清单 |
 | [VERIFICATION.md](VERIFICATION.md) | 五层验证体系与实测结果、已知限制 |
 | [CLIENT-FEATURES.md](CLIENT-FEATURES.md) | 客户端能力、交互速查与限制 |
+| [ROADMAP.md](ROADMAP.md) | 已完成 / 待验证 / 明确不做 / 技术债与触发条件 |
 
 ## 快速命令
 
