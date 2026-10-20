@@ -302,6 +302,30 @@ func (h *WebSocketHub) deliverLocal(message WSMessage) {
 	}
 }
 
+// enqueueUnregister 把要摘除的连接交给 Run 循环统一处理。
+//
+// 不能在持读锁时 delete/close：那是「读锁下写 map」，
+// 并发场景会触发 fatal error，而且 channel 可能被重复关闭。
+func (h *WebSocketHub) enqueueUnregister(clients []*Client) {
+	for _, c := range clients {
+		select {
+		case h.unregister <- c:
+		default:
+			// Run 循环繁忙时丢弃入队：下一次投递仍会发现它并重试
+		}
+	}
+}
+
+// trySend 投递一条消息，缓冲区满时返回 false（调用方收集后统一摘除）
+func trySend(client *Client, message WSMessage) bool {
+	select {
+	case client.Send <- message:
+		return true
+	default:
+		return false
+	}
+}
+
 func (h *WebSocketHub) broadcastToConversation(message WSMessage) {
 	if message.ConvID == uuid.Nil {
 		h.broadcastToAll(message)
@@ -318,36 +342,34 @@ func (h *WebSocketHub) broadcastToConversation(message WSMessage) {
 
 	// 只发送给会话成员
 	h.mu.RLock()
-	defer h.mu.RUnlock()
-
+	var slow []*Client
 	for _, member := range members {
 		if clientIDs, ok := h.userConns[member.UserID]; ok {
 			for clientID := range clientIDs {
 				if client, ok := h.clients[clientID]; ok {
-					select {
-					case client.Send <- message:
-					default:
-						close(client.Send)
-						delete(h.clients, client.ID)
+					if !trySend(client, message) {
+						slow = append(slow, client)
 					}
 				}
 			}
 		}
 	}
+	h.mu.RUnlock()
+
+	h.enqueueUnregister(slow)
 }
 
 func (h *WebSocketHub) broadcastToAll(message WSMessage) {
 	h.mu.RLock()
-	defer h.mu.RUnlock()
-
+	var slow []*Client
 	for _, client := range h.clients {
-		select {
-		case client.Send <- message:
-		default:
-			close(client.Send)
-			delete(h.clients, client.ID)
+		if !trySend(client, message) {
+			slow = append(slow, client)
 		}
 	}
+	h.mu.RUnlock()
+
+	h.enqueueUnregister(slow)
 }
 
 // SendToUser 发送消息给指定用户的所有连接（本地投递 + 广播到其它实例）
@@ -359,20 +381,19 @@ func (h *WebSocketHub) SendToUser(userID uuid.UUID, message WSMessage) {
 // deliverToUser 只投递给当前实例上该用户的连接
 func (h *WebSocketHub) deliverToUser(userID uuid.UUID, message WSMessage) {
 	h.mu.RLock()
-	defer h.mu.RUnlock()
-
+	var slow []*Client
 	if clientIDs, ok := h.userConns[userID]; ok {
 		for clientID := range clientIDs {
 			if client, ok := h.clients[clientID]; ok {
-				select {
-				case client.Send <- message:
-				default:
-					close(client.Send)
-					delete(h.clients, client.ID)
+				if !trySend(client, message) {
+					slow = append(slow, client)
 				}
 			}
 		}
 	}
+	h.mu.RUnlock()
+
+	h.enqueueUnregister(slow)
 }
 
 // BroadcastOnlineStatus 广播用户在线状态

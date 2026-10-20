@@ -2,6 +2,7 @@
 package middleware
 
 import (
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,10 @@ type Metrics struct {
 	StartTime       time.Time
 }
 
+// mu 保护 globalMetrics：中间件会在每个请求的 goroutine 里写它，
+// 没有锁时并发写 map 会触发 "fatal error: concurrent map writes"（进程直接退出）。
+var mu sync.Mutex
+
 var globalMetrics = &Metrics{
 	RequestsPerPath: make(map[string]int64),
 	ResponseTimes:   make(map[string][]time.Duration),
@@ -30,32 +35,37 @@ func MetricsMiddleware() gin.HandlerFunc {
 		start := time.Now()
 		path := c.FullPath()
 
+		mu.Lock()
 		globalMetrics.TotalRequests++
 		globalMetrics.RequestsPerPath[path]++
+		mu.Unlock()
 
 		c.Next()
 
 		duration := time.Since(start)
-
-		// 记录响应时间
-		globalMetrics.ResponseTimes[path] = append(globalMetrics.ResponseTimes[path], duration)
-
-		// 保留最近的 1000 个响应时间
-		if len(globalMetrics.ResponseTimes[path]) > 1000 {
-			globalMetrics.ResponseTimes[path] = globalMetrics.ResponseTimes[path][1:]
-		}
-
-		// 记录错误
 		status := c.Writer.Status()
+
+		mu.Lock()
+		// 记录响应时间，只保留最近 1000 个
+		times := append(globalMetrics.ResponseTimes[path], duration)
+		if len(times) > 1000 {
+			times = times[len(times)-1000:]
+		}
+		globalMetrics.ResponseTimes[path] = times
+
 		if status >= 400 {
 			globalMetrics.ErrorCount++
 			globalMetrics.ErrorsPerPath[path]++
 		}
+		mu.Unlock()
 	}
 }
 
 // GetMetrics 获取当前性能指标
 func GetMetrics() map[string]interface{} {
+	mu.Lock()
+	defer mu.Unlock()
+
 	result := make(map[string]interface{})
 
 	result["total_requests"] = globalMetrics.TotalRequests

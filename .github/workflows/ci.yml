@@ -23,12 +23,12 @@ jobs:
       - name: go vet
         working-directory: backend
         run: go vet ./...
-      - name: 单元 + 集成测试
+      - name: 单元 + 集成测试（含数据竞争检测）
         working-directory: backend
         env:
           RUN_INTEGRATION_TESTS: 'true'
           GOPROXY: https://proxy.golang.org,direct
-        run: go test ./... -timeout 300s -coverprofile=coverage.out
+        run: go test ./... -race -count=1 -timeout 600s -coverprofile=coverage.out
       - name: 覆盖率摘要
         working-directory: backend
         run: go tool cover -func=coverage.out | tail -1
