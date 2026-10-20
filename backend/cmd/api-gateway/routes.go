@@ -49,13 +49,6 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 	// Swagger API 文档
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// 静态文件服务 - 上传文件访问
-	uploadDir := deps.Cfg.Storage.UploadDir
-	if uploadDir == "" {
-		uploadDir = "./uploads"
-	}
-	r.Static("/uploads", uploadDir)
-
 	// API 路由
 	api := r.Group("/api/v1")
 	{
@@ -215,6 +208,14 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 		api.GET("/chat/ws", deps.AuthMiddleware.WebSocketAuthMiddleware(), deps.WsHub.WebSocketHandler)
 
 		// 文件上传路由
+		// 上传文件不再通过静态目录直接暴露：必须带鉴权，
+		// 且文件被某条消息引用时还要求调用者是会话成员。
+		// 允许 ?token= 是因为 <img>/<video>/<audio> 无法自定义请求头。
+		filesGroup := api.Group("/files", deps.AuthMiddleware.AuthMiddlewareOrQuery())
+		{
+			filesGroup.GET("/*path", deps.ChatHandler.DownloadFile)
+		}
+
 		uploadGroup := api.Group("/upload", deps.AuthMiddleware.AuthMiddleware())
 		{
 			uploadGroup.POST("", deps.UploadHandler.UploadFile)

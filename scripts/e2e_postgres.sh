@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # 用 Docker 起一个 PostgreSQL，把完整 E2E 跑在 Postgres 上（此前只有 SQLite）。
 #
-#   bash scripts/e2e_postgres.sh            # 起容器 → 跑 E2E → 停容器
-#   bash scripts/e2e_postgres.sh --keep     # 跑完保留容器
+#   bash scripts/e2e_postgres.sh              # 起容器 → 跑 E2E → 停容器
+#   bash scripts/e2e_postgres.sh --keep       # 跑完保留容器
+#   bash scripts/e2e_postgres.sh --external   # 用外部已有的 Postgres（CI 服务容器）
 #
 # 依赖：Docker（daemon 必须可用）、Go、dart
 set -uo pipefail
@@ -15,12 +16,29 @@ APP_PORT=18085
 PG_PASSWORD=neochat_dev_pw
 PG_DB=neochat
 KEEP=0
-[ "${1:-}" = "--keep" ] && KEEP=1
+EXTERNAL=0
+for arg in "$@"; do
+  [ "$arg" = "--keep" ] && KEEP=1
+  [ "$arg" = "--external" ] && EXTERNAL=1
+done
+
+# 外部模式下由环境变量提供连接信息（CI 的 service container 就是这种用法）
+PG_HOST="${PG_HOST:-127.0.0.1}"
+PG_USER="${PG_USER:-postgres}"
+PG_DB="${PG_DB:-neochat}"
+export PGPASSWORD="${PG_PASSWORD:-$PG_PASSWORD}"
+if [ "$EXTERNAL" = "1" ]; then
+  PG_PORT="${PG_PORT:-5432}"
+  PG_PASSWORD="${PG_PASSWORD:-postgres}"
+fi
 SERVER_PID=""
 
 cleanup() {
   [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null
   sleep 1
+  if [ "$EXTERNAL" = "1" ]; then
+    return 0
+  fi
   if [ "$KEEP" = "0" ]; then
     docker rm -f "$CONTAINER" >/dev/null 2>&1
   else
@@ -29,6 +47,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
+if [ "$EXTERNAL" = "0" ]; then
 if ! docker info >/dev/null 2>&1; then
   echo "❌ Docker daemon 不可用。请先启动 Docker Desktop 并完成管理员授权。"
   exit 1
@@ -64,6 +83,9 @@ for _ in $(seq 1 60); do
 done
 docker exec "$CONTAINER" pg_isready -U postgres -d "$PG_DB" >/dev/null 2>&1 || {
   echo "❌ PostgreSQL 未能在 60 秒内就绪"; docker logs "$CONTAINER" | tail -20; exit 1; }
+else
+  echo "▶ 使用外部 PostgreSQL（$PG_HOST:$PG_PORT/$PG_DB）"
+fi
 
 echo "▶ 构建并启动后端（连接 Postgres）"
 rm -rf "$RUN_DIR"; mkdir -p "$RUN_DIR/uploads"
@@ -83,9 +105,9 @@ server:
     allow_headers: ["*"]
 database:
   driver: postgres
-  host: 127.0.0.1
+  host: $PG_HOST
   port: $PG_PORT
-  user: postgres
+  user: $PG_USER
   password: $PG_PASSWORD
   dbname: $PG_DB
   sslmode: disable

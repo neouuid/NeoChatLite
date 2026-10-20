@@ -98,6 +98,9 @@ func Load() *Config {
 	viper.AddConfigPath("./configs")
 	viper.AddConfigPath("../configs")
 
+	// 支持用环境变量覆盖任意配置项：NEOCHAT_DATABASE_HOST → database.host
+	viper.SetEnvPrefix("NEOCHAT")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {

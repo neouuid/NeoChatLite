@@ -11,11 +11,19 @@ import (
 )
 
 type Handler struct {
-	service *Service
+	service   *Service
+	uploadDir string
 }
 
 func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+	return &Handler{service: service, uploadDir: "./uploads"}
+}
+
+// SetUploadDir 设置上传目录（文件下载接口需要）
+func (h *Handler) SetUploadDir(dir string) {
+	if dir != "" {
+		h.uploadDir = dir
+	}
 }
 
 // GetUserIDFromContext 从上下文中获取用户ID

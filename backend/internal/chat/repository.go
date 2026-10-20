@@ -119,6 +119,15 @@ func (r *Repository) CreateMessage(msg *Message) error {
 }
 
 // GetMessageByID 根据ID获取消息
+// FindMessageByMediaURL 按 media_url 查消息（兼容新旧两种 URL 形式）
+func (r *Repository) FindMessageByMediaURL(urls ...string) (*Message, error) {
+	var msg Message
+	if err := r.db.Where("media_url IN ?", urls).First(&msg).Error; err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}
+
 func (r *Repository) GetMessageByID(id uuid.UUID) (*Message, error) {
 	var msg Message
 	err := r.db.Preload("Sender").Where("id = ?", id).First(&msg).Error

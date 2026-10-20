@@ -67,7 +67,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 child: CircleAvatar(
                   radius: 48,
                   backgroundImage:
-                      avatar.isNotEmpty ? NetworkImage('${widget.session.baseUrl}$avatar') : null,
+                      avatar.isNotEmpty
+                          ? NetworkImage(widget.session.fileUrl(avatar))
+                          : null,
                   child: avatar.isEmpty
                       ? Text(
                           nickname.characters.first.toUpperCase(),

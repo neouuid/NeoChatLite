@@ -106,6 +106,41 @@ func (m *Middleware) WebSocketAuthMiddleware() gin.HandlerFunc {
 	}
 }
 
+// AuthMiddlewareOrQuery 允许 Authorization 头或 ?token= 查询参数。
+//
+// 用于浏览器无法自定义请求头的场景（<img>/<video>/<audio> 标签、
+// window.open 打开附件）。优先使用请求头，查询参数只作为回退。
+func (m *Middleware) AuthMiddlewareOrQuery() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := ""
+		if authHeader := c.GetHeader("Authorization"); authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				token = parts[1]
+			}
+		}
+		if token == "" {
+			token = c.Query("token")
+		}
+		if token == "" {
+			response.Unauthorized(c, "token is required (header or ?token=)")
+			c.Abort()
+			return
+		}
+
+		claims, err := utils.ParseAccessToken(token, m.config)
+		if err != nil {
+			response.Unauthorized(c, "invalid or expired token")
+			c.Abort()
+			return
+		}
+
+		c.Set("user_id", claims.UserID.String())
+		c.Set("username", claims.Username)
+		c.Next()
+	}
+}
+
 // AuthMiddleware JWT认证中间件
 func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

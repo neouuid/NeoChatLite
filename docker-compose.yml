@@ -1,39 +1,79 @@
-# NeoChat 开发环境 Docker Compose
-# 使用方法: docker-compose up -d
-
-version: '3.8'
+# NeoChat 一键起全套：Postgres + Redis + 后端 API
+#
+#   cp .env.example .env      # 然后改 NEOCHAT_JWT_SECRET
+#   docker compose up -d --build
+#   curl http://127.0.0.1:8080/health
+#
+# 国内网络可先在 .env 里指定镜像源：
+#   GO_IMAGE=docker.m.daocloud.io/library/golang:1.24-bookworm
+#   RUNTIME_IMAGE=docker.m.daocloud.io/library/debian:bookworm-slim
+name: neochat
 
 services:
   postgres:
-    image: postgres:15-alpine
+    image: ${PG_IMAGE:-postgres:16-alpine}
     container_name: neochat-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: neochat
+      POSTGRES_USER: ${POSTGRES_USER:-neochat}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-neochat_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-neochat}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-15432}:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-neochat} -d ${POSTGRES_DB:-neochat}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   redis:
-    image: redis:7-alpine
+    image: ${REDIS_IMAGE:-redis:7-alpine}
     container_name: neochat-redis
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - redis-data:/data
+      - redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  app:
+    build:
+      context: ./backend
+      args:
+        GO_IMAGE: ${GO_IMAGE:-golang:1.24-bookworm}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-debian:bookworm-slim}
+        GOPROXY: ${GO_PROXY:-https://proxy.golang.org,direct}
+    container_name: neochat-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NEOCHAT_SERVER_PORT: "8080"
+      NEOCHAT_SERVER_AUTH_RATE_LIMIT_PER_MINUTE: "${AUTH_RATE_LIMIT:-60}"
+      NEOCHAT_DATABASE_DRIVER: postgres
+      NEOCHAT_DATABASE_HOST: postgres
+      NEOCHAT_DATABASE_PORT: "5432"
+      NEOCHAT_DATABASE_USER: ${POSTGRES_USER:-neochat}
+      NEOCHAT_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-neochat_dev_pw}
+      NEOCHAT_DATABASE_DBNAME: ${POSTGRES_DB:-neochat}
+      NEOCHAT_DATABASE_SSLMODE: disable
+      NEOCHAT_REDIS_HOST: redis
+      NEOCHAT_REDIS_PORT: "6379"
+      NEOCHAT_JWT_SECRET: ${NEOCHAT_JWT_SECRET:?请在 .env 里设置 NEOCHAT_JWT_SECRET（至少 32 字符）}
+      APP_ENV: production
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - uploads:/app/uploads
 
 volumes:
-  postgres-data:
-  redis-data:
+  pgdata:
+  redisdata:
+  uploads:

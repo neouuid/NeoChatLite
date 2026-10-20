@@ -1,304 +1,129 @@
-# NeoChat - 跨平台聊天软件
+# NeoChat
 
-一款现代化的跨平台即时通讯应用，支持 iOS、Android、Windows、macOS、Linux、Web。
+跨平台即时通讯应用：Go 后端 + Flutter 客户端，支持 Android / iOS / Web / macOS / Windows / Linux 六端。
 
-## 🎉 项目状态
+## 当前状态
 
-**Flutter 版本（当前主要版本）**
-- ✅ 29个页面完整实现
-- ✅ 完整的路由系统
-- ✅ Riverpod状态管理
-- ✅ Dio API服务
-- ✅ WebSocket实时通信
-- ✅ Hive本地存储
-- ✅ 完整的组件库
-- ✅ 多平台支持（Android/iOS/Windows/macOS/Linux/Web）
+| 层 | 状态 |
+|---|---|
+| 后端 API | 65 个接口，OpenAPI 文档 + 契约测试 |
+| 客户端 | 11 个页面：登录/注册、会话、聊天、搜索、@我的、收藏、通讯录、群信息、建群、我的资料、他人资料 |
+| 实时 | WebSocket：新消息、正在输入、已读回执、在线状态、跨实例广播 |
+| 消息 | 文本 / 图片 / 文件 / 语音 / 视频，引用回复、编辑、转发、撤回、收藏、历史分页 |
+| 群聊 | 建群、拉人、设管理员、踢人、退群、解散、改群资料 |
+| 关系 | 好友请求、好友列表、黑名单、免打扰、会话置顶 |
+| 验证 | 端到端 26 步（SQLite + Postgres 双跑）、实时 7 步、跨实例双向广播、真实 Chrome 运行时、离线缓存 |
 
 ## 技术栈
 
-### 客户端 (Flutter)
-- **Flutter** - 跨平台UI框架
-- **Dart** - 编程语言
-- **Flutter Riverpod** - 状态管理
-- **GoRouter** - 导航路由
-- **Dio** - HTTP客户端
-- **Hive** - NoSQL本地存储
-- **WebSocket** - 实时通信
-- **json_serializable** - JSON序列化
-- **cached_network_image** - 图片缓存
-- **photo_view** - 图片查看
+**后端**：Go 1.24、Gin、GORM、PostgreSQL（生产）/ SQLite（测试）、Redis（缓存 + 跨实例广播）、JWT、gorilla/websocket、swaggo
 
-### 后端
-- **Go 1.21+** - 高性能服务端
-- **Gin** - Web 框架
-- **GORM** - ORM
-- **PostgreSQL** - 主数据库
-- **Redis** - 缓存
-- **WebSocket** - 实时通信
-- **JWT** - 认证
+**客户端**：Flutter 3.44、Dart 3.12；状态用 `ChangeNotifier`（`NeoChatSession`），HTTP/WS 走自研 SDK，媒体播放用 `just_audio` / `video_player`，本地缓存用 `shared_preferences`
 
-## 项目结构
+**代码生成**：`swag init` → `backend/docs/swagger.json` → `scripts/gen_dart_client.py` → `client_sdk/dart` → `client_app`
+
+## 目录结构
 
 ```
-neochat/
-├── docs/                    # 文档
-├── design/                  # 设计文件 (Pencil)
-├── backend/                 # 后端 (Go)
-│   ├── cmd/                 # 服务入口
-│   │   └── api-gateway/     # API 网关
-│   ├── internal/            # 内部服务
-│   │   ├── auth/            # 认证模块
-│   │   ├── user/            # 用户/好友模块
-│   │   └── chat/            # 聊天/群组模块
-│   ├── pkg/                 # 公共包
-│   │   ├── config/          # 配置
-│   │   ├── database/        # 数据库
-│   │   ├── redis/           # Redis
-│   │   ├── response/        # API 响应
-│   │   └── utils/           # 工具函数
-│   └── configs/             # 配置文件
-└── client_flutter/          # 客户端 (Flutter)
-    ├── lib/
-    │   ├── core/            # 核心模块
-    │   │   ├── constants/   # 常量
-    │   │   ├── theme/       # 主题
-    │   │   └── router/      # 路由
-    │   ├── data/            # 数据层
-    │   │   ├── models/      # 数据模型
-    │   │   └── services/    # API服务
-    │   ├── providers/       # 状态管理
-    │   ├── screens/         # 页面
-    │   ├── widgets/         # 组件
-    │   └── main.dart
-    ├── android/             # Android原生
-    ├── ios/                 # iOS原生
-    ├── windows/             # Windows原生
-    ├── macos/               # macOS原生
-    ├── linux/               # Linux原生
-    └── pubspec.yaml
+backend/           Go 后端（cmd/api-gateway、internal/{auth,user,chat}、pkg/*）
+backend/Dockerfile 多阶段构建，运行镜像非 root
+client_sdk/dart/   由 OpenAPI 生成的 Dart SDK（含 realtime 与测试工具）
+client_app/        当前使用的 Flutter 客户端
+client_flutter/    历史客户端（不再维护，可忽略）
+demo_server/       早期演示服务（可忽略）
+docs/              架构、安全、验证、API 说明
+scripts/           E2E 与验证脚本
+docker-compose.yml Postgres + Redis + 后端 一键起
 ```
 
-## 开发指南
-
-### 环境要求
-
-- Go 1.21+ (后端)
-- Flutter 3.10+ (客户端)
-- PostgreSQL 14+
-- Redis 7+
-- Xcode (for iOS/macOS)
-- Android Studio (for Android)
-- Visual Studio (for Windows)
-
-### 快速开始
-
-#### 1. 启动数据库 (Docker)
+## 快速开始（Docker）
 
 ```bash
-# 使用 Docker Compose 启动 PostgreSQL 和 Redis
-docker-compose up -d
+cp .env.example .env
+# 编辑 .env，至少把 NEOCHAT_JWT_SECRET 换成 32 位以上随机串
 
-# 查看状态
-docker-compose ps
-
-# 查看日志
-docker-compose logs -f
+docker compose up -d --build
+curl http://127.0.0.1:8080/health
 ```
 
-#### 2. 后端配置
+起三个服务：`neochat-postgres`（15432）、`neochat-redis`（6379）、`neochat-app`（8080）。
+上传文件持久化在命名卷 `neochat_uploads`，数据库在 `neochat_pgdata`。
+
+> 国内网络：在 `.env` 里放开 `GO_IMAGE` / `RUNTIME_IMAGE` / `PG_IMAGE` / `REDIS_IMAGE`
+> 的镜像源注释，并把 `GO_PROXY` 设为 `https://goproxy.cn,direct`。
+
+停止并清理：
+
+```bash
+docker compose down          # 保留数据卷
+docker compose down -v       # 连数据一起删
+```
+
+## 本地开发（SQLite，不需要任何中间件）
 
 ```bash
 cd backend
-
-# 复制配置文件
-cp configs/config.yaml config.yaml
-
-# 编辑配置 (如果需要)
-# vim config.yaml
-
-# 构建并运行
-go build -o api-gateway.exe ./cmd/api-gateway
-./api-gateway.exe
+go build -o /tmp/neochat ./cmd/api-gateway
+cd /tmp && ./neochat          # 默认 8080，自动 SQLite 建库
 ```
 
-或者直接运行：
+客户端：
 
 ```bash
-go run ./cmd/api-gateway
-```
-
-后端服务将在 `http://localhost:8080` 启动。
-
-#### 3. 前端 (Flutter)
-
-```bash
-cd client_flutter
-
-# 安装依赖
+cd client_app
 flutter pub get
-
-# 运行代码生成
-flutter pub run build_runner build --delete-conflicting-outputs
-
-# 运行 (Windows桌面)
-flutter run -d windows
-
-# 运行 (Android)
-flutter run -d android
-
-# 运行 (iOS/macOS)
-flutter run -d ios
-flutter run -d macos
-
-# 运行 (Web)
-flutter run -d chrome
-
-# 构建
-flutter build apk    # Android
-flutter build windows # Windows
-flutter build appbundle # AAB
+flutter run -d macos          # 或 chrome / ios / android
+# 指向其它后端：--dart-define=NEOCHAT_BASE_URL=http://127.0.0.1:8080
 ```
 
-## Flutter 页面列表
+## 验证
 
-| 页面 | 路由 | 说明 |
-|------|------|------|
-| 登录页 | /login | 用户登录 |
-| 注册页 | /register | 用户注册 |
-| 忘记密码 | /forgot-password | 重置密码 |
-| 主聊天页 | / | 会话列表 |
-| 聊天页 | /chat/:conversationId | 私聊窗口 |
-| 群聊页 | /group-chat/:conversationId | 群聊窗口 |
-| 个人资料 | /profile | 用户个人资料 |
-| 查看用户 | /profile/:userId | 查看其他用户资料 |
-| 好友管理 | /friends | 好友列表管理 |
-| 添加好友 | /add-friend | 搜索添加好友 |
-| 黑名单 | /blocklist | 黑名单管理 |
-| 群组信息 | /group-info/:groupId | 查看群组详情 |
-| 创建群组 | /create-group | 创建新群组 |
-| 图片查看 | /image-viewer | 查看图片 |
-| 文件查看 | /file-viewer | 查看文件 |
-| 搜索 | /search | 搜索好友/群组 |
-| 聊天设置 | /chat-settings/:conversationId | 聊天详情设置 |
-| 设置 | /settings | 系统设置 |
-| 通知设置 | /notification-settings | 通知管理 |
-| 主题设置 | /theme | 主题切换 |
-| 聊天背景 | /chat-background | 背景设置 |
-| 聊天备份 | /chat-backup | 备份管理 |
-| 数据清理 | /data-clear | 缓存清理 |
-| 关于 | /about | 应用关于页 |
-| 收藏 | /favorites | 收藏列表 |
-| 账号安全 | /account-security | 安全设置 |
-| 转发 | /forward/:messageId | 转发消息 |
-| 视频通话 | /video-call | 视频通话 |
-| 语音通话 | /voice-call | 语音通话 |
+```bash
+# 后端（单元 + 集成）
+cd backend && RUN_INTEGRATION_TESTS=true go test ./...
 
-### API 文档
+# 客户端
+cd client_app && flutter analyze && flutter test
 
-启动后端后，健康检查端点：
+# 端到端（SQLite）
+bash scripts/e2e_local.sh
 
-- `GET /health` - 总健康检查
-- `GET /health/db` - 数据库健康检查
-- `GET /health/redis` - Redis健康检查
+# 端到端（Postgres，需 Docker）
+bash scripts/e2e_postgres.sh
 
-主要 API 端点：
+# 跨实例广播（需 Redis）
+bash scripts/verify_multi_instance.sh
 
-- `POST /api/v1/auth/register` - 用户注册
-- `POST /api/v1/auth/login` - 用户登录
-- `POST /api/v1/auth/refresh` - 刷新 Token
-- `GET /api/v1/user/profile` - 获取用户资料
-- `GET /api/v1/user/search` - 搜索用户
-- `GET /api/v1/friend/list` - 获取好友列表
-- `POST /api/v1/friend/request` - 发送好友请求
-- `GET /api/v1/chat/conversations` - 获取会话列表
-- `POST /api/v1/chat/message` - 发送消息
-- `GET /api/v1/chat/ws` - WebSocket 连接
-- `POST /api/v1/group/` - 创建群组
-- `POST /api/v1/call/initiate` - 发起音视频通话
-- `POST /api/v1/call/:id/accept` - 接受通话
-- `POST /api/v1/call/:id/reject` - 拒绝通话
-- `POST /api/v1/call/:id/end` - 结束通话
+# Web 运行时（需 Chrome）
+bash scripts/verify_web.sh start && bash scripts/verify_web.sh check
+```
 
-## 功能模块
+详细说明见 [docs/VERIFICATION.md](docs/VERIFICATION.md)。
 
-| 模块 | 状态 | 说明 |
-|------|------|------|
-| 项目初始化 & 架构设计 | ✅ | 项目结构、技术选型 |
-| 账号体系 (后端) | ✅ | 注册、登录、JWT、用户资料、账号安全、登录历史、设备管理 |
-| 好友关系 (后端) | ✅ | 好友请求、好友列表、黑名单 |
-| 单聊功能 (后端) | ✅ | 会话、消息、已读状态、撤回/删除、分页加载 |
-| 群聊功能 (后端) | ✅ | 群组创建、成员管理、角色权限、@提及功能 |
-| WebSocket 实时消息 | ✅ | 新消息推送、在线状态、信令转发 |
-| Flutter 客户端 | ✅ | 29个页面完整实现，架构完整 |
-| 多媒体 (图片/文件) | ✅ | 文件上传/下载、消息转发、收藏 |
-| 音视频通话 | ✅ | WebRTC信令、视频/语音通话UI、通话邀请弹窗 |
-| 消息转发/收藏 | ✅ | 已完成 |
-| 系统设置 | ✅ | 已完成所有设置页面 |
-| @提及功能 | ✅ | 完整的提及功能实现 |
-| 消息搜索 | ✅ | 消息内容搜索和群组搜索 |
+## 安全相关
 
-## 当前进度概览
+- 访问令牌与刷新令牌类型隔离（`typ` 声明），刷新令牌一次性轮换、可吊销
+- 登录失败 5 次锁定 15 分钟；认证接口按 IP 限流；生产环境弱 JWT 密钥拒绝启动
+- 上传文件不再公开暴露：`GET /api/v1/files/*path` 需鉴权，被消息引用的文件还要求是会话成员
+- 细节与上线检查清单见 [docs/SECURITY.md](docs/SECURITY.md)
 
-| 阶段 | 状态 | 完成度 |
-|------|------|--------|
-| 阶段 0: 项目初始化 & 架构设计 | ✅ 已完成 | 100% |
-| 阶段 1: 基础设施 | ✅ 已完成 | 100% |
-| 阶段 2: 账号体系 | ✅ 已完成 | 100% |
-| 阶段 3: 好友关系 | ✅ 已完成 | 100% |
-| 阶段 4: 单聊功能 | ✅ 已完成 | 100% |
-| 阶段 5: 群聊功能 | ✅ 已完成 | 100% |
-| 阶段 6: 多媒体 | ✅ 已完成 | 100% |
-| 阶段 7: 音视频通话 | ✅ 已完成 | 100% |
-| 阶段 8: 完善与优化 | ✅ 已完成 | 100% |
+## 文档
 
-## 设计文件
+| 文档 | 内容 |
+|---|---|
+| [docs/VERIFICATION.md](docs/VERIFICATION.md) | 五层验证体系与实测结果 |
+| [docs/SECURITY.md](docs/SECURITY.md) | 令牌模型、防护机制、上线检查清单 |
+| [docs/CLIENT-FEATURES.md](docs/CLIENT-FEATURES.md) | 客户端能力与交互速查 |
+| `backend/docs/swagger.json` | OpenAPI 契约（启动后 `/swagger/index.html`） |
+| [client_sdk/dart/README.md](client_sdk/dart/README.md) | SDK 用法、协议细节、响应结构约定 |
 
-设计文件位于 `design/` 目录，使用 [Pencil](https://pencil.evolus.vn/) 工具打开。
+## 已知限制
 
-包含的设计：
-- Login Page (登录页面)
-- Register Page (注册页面)
-- MainChat Page (主聊天页面)
-- Chat Settings (聊天设置)
-- Profile Page (个人资料)
-- Friend Management (好友管理)
-- Group Chat (群聊页面)
-- Group Info (群组信息)
-- Create Group (创建群组)
-- Add Friend (添加好友)
-- Settings (系统设置)
-- Video Call (视频通话)
-- Voice Call (语音通话)
-- 等等...
-
-每个页面都有 `_desktop` 和 `_mobile` 两个版本。
-
-## 开发计划
-
-详细的开发计划请查看 [docs/开发计划.md](docs/开发计划.md)。
-
-Flutter版本状态请查看 [docs/FLUTTER_PROJECT_STATUS.md](docs/FLUTTER_PROJECT_STATUS.md)。
-
-## 架构设计
-
-详细的架构设计请查看 [docs/架构设计.md](docs/架构设计.md)。
-
-## 数据库设计
-
-详细的数据库设计请查看 [docs/数据库设计.md](docs/数据库设计.md)。
-
-## API 设计
-
-详细的 API 设计请查看 [docs/API设计.md](docs/API设计.md)。
-
-## 设计规范
-
-详细的设计规范请查看 [docs/设计规范.md](docs/设计规范.md)。
-
-## 开发环境搭建
-
-详细的开发环境搭建请查看 [docs/开发环境搭建.md](docs/开发环境搭建.md)。
+- 无系统级推送通知（仅应用内提醒），需要 APNs/FCM 或平台通知插件
+- 真机录音/播放未做自动化验证
+- 数据库迁移仍用 AutoMigrate，尚未版本化
+- 无压力测试结论
 
 ## License
 
-BSD 3-Clause License
+见 [LICENSE](LICENSE)。

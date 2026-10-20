@@ -101,7 +101,7 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 	}
 
 	// 生成访问URL
-	fileURL := fmt.Sprintf("/uploads/%s/%s/%s", uploadType, datePath, newFileName)
+	fileURL := fmt.Sprintf("%s%s/%s/%s", FileURLPrefix, uploadType, datePath, newFileName)
 
 	// 返回结果
 	response.Success(c, gin.H{

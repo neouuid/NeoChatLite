@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: 后端测试（SQLite）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: backend/go.sum
+      - name: go vet
+        working-directory: backend
+        run: go vet ./...
+      - name: 单元 + 集成测试
+        working-directory: backend
+        env:
+          RUN_INTEGRATION_TESTS: 'true'
+          GOPROXY: https://proxy.golang.org,direct
+        run: go test ./... -timeout 300s -coverprofile=coverage.out
+      - name: 覆盖率摘要
+        working-directory: backend
+        run: go tool cover -func=coverage.out | tail -1
+
+  client:
+    name: 客户端（analyze + test）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.2'
+          channel: stable
+          cache: true
+      - name: SDK 依赖与静态检查
+        working-directory: client_sdk/dart
+        run: |
+          dart pub get
+          dart analyze
+          dart test
+      - name: 客户端依赖与静态检查
+        working-directory: client_app
+        run: |
+          flutter pub get
+          flutter analyze
+      - name: 客户端单元测试
+        working-directory: client_app
+        run: flutter test
+
+  e2e:
+    name: 端到端（SQLite）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: backend/go.sum
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: 运行 E2E（HTTP + 实时）
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+        run: bash scripts/e2e_local.sh
+
+  e2e-postgres:
+    name: 端到端（Postgres + Redis）
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: neochat
+          POSTGRES_PASSWORD: neochat_dev_pw
+          POSTGRES_DB: neochat
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U neochat -d neochat"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: backend/go.sum
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: 以 Postgres 启动并跑 E2E
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+          PG_HOST: 127.0.0.1
+          PG_PORT: '5432'
+          PG_USER: neochat
+          PG_PASSWORD: neochat_dev_pw
+          PG_DB: neochat
+        run: bash scripts/e2e_postgres.sh --external
+      - name: 失败时输出后端日志
+        if: failure()
+        run: tail -60 .pg-run/server.log || true

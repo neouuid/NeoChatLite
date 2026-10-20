@@ -457,6 +457,11 @@ func (s *Service) SetConversationPinned(convID, userID uuid.UUID, pinned bool) e
 	return nil
 }
 
+// FindMessageByMediaURL 找出引用了该文件的消（用于鉴权）
+func (s *Service) FindMessageByMediaURL(urls ...string) (*Message, error) {
+	return s.repo.FindMessageByMediaURL(urls...)
+}
+
 // SetConversationMuted 设置当前用户对该会话的免打扰状态
 func (s *Service) SetConversationMuted(convID, userID uuid.UUID, muted bool) error {
 	if _, err := s.repo.GetConversationMember(convID, userID); err != nil {

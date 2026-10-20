@@ -75,6 +75,24 @@ Docker Hub 直连不通时脚本会自动改用 `docker.m.daocloud.io` 镜像源
 跨实例广播验证（`scripts/verify_multi_instance.sh`）就是跑在这个 Docker Redis 上的，
 双向广播均通过。
 
+## 容器化部署（已验证通过）
+
+```bash
+cp .env.example .env      # 设置 NEOCHAT_JWT_SECRET
+docker compose up -d --build
+```
+
+三个容器：`neochat-postgres`（15432）、`neochat-redis`（6379）、`neochat-app`（8080）。
+对这套**容器内运行的进程**跑同一份 E2E：
+
+```
+HTTP E2E   26/26（59 条断言）  ✅
+实时 E2E    7/7（8 条断言）    ✅
+```
+
+这验证的不只是"能启动"：容器里跑的是生产配置（Postgres + Redis + 非 root 用户 + 环境变量注入），
+`NEOCHAT_*` 环境变量覆盖生效，JWT 弱密钥在生产模式会被拒绝启动。
+
 ## Postgres（已验证通过）
 
 ```bash
@@ -110,4 +128,5 @@ UUID 主键与时间戳比较、pgx 驱动下的连接池与迁移。
 | 真机录音/播放 | 需要麦克风与音频设备的人工确认 |
 | 系统级推送通知 | 需要 APNs / FCM 证书或平台通知插件 |
 | 压力/并发 | 未做压测，结论不覆盖性能与连接风暴 |
+| GitHub Actions 实跑 | CI 工作流已提交，各步骤命令均在本地验证过，但尚未在真实 runner 上跑过 |
 | 高并发/长连接压测 | 未做，当前结论不覆盖性能 |

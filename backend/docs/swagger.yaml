@@ -1789,6 +1789,43 @@ paths:
       summary: 离线消息同步
       tags:
       - chat
+  /api/v1/files/{path}:
+    get:
+      description: 需要登录；如果文件属于某条消息，则还要求调用者是该会话成员
+      parameters:
+      - description: 上传目录内的相对路径
+        in: path
+        name: path
+        required: true
+        type: string
+      - description: 浏览器无法设置请求头时可用查询参数传 token
+        in: query
+        name: token
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_neochat_backend_pkg_response.ApiResponse'
+      security:
+      - BearerAuth: []
+      summary: 下载/查看上传文件
+      tags:
+      - chat
   /api/v1/friends:
     get:
       consumes:

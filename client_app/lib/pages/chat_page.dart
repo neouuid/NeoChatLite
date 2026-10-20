@@ -283,7 +283,7 @@ class _ChatPageState extends State<ChatPage> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Image.network(
-            '${widget.session.baseUrl}$mediaUrl',
+            widget.session.fileUrl(mediaUrl),
             width: 180,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => const Text('[图片加载失败]'),
@@ -310,11 +310,11 @@ class _ChatPageState extends State<ChatPage> {
     String mediaUrl,
   ) {
     if (type == 'audio' && mediaUrl.isNotEmpty) {
-      return AudioBubble(url: '${widget.session.baseUrl}$mediaUrl');
+      return AudioBubble(url: widget.session.fileUrl(mediaUrl));
     }
 
     if (type == 'video' && mediaUrl.isNotEmpty) {
-      return VideoBubble(url: '${widget.session.baseUrl}$mediaUrl');
+      return VideoBubble(url: widget.session.fileUrl(mediaUrl));
     }
 
     if (type == 'file') {
@@ -364,7 +364,7 @@ class _ChatPageState extends State<ChatPage> {
         backgroundColor: Colors.black,
         insetPadding: const EdgeInsets.all(8),
         child: InteractiveViewer(
-          child: Image.network('${widget.session.baseUrl}$mediaUrl'),
+          child: Image.network(widget.session.fileUrl(mediaUrl)),
         ),
       ),
     );
@@ -541,7 +541,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _openAttachment(String mediaUrl) async {
-    final uri = Uri.parse('${widget.session.baseUrl}$mediaUrl');
+    final uri = Uri.parse(widget.session.fileUrl(mediaUrl));
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

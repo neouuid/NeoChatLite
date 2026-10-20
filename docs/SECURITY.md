@@ -36,6 +36,17 @@
 - **生产环境（`APP_ENV=production` 或 `GIN_MODE=release`）直接拒绝启动**；
 - 开发环境仅打印告警。
 
+## 文件访问控制
+
+上传文件**不再通过静态目录暴露**（旧的 `r.Static("/uploads", ...)` 已移除）。
+
+- 访问入口：`GET /api/v1/files/*path`，必须带 `Authorization: Bearer` 或 `?token=`
+- 文件若被某条消息引用，还要求调用者是该会话成员；否则 403
+- 路径做穿越防护（拒绝 `..`、绝对路径、盘符），拼接后二次确认仍在 uploadDir 内
+- 响应带 `X-Content-Type-Options: nosniff`、`Cache-Control: private`
+- `?token=` 是为了 `<img>/<video>/<audio>` 无法自定义请求头的取舍，
+  代价是 token 可能出现在 URL / 日志里；如需更强隔离应改为短期签名 URL
+
 ## 其它
 
 - 全局安全响应头：`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、

@@ -52,6 +52,22 @@ class NeoChatSession extends ChangeNotifier {
 
   /// 服务端地址（拼接上传后的相对 URL 用）
   String get baseUrl => _baseUrl;
+
+  /// 把上传返回的相对路径拼成可访问 URL。
+  ///
+  /// 上传文件接口已改为鉴权访问，而 <img>/<video>/<audio> 无法设置请求头，
+  /// 所以这里把 token 放进查询参数（与 WebSocket 同一取舍）。
+  String fileUrl(String mediaUrl) {
+    if (mediaUrl.isEmpty) return '';
+    if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
+      return mediaUrl;
+    }
+    final token = _token;
+    final sep = mediaUrl.contains('?') ? '&' : '?';
+    return token == null || token.isEmpty
+        ? '$_baseUrl$mediaUrl'
+        : '$_baseUrl$mediaUrl${sep}token=$token';
+  }
   RealtimeClient? _realtime;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   StreamSubscription<RealtimeStatus>? _realtimeStatusSub;

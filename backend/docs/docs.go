@@ -2381,6 +2381,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/files/{path}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "需要登录；如果文件属于某条消息，则还要求调用者是该会话成员",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "下载/查看上传文件",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "上传目录内的相对路径",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "浏览器无法设置请求头时可用查询参数传 token",
+                        "name": "token",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_neochat_backend_pkg_response.ApiResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_neochat_backend_pkg_response.ApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_neochat_backend_pkg_response.ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/friends": {
             "get": {
                 "security": [

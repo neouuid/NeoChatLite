@@ -102,7 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   CircleAvatar(
                     radius: 44,
                     backgroundImage: (avatar != null && avatar.isNotEmpty)
-                        ? NetworkImage('${widget.session.baseUrl}$avatar')
+                        ? NetworkImage(widget.session.fileUrl(avatar))
                         : null,
                     child: (avatar == null || avatar.isEmpty)
                         ? Text(

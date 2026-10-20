@@ -508,12 +508,24 @@ Future<void> main(List<String> args) async {
         fail('消息列表里没有找到图片消息');
       }
 
-      final req = await HttpClient().getUrl(Uri.parse('$baseUrl$mediaUrl'));
-      final resp = await req.close();
+      // 附件走鉴权接口：带 token 200，不带 token 401
+      final authed = Uri.parse('$baseUrl$mediaUrl').replace(
+        queryParameters: {'token': tokenA},
+      );
+      final resp = await (await HttpClient().getUrl(authed)).close();
       if (resp.statusCode == 200) {
-        ok('附件可访问（HTTP 200）');
+        ok('附件需鉴权后可访问（HTTP 200）');
       } else {
         fail('附件访问失败: ${resp.statusCode}');
+      }
+
+      final anonymous = await (await HttpClient().getUrl(
+        Uri.parse('$baseUrl$mediaUrl'),
+      )).close();
+      if (anonymous.statusCode == 401) {
+        ok('匿名访问附件被拒绝（HTTP 401）');
+      } else {
+        fail('匿名访问附件竟然成功: ${anonymous.statusCode}');
       }
     }
   } catch (e) {
@@ -720,10 +732,12 @@ Future<void> main(List<String> args) async {
         fail('消息列表里没有视频消息');
       }
 
-      final req = await HttpClient().getUrl(Uri.parse('$baseUrl$videoUrl'));
-      final resp = await req.close();
+      final videoAuthed = Uri.parse('$baseUrl$videoUrl').replace(
+        queryParameters: {'token': tokenA},
+      );
+      final resp = await (await HttpClient().getUrl(videoAuthed)).close();
       if (resp.statusCode == 200) {
-        ok('视频附件可访问（HTTP 200）');
+        ok('视频附件鉴权后可访问（HTTP 200）');
       } else {
         fail('视频附件访问失败: ${resp.statusCode}');
       }

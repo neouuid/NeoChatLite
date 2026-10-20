@@ -93,6 +93,7 @@ func main() {
 	chatRepo := chat.NewRepository(database.DB)
 	chatService := chat.NewService(chatRepo)
 	chatHandler := chat.NewHandler(chatService)
+	chatHandler.SetUploadDir(cfg.Storage.UploadDir)
 	uploadHandler := chat.NewUploadHandler(chatService, cfg)
 	wsHub := chat.NewWebSocketHub(chatService, cfg)
 	chatService.SetWebSocketHub(wsHub)
