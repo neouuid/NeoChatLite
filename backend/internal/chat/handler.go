@@ -190,8 +190,16 @@ func (h *Handler) SendMessage(c *gin.Context) {
 	if req.Type == "" {
 		req.Type = MessageTypeText
 	}
+	if !isAllowedMessageType(req.Type) {
+		response.BadRequest(c, "unsupported message type")
+		return
+	}
 	if req.Content == "" && req.Type == MessageTypeText {
 		response.BadRequest(c, "content is required")
+		return
+	}
+	if msg := validateMessageContent(req.Type, req.Content, req.FileName); msg != "" {
+		response.BadRequest(c, msg)
 		return
 	}
 
@@ -251,6 +259,8 @@ func (h *Handler) GetConversationMessages(c *gin.Context) {
 	if limitStr := c.Query("limit"); limitStr != "" {
 		_, _ = fmt.Sscanf(limitStr, "%d", &limit)
 	}
+	// 没有上限时一次请求能把整个会话拉进内存（实测 5000 条 = 3.3MB）
+	limit = clampLimit(limit, 50, MaxMessagesPerPage)
 
 	msgs, err := h.service.GetConversationMessages(convID, userID, before, limit)
 	if err != nil {
@@ -379,6 +389,7 @@ func (h *Handler) SyncOfflineMessages(c *gin.Context) {
 	if raw := c.Query("limit"); raw != "" {
 		_, _ = fmt.Sscanf(raw, "%d", &limit)
 	}
+	limit = clampLimit(limit, 200, MaxSyncPerPage)
 
 	// 先记录同步窗口的结束时间再查询：可能重复，但不会漏掉查询期间到达的消息。
 	// 客户端按消息 ID 去重即可。

@@ -64,6 +64,11 @@ const (
 	maxMessageSize  = 4096             // 单帧上限
 	maxConnsPerUser = 5                // 单用户并发连接上限
 	maxTotalConns   = 20000            // 全局连接上限，防止 fd 耗尽
+	// 单连接入站帧速率：typing 一类帧会被转发给会话所有成员，
+	// 不限制的话一个客户端就能放大成广播风暴
+	maxFramesPerSecond = 30
+	// 超过这个倍数直接断开：正常客户端不会持续超速
+	frameFloodFactor = 4
 )
 
 // Client WebSocket客户端
@@ -467,6 +472,10 @@ func (c *Client) ReadPump() {
 
 	c.Conn.SetReadLimit(maxMessageSize)
 
+	// 入站帧速率限制：窗口内计数，超速的帧丢弃，持续超速则断开
+	frameWindow := time.Now()
+	frames := 0
+
 	// 每收到一个 pong 就续期；超时未收到则 ReadMessage 返回错误，连接被清理
 	_ = c.Conn.SetReadDeadline(time.Now().Add(c.Hub.pongWait))
 	c.Conn.SetPongHandler(func(string) error {
@@ -480,6 +489,20 @@ func (c *Client) ReadPump() {
 				logger.Errorf("WebSocket read error: %v", err)
 			}
 			break
+		}
+
+		// 帧速率限制
+		if time.Since(frameWindow) >= time.Second {
+			frameWindow = time.Now()
+			frames = 0
+		}
+		frames++
+		if frames > maxFramesPerSecond {
+			if frames > maxFramesPerSecond*frameFloodFactor {
+				logger.Warnf("WebSocket flood detected, closing: user=%s client=%s", c.UserID, c.ID)
+				return // defer 里会 unregister + close
+			}
+			continue // 超速但未到断开阈值：丢弃该帧
 		}
 
 		var wsMsg WSMessage

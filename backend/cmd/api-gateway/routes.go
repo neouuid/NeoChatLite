@@ -40,6 +40,11 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 	// 基础安全响应头
 	r.Use(middleware.SecurityHeaders())
 
+	// 请求体大小上限：普通接口 8MB，上传接口单独放宽（文件另有按类型的校验）
+	bodyLimit := deps.Cfg.Server.MaxBodyBytes
+	uploadLimit := deps.Cfg.Server.MaxUploadBytes
+	r.Use(middleware.BodyLimit(bodyLimit, uploadLimit))
+
 	// 健康检查和监控
 	r.GET("/health", healthHandler)
 	r.GET("/health/db", dbHealthHandler)

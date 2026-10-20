@@ -557,7 +557,18 @@ Content-Type: application/json
 写操作会失效该用户的会话列表缓存。置顶会话在列表中最前：
 排序为 `pinned DESC, updated_at DESC`。
 
-#### 5.y 限流
+#### 5.y 输入上限
+
+| 项 | 限制 |
+|---|---|
+| 请求体 | 8 MB（上传接口 256 MB） |
+| 文本正文 | 10000 字符 |
+| 媒体 content / 文件名 | 255 字符 |
+| `type` | `text / image / file / audio / video / system` |
+| 消息分页 `limit` | ≤ 200（超出自动钳制） |
+| 同步 `limit` | ≤ 500 |
+
+#### 5.z 限流
 
 发送消息与上传文件按**用户**限流（令牌桶）：
 

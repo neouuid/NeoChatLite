@@ -31,6 +31,10 @@ type ServerConfig struct {
 	MessageRateLimitPer10s int
 	// UploadRateLimitPerMinute 每用户每分钟允许的上传次数
 	UploadRateLimitPerMinute int
+	// MaxBodyBytes 普通接口的请求体上限（字节）
+	MaxBodyBytes int64
+	// MaxUploadBytes 上传接口的请求体上限（字节）
+	MaxUploadBytes int64
 	// ExposeResetToken 是否在「忘记密码」响应里返回重置令牌。
 	// 仅供本地开发（没有 SMTP 时没法收邮件）；生产环境强制关闭。
 	ExposeResetToken bool
@@ -120,6 +124,8 @@ func Load() *Config {
 			AuthRateLimitPerMinute:   viper.GetInt("server.auth_rate_limit_per_minute"),
 			MessageRateLimitPer10s:   viper.GetInt("server.message_rate_limit_per_10s"),
 			UploadRateLimitPerMinute: viper.GetInt("server.upload_rate_limit_per_minute"),
+			MaxBodyBytes:             viper.GetInt64("server.max_body_bytes"),
+			MaxUploadBytes:           viper.GetInt64("server.max_upload_bytes"),
 			ExposeResetToken:         viper.GetBool("server.expose_reset_token"),
 			CORS: CORSConfig{
 				AllowOrigins: viper.GetStringSlice("server.cors.allow_origins"),
@@ -208,6 +214,8 @@ func setDefaults() {
 	viper.SetDefault("server.message_rate_limit_per_10s", 20)
 	viper.SetDefault("server.upload_rate_limit_per_minute", 10)
 	viper.SetDefault("server.expose_reset_token", false)
+	viper.SetDefault("server.max_body_bytes", 8<<20)     // 8 MB
+	viper.SetDefault("server.max_upload_bytes", 256<<20) // 256 MB
 	viper.SetDefault("storage.upload_dir", "./uploads")
 	viper.SetDefault("storage.max_file_size", 104857600)
 	viper.SetDefault("storage.max_image_size", 10485760)

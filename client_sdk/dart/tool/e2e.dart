@@ -1361,6 +1361,58 @@ Future<void> main(List<String> args) async {
     fail('账号安全验证失败: $e');
   }
 
+  step('29. 输入边界（正文长度 / 分页上限）');
+  try {
+    // 用 B 的令牌：第 27 步刚把 A 的发送配额打满，继续用 A 会先撞 429
+    api.token = tokenB;
+
+    // 正文超过 10000 字符应被拒（400）
+    try {
+      await api.postChatMessages(body: {
+        'conversation_id': convId,
+        'type': 'text',
+        'content': 'y' * 10001,
+      });
+      fail('超长正文竟然被接受');
+    } on ApiException catch (e) {
+      if (e.statusCode == 400) {
+        ok('超长正文被拒（400）');
+      } else {
+        fail('预期 400，实际 ${e.statusCode}');
+      }
+    }
+
+    // 未知消息类型应被拒
+    try {
+      await api.postChatMessages(body: {
+        'conversation_id': convId,
+        'type': 'not-a-type',
+        'content': 'x',
+      });
+      fail('未知消息类型竟然被接受');
+    } on ApiException catch (e) {
+      if (e.statusCode == 400) {
+        ok('未知消息类型被拒（400）');
+      } else {
+        fail('预期 400，实际 ${e.statusCode}');
+      }
+    }
+
+    // 分页 limit 会被钳制：请求 100000 条不应报错，返回条数不超过 200
+    final page = await api.getChatConversationsIdMessages(
+      id: convId,
+      limit: 100000,
+    );
+    final items = (page is Map && page['data'] is List) ? page['data'] as List : const [];
+    if (items.length <= 200) {
+      ok('超大 limit 被钳制（返回 ${items.length} 条 ≤ 200）');
+    } else {
+      fail('limit 未钳制，返回了 ${items.length} 条');
+    }
+  } catch (e) {
+    fail('输入边界验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');
