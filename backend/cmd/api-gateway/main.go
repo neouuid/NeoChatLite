@@ -25,7 +25,7 @@ import (
 )
 
 // @title NeoChat API
-// @version 1.0
+// @version 0.1.0
 // @description NeoChat 跨平台聊天服务端 API。客户端在 Authorization 头里携带 "Bearer {token}"。
 // @contact.name NeoChat
 // @host localhost:8080

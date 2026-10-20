@@ -60,7 +60,7 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 		api.GET("/", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"message": "NeoChat API v1",
-				"version": "1.0.0",
+				"version": "0.1.0",
 			})
 		})
 

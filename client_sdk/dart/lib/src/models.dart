@@ -689,6 +689,7 @@ class Mention {
 }
 
 class Message {
+  String? clientMsgId;
   String? content;
   String? conversationId;
   String? createdAt;
@@ -708,6 +709,7 @@ class Message {
   String? updatedAt;
 
   Message({
+    this.clientMsgId,
     this.content,
     this.conversationId,
     this.createdAt,
@@ -735,6 +737,7 @@ class Message {
 
   factory Message._fromMap(Map<String, dynamic> map) {
     final obj = Message();
+    obj.clientMsgId = map['client_msg_id'] as String?;
     obj.content = map['content'] as String?;
     obj.conversationId = map['conversation_id'] as String?;
     obj.createdAt = map['created_at'] as String?;
@@ -757,6 +760,7 @@ class Message {
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
+    if (clientMsgId != null) map['client_msg_id'] = clientMsgId;
     if (content != null) map['content'] = content;
     if (conversationId != null) map['conversation_id'] = conversationId;
     if (createdAt != null) map['created_at'] = createdAt;

@@ -6,7 +6,7 @@
         "contact": {
             "name": "NeoChat"
         },
-        "version": "1.0"
+        "version": "0.1.0"
     },
     "host": "localhost:8080",
     "basePath": "/api/v1",
@@ -4142,6 +4142,10 @@
         "internal_chat.Message": {
             "type": "object",
             "properties": {
+                "client_msg_id": {
+                    "description": "ClientMsgID 客户端生成的幂等键：重试时携带同一个值，服务端据此去重",
+                    "type": "string"
+                },
                 "content": {
                     "type": "string"
                 },

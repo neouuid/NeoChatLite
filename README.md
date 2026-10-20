@@ -2,6 +2,8 @@
 
 跨平台即时通讯应用：Go 后端 + Flutter 客户端，支持 Android / iOS / Web / macOS / Windows / Linux 六端。
 
+当前版本 **v0.1.0**（变更记录见 [CHANGELOG.md](CHANGELOG.md)，阶段结论见 [docs/ROADMAP.md](docs/ROADMAP.md)）。
+
 ## 当前状态
 
 | 层 | 状态 |

@@ -4148,6 +4148,10 @@ const docTemplate = `{
         "internal_chat.Message": {
             "type": "object",
             "properties": {
+                "client_msg_id": {
+                    "description": "ClientMsgID 客户端生成的幂等键：重试时携带同一个值，服务端据此去重",
+                    "type": "string"
+                },
                 "content": {
                     "type": "string"
                 },
@@ -4324,7 +4328,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "0.1.0",
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},

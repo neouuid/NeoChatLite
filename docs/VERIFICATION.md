@@ -141,6 +141,15 @@ UUID 主键与时间戳比较、pgx 驱动下的连接池与迁移。
   `TestWebSocketDropsSilentClient`（不回 pong 的连接被断开）、
   `TestWebSocketConnectionLimit`（单用户超限返回 429）
 
+## 已知未复验项
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| Web 运行时（真实 Chrome） | ⚠️ 最近改动后未复验 | 本会话早期通过（`VERIFY_RESULT=PASS`）；之后新增发送队列气泡、撤回事件处理等客户端改动，复跑 `verify_web.sh check` 时在 CDP 连接阶段超时（`TimeoutError`），不是页面逻辑报错；`flutter build web --release` 通过。需要人工在浏览器点一遍，或环境稳定后重跑脚本 |
+| 移动端真机 | ❌ 未验证 | 只验证了「能编译」，录音 / 播放 / 相机 / 后台恢复均未在真机跑过 |
+| 系统级推送 | ❌ 未实现 | 只有应用内提醒 |
+| 压测 | ❌ 未做 | 无并发与容量数据，性能结论一律不可信 |
+
 ## 尚未覆盖
 
 | 项 | 原因 |
