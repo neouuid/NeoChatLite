@@ -529,6 +529,21 @@ Authorization: Bearer <token>
 
 ---
 
+#### 5.x 置顶与免打扰
+
+```http
+PUT /api/v1/chat/conversations/{id}/pin
+PUT /api/v1/chat/conversations/{id}/mute
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "pinned": true }   # 或 { "muted": true }
+```
+
+两者都是**按用户**生效（状态存在 `conversation.members[]` 上），
+写操作会失效该用户的会话列表缓存。置顶会话在列表中最前：
+排序为 `pinned DESC, updated_at DESC`。
+
 ### 6. 消息模块 (Messages)
 
 #### 6.1 获取消息列表
@@ -752,7 +767,7 @@ Authorization: Bearer <token>
 Content-Type: multipart/form-data
 
 file: <binary>
-type: image/file
+type: image | file | audio | video
 ```
 
 **响应**:
@@ -760,7 +775,7 @@ type: image/file
 {
   "success": true,
   "data": {
-    "url": "https://example.com/files/uuid.jpg",
+    "url": "/api/v1/files/image/2026/10/20/uuid.jpg",
     "file_name": "original.jpg",
     "file_size": 1048576,
     "mime_type": "image/jpeg"
@@ -773,7 +788,22 @@ type: image/file
 | 类型 | 最大大小 | 支持格式 |
 |------|---------|---------|
 | 图片 | 10 MB | jpg, jpeg, png, gif, webp |
-| 文件 | 100 MB | 所有常见格式 |
+| 音频 | 20 MB | mpeg, mp4, aac, wav, ogg, webm |
+| 视频 | 200 MB | mp4, quicktime, webm, x-matroska |
+| 文件 | 100 MB | 白名单内常见格式 |
+
+#### 9.3 下载/查看文件（需要鉴权）
+
+```http
+GET /api/v1/files/{path}
+Authorization: Bearer <token>
+# 或（<img>/<video>/<audio> 无法设置请求头时）
+GET /api/v1/files/{path}?token=<access_token>
+```
+
+- 文件被某条消息引用时，要求调用者是该会话成员，否则 403
+- 路径穿越（`..`、绝对路径、盘符）一律拒绝
+- **上传目录不再作为静态目录公开**（旧版 `/uploads/...` 直链已废弃）
 
 ---
 
@@ -782,8 +812,11 @@ type: image/file
 ### WebSocket 连接
 
 ```
-wss://localhost:8080/ws?token=<access_token>
+ws://localhost:8080/api/v1/chat/ws?token=<access_token>
 ```
+
+服务端限制：单帧 4 KB、服务端每 25s 发 ping、60s 未回 pong 断开、
+单用户最多 5 条连接、全局 20000 条。
 
 ### 消息格式
 

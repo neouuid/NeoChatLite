@@ -925,6 +925,34 @@ curl -X DELETE http://localhost:8080/api/v1/chat/favorite/550e8400-e29b-41d4-a71
 
 ---
 
+## 附件访问（需鉴权）
+
+```bash
+# 上传后返回 /api/v1/files/... 形式的相对路径
+curl -X POST http://localhost:8080/api/v1/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "type=image" -F "file=@photo.png"
+
+# 下载/查看：带 token（或 ?token=，供 img/video/audio 使用）
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8080/api/v1/files/image/2026/10/20/<uuid>.png"
+
+# 未带 token 会得到 401
+curl -i "http://localhost:8080/api/v1/files/image/2026/10/20/<uuid>.png"
+```
+
+## 会话置顶与免打扰
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/chat/conversations/$CONV/pin \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"pinned": true}'
+
+curl -X PUT http://localhost:8080/api/v1/chat/conversations/$CONV/mute \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"muted": true}'
+```
+
 ## WebSocket 实时通信
 
 ### 连接 WebSocket

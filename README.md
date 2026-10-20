@@ -109,6 +109,7 @@ bash scripts/verify_web.sh start && bash scripts/verify_web.sh check
 
 | 文档 | 内容 |
 |---|---|
+| [docs/README.md](docs/README.md) | 文档索引（按角色分类） |
 | [docs/MIGRATIONS.md](docs/MIGRATIONS.md) | 版本化迁移：目录结构、新增步骤、验证方式 |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | 五层验证体系与实测结果 |
 | [docs/SECURITY.md](docs/SECURITY.md) | 令牌模型、防护机制、上线检查清单 |
