@@ -18,39 +18,53 @@ import (
 
 // WebSocket message types
 const (
-	WSMessageTypeNewMessage      = "new_message"
-	WSMessageTypeMessageRead     = "message_read"
-	WSMessageTypeMessageEdited   = "message_edited"
-	WSMessageTypeMessageDeleted  = "message_deleted"
-	WSMessageTypeTyping          = "typing"
-	WSMessageTypeStopTyping      = "stop_typing"
-	WSMessageTypeOnlineStatus    = "online_status"
-	WSMessageTypeError           = "error"
-	WSMessageTypePing            = "ping"
-	WSMessageTypePong            = "pong"
+	WSMessageTypeNewMessage     = "new_message"
+	WSMessageTypeMessageRead    = "message_read"
+	WSMessageTypeMessageEdited  = "message_edited"
+	WSMessageTypeMessageDeleted = "message_deleted"
+	WSMessageTypeTyping         = "typing"
+	WSMessageTypeStopTyping     = "stop_typing"
+	WSMessageTypeOnlineStatus   = "online_status"
+	WSMessageTypeError          = "error"
+	WSMessageTypePing           = "ping"
+	WSMessageTypePong           = "pong"
 	// WebRTC 信令消息类型
-	WSMessageTypeSignalOffer     = "signal_offer"
-	WSMessageTypeSignalAnswer    = "signal_answer"
-	WSMessageTypeSignalIce       = "signal_ice"
-	WSMessageTypeCallInvite      = "call_invite"
-	WSMessageTypeCallAccept      = "call_accept"
-	WSMessageTypeCallReject      = "call_reject"
-	WSMessageTypeCallHangup      = "call_hangup"
-	WSMessageTypeCallEnded       = "call_ended"
+	WSMessageTypeSignalOffer  = "signal_offer"
+	WSMessageTypeSignalAnswer = "signal_answer"
+	WSMessageTypeSignalIce    = "signal_ice"
+	WSMessageTypeCallInvite   = "call_invite"
+	WSMessageTypeCallAccept   = "call_accept"
+	WSMessageTypeCallReject   = "call_reject"
+	WSMessageTypeCallHangup   = "call_hangup"
+	WSMessageTypeCallEnded    = "call_ended"
 	// 好友请求消息类型
-	WSMessageTypeFriendRequest   = "friend_request"
-	WSMessageTypeFriendAccepted  = "friend_accepted"
+	WSMessageTypeFriendRequest  = "friend_request"
+	WSMessageTypeFriendAccepted = "friend_accepted"
 	// 提及消息类型
-	WSMessageTypeMention         = "mention"
+	WSMessageTypeMention = "mention"
 )
 
 // WSMessage WebSocket消息结构
 type WSMessage struct {
-	Type    string      `json:"type"`
-	Data    interface{} `json:"data"`
-	FromID  uuid.UUID   `json:"from_id"`
-	ConvID  uuid.UUID   `json:"conv_id,omitempty"`
+	Type   string      `json:"type"`
+	Data   interface{} `json:"data"`
+	FromID uuid.UUID   `json:"from_id"`
+	ConvID uuid.UUID   `json:"conv_id,omitempty"`
 }
+
+// WebSocket 连接参数。
+//
+// 客户端有 25 秒的应用层心跳，但服务端原先没有读超时：
+// 客户端异常断网（不发 close 帧）时，连接会挂到 TCP 超时才清理，
+// 期间消息都投给死连接。这里补上服务端 ping/pong 与读写超时。
+const (
+	writeWait       = 10 * time.Second // 单次写入上限
+	pongWait        = 60 * time.Second // 多久收不到 pong 就判定失联
+	pingPeriod      = 25 * time.Second // 服务端发 ping 的间隔（须小于 pongWait）
+	maxMessageSize  = 4096             // 单帧上限
+	maxConnsPerUser = 5                // 单用户并发连接上限
+	maxTotalConns   = 20000            // 全局连接上限，防止 fd 耗尽
+)
 
 // Client WebSocket客户端
 type Client struct {
@@ -74,18 +88,28 @@ type WebSocketHub struct {
 	service     *Service
 	upgrader    websocket.Upgrader
 	cfg         *config.Config
+
+	// 可在测试中覆盖
+	pongWait        time.Duration
+	pingPeriod      time.Duration
+	maxConnsPerUser int
+	maxTotalConns   int
 }
 
 func NewWebSocketHub(service *Service, cfg *config.Config) *WebSocketHub {
 	hub := &WebSocketHub{
-		clients:    make(map[uuid.UUID]*Client),
-		userConns:  make(map[uuid.UUID]map[uuid.UUID]bool),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		broadcast:  make(chan WSMessage, 256),
-		remote:     make(chan WSMessage, 256),
-		service:    service,
-		cfg:        cfg,
+		clients:         make(map[uuid.UUID]*Client),
+		userConns:       make(map[uuid.UUID]map[uuid.UUID]bool),
+		register:        make(chan *Client),
+		unregister:      make(chan *Client),
+		broadcast:       make(chan WSMessage, 256),
+		remote:          make(chan WSMessage, 256),
+		service:         service,
+		cfg:             cfg,
+		pongWait:        pongWait,
+		pingPeriod:      pingPeriod,
+		maxConnsPerUser: maxConnsPerUser,
+		maxTotalConns:   maxTotalConns,
 	}
 
 	hub.upgrader = websocket.Upgrader{
@@ -377,9 +401,9 @@ func (h *WebSocketHub) SendFriendRequest(toUserID uuid.UUID, fromUserID uuid.UUI
 		Type:   WSMessageTypeFriendRequest,
 		FromID: fromUserID,
 		Data: map[string]interface{}{
-			"user_id":   fromUserID,
-			"username":  fromUserName,
-			"avatar":    fromUserAvatar,
+			"user_id":  fromUserID,
+			"username": fromUserName,
+			"avatar":   fromUserAvatar,
 		},
 	})
 }
@@ -390,9 +414,9 @@ func (h *WebSocketHub) SendFriendAccepted(toUserID uuid.UUID, fromUserID uuid.UU
 		Type:   WSMessageTypeFriendAccepted,
 		FromID: fromUserID,
 		Data: map[string]interface{}{
-			"user_id":   fromUserID,
-			"username":  fromUserName,
-			"avatar":    fromUserAvatar,
+			"user_id":  fromUserID,
+			"username": fromUserName,
+			"avatar":   fromUserAvatar,
 		},
 	})
 }
@@ -404,11 +428,11 @@ func (h *WebSocketHub) SendMention(toUserID uuid.UUID, messageID uuid.UUID, conv
 		FromID: fromUserID,
 		ConvID: conversationID,
 		Data: map[string]interface{}{
-			"message_id":   messageID,
-			"user_id":      fromUserID,
-			"username":     fromUserName,
-			"avatar":       fromUserAvatar,
-			"content":      messageContent,
+			"message_id": messageID,
+			"user_id":    fromUserID,
+			"username":   fromUserName,
+			"avatar":     fromUserAvatar,
+			"content":    messageContent,
 		},
 	})
 }
@@ -420,7 +444,13 @@ func (c *Client) ReadPump() {
 		c.Conn.Close()
 	}()
 
-	c.Conn.SetReadLimit(4096)
+	c.Conn.SetReadLimit(maxMessageSize)
+
+	// 每收到一个 pong 就续期；超时未收到则 ReadMessage 返回错误，连接被清理
+	_ = c.Conn.SetReadDeadline(time.Now().Add(c.Hub.pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		return c.Conn.SetReadDeadline(time.Now().Add(c.Hub.pongWait))
+	})
 
 	for {
 		_, msg, err := c.Conn.ReadMessage()
@@ -444,22 +474,38 @@ func (c *Client) ReadPump() {
 
 // Client Write Pump
 func (c *Client) WritePump() {
+	ticker := time.NewTicker(c.Hub.pingPeriod)
 	defer func() {
+		ticker.Stop()
 		c.Conn.Close()
 	}()
 
-	for message := range c.Send {
-		w, err := c.Conn.NextWriter(websocket.TextMessage)
-		if err != nil {
-			return
-		}
+	for {
+		select {
+		case message, ok := <-c.Send:
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// hub 关闭了 channel
+				_ = c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
 
-		if err := json.NewEncoder(w).Encode(message); err != nil {
-			return
-		}
+			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			if err := json.NewEncoder(w).Encode(message); err != nil {
+				return
+			}
+			if err := w.Close(); err != nil {
+				return
+			}
 
-		if err := w.Close(); err != nil {
-			return
+		case <-ticker.C:
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
 	}
 
@@ -584,11 +630,30 @@ func (c *Client) SendError(errMsg string) {
 	}
 }
 
+// canAccept 判断是否允许新建连接：
+//   - 单用户并发连接不超过 maxConnsPerUser
+//   - 全局连接数不超过 maxTotalConns
+func (h *WebSocketHub) canAccept(userID uuid.UUID) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	if len(h.clients) >= h.maxTotalConns {
+		return false
+	}
+	return len(h.userConns[userID]) < h.maxConnsPerUser
+}
+
 // WebSocketHandler WebSocket连接处理器
 func (h *WebSocketHub) WebSocketHandler(c *gin.Context) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil || userID == uuid.Nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	if !h.canAccept(userID) {
+		logger.Warnf("WebSocket rejected for user %s: connection limit reached", userID)
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many connections"})
 		return
 	}
 

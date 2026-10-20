@@ -47,6 +47,20 @@
 - `?token=` 是为了 `<img>/<video>/<audio>` 无法自定义请求头的取舍，
   代价是 token 可能出现在 URL / 日志里；如需更强隔离应改为短期签名 URL
 
+## WebSocket 连接防护
+
+| 机制 | 取值 | 说明 |
+|---|---|---|
+| 单帧大小 | 4 KB | `SetReadLimit`，超限直接断开 |
+| 服务端 ping | 25 秒 | 由服务端主动发，客户端回 pong |
+| pong 超时 | 60 秒 | 超过则 `ReadMessage` 报错并清理连接 |
+| 写超时 | 10 秒 | 避免向死连接阻塞 |
+| 单用户连接数 | 5 | 超出返回 429，防止单账号刷连接 |
+| 全局连接数 | 20000 | 防止 fd 耗尽 |
+
+之前只有 4 KB 大小限制，客户端异常断网（不发 close 帧）时连接会挂到 TCP
+超时，期间消息都投给死连接。现在由服务端 ping/pong 主动收敛。
+
 ## 其它
 
 - 全局安全响应头：`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、

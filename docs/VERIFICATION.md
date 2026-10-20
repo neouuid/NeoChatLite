@@ -121,6 +121,13 @@ UUID 主键与时间戳比较、pgx 驱动下的连接池与迁移。
 - Go 单元测试仍跑在 SQLite 上（`TestConfig` 固定 sqlite）；
   Postgres 只覆盖了端到端链路，未覆盖每个 handler 的单测。
 
+## 迁移与 WebSocket
+
+- 数据库迁移版本化（goose）的验证：见 [MIGRATIONS.md](MIGRATIONS.md)
+- WebSocket 加固有两条回归测试：
+  `TestWebSocketDropsSilentClient`（不回 pong 的连接被断开）、
+  `TestWebSocketConnectionLimit`（单用户超限返回 429）
+
 ## 尚未覆盖
 
 | 项 | 原因 |
