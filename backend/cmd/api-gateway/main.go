@@ -14,6 +14,7 @@ import (
 	_ "github.com/neochat/backend/docs" // Swagger 生成的文档（swag init 产物）
 	"github.com/neochat/backend/internal/auth"
 	"github.com/neochat/backend/internal/chat"
+	"github.com/neochat/backend/internal/migrations"
 	"github.com/neochat/backend/internal/user"
 	"github.com/neochat/backend/pkg/broadcast"
 	"github.com/neochat/backend/pkg/config"
@@ -58,9 +59,16 @@ func main() {
 		}
 	}()
 
-	// 自动迁移数据库
-	if err := database.AutoMigrate(); err != nil {
-		logger.Fatalf("Failed to migrate database: %v", err)
+	// 版本化迁移（goose）。AutoMigrate 仍保留给测试使用，生产路径不再走它。
+	sqlDB, err := database.DB.DB()
+	if err != nil {
+		logger.Fatalf("Failed to access database handle: %v", err)
+	}
+	if err := migrations.Up(context.Background(), sqlDB, cfg.Database.Driver); err != nil {
+		logger.Fatalf("Failed to apply migrations: %v", err)
+	}
+	if version, err := migrations.Version(sqlDB, cfg.Database.Driver); err == nil {
+		logger.Infof("Database schema version: %d", version)
 	}
 
 	// 初始化 Redis

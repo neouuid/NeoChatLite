@@ -103,9 +103,12 @@ func Load() *Config {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
+	// 默认值必须在读配置之前注册：viper 只在 key 缺失时才用默认值，
+	// 如果等读文件失败再注册，那么「配置文件存在但缺少某些键」时
+	// 这些键会退化成零值（例如 jwt.expiry_hour=0 会导致令牌立即过期）。
+	setDefaults()
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("Warning: config file not found, using defaults: %v", err)
-		setDefaults()
 	}
 
 	config := &Config{

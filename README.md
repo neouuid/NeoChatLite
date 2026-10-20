@@ -111,6 +111,7 @@ bash scripts/verify_web.sh start && bash scripts/verify_web.sh check
 
 | 文档 | 内容 |
 |---|---|
+| [docs/MIGRATIONS.md](docs/MIGRATIONS.md) | 版本化迁移：目录结构、新增步骤、验证方式 |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | 五层验证体系与实测结果 |
 | [docs/SECURITY.md](docs/SECURITY.md) | 令牌模型、防护机制、上线检查清单 |
 | [docs/CLIENT-FEATURES.md](docs/CLIENT-FEATURES.md) | 客户端能力与交互速查 |
@@ -121,7 +122,7 @@ bash scripts/verify_web.sh start && bash scripts/verify_web.sh check
 
 - 无系统级推送通知（仅应用内提醒），需要 APNs/FCM 或平台通知插件
 - 真机录音/播放未做自动化验证
-- 数据库迁移仍用 AutoMigrate，尚未版本化
+- 迁移已版本化（goose），但回滚（Down）尚未在 CI 中演练
 - 无压力测试结论
 
 ## License
