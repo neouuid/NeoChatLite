@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"github.com/neochat/backend/pkg/response"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -117,7 +119,7 @@ func (s *Service) Register(req *RegisterRequest) (*AuthResponse, error) {
 		return nil, err
 	}
 	if exists {
-		return nil, errors.New("username already exists")
+		return nil, response.Public("username already exists")
 	}
 
 	// 检查邮箱是否存在（如果提供了）
@@ -127,7 +129,7 @@ func (s *Service) Register(req *RegisterRequest) (*AuthResponse, error) {
 			return nil, err
 		}
 		if exists {
-			return nil, errors.New("email already exists")
+			return nil, response.Public("email already exists")
 		}
 	}
 
@@ -138,7 +140,7 @@ func (s *Service) Register(req *RegisterRequest) (*AuthResponse, error) {
 			return nil, err
 		}
 		if exists {
-			return nil, errors.New("phone already exists")
+			return nil, response.Public("phone already exists")
 		}
 	}
 
@@ -164,11 +166,27 @@ func (s *Service) Register(req *RegisterRequest) (*AuthResponse, error) {
 	}
 
 	if err := s.repo.CreateUser(u); err != nil {
+		// 兜底：并发注册时唯一约束可能先于上面的存在性检查触发，
+		// 这时也要给客户端可读提示，而不是 500。
+		if isUniqueViolation(err) {
+			return nil, response.Public("username, email or phone already exists")
+		}
 		return nil, err
 	}
 
 	// 生成令牌
 	return s.generateAuthResponse(u)
+}
+
+// isUniqueViolation 判断唯一约束冲突（PostgreSQL 与 SQLite 的报错文案不同）
+func isUniqueViolation(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate key value") ||
+		strings.Contains(msg, "unique constraint failed") ||
+		strings.Contains(msg, "sqlstate 23505")
 }
 
 // Login 用户登录
@@ -182,13 +200,13 @@ func (s *Service) Login(req *LoginRequest) (*AuthResponse, error) {
 	u, err := s.repo.GetUserByUsernameOrEmailOrPhone(req.Identifier)
 	if err != nil {
 		s.guard.Fail(req.Identifier)
-		return nil, errors.New("invalid credentials")
+		return nil, response.Public("invalid credentials")
 	}
 
 	// 验证密码
 	if !utils.CheckPasswordHash(req.Password, u.Password) {
 		s.guard.Fail(req.Identifier)
-		return nil, errors.New("invalid credentials")
+		return nil, response.Public("invalid credentials")
 	}
 
 	// 登录成功，清除失败计数
@@ -214,28 +232,28 @@ func (s *Service) Login(req *LoginRequest) (*AuthResponse, error) {
 func (s *Service) RefreshToken(refreshToken string) (*AuthResponse, error) {
 	claims, err := utils.ParseRefreshToken(refreshToken, s.config)
 	if err != nil {
-		return nil, errors.New("invalid refresh token")
+		return nil, response.Public("invalid refresh token")
 	}
 
 	record, err := s.repo.GetRefreshTokenByHash(hashToken(refreshToken))
 	if err != nil {
-		return nil, errors.New("invalid refresh token")
+		return nil, response.Public("invalid refresh token")
 	}
 
 	if record.RevokedAt != nil {
 		// 已用过的令牌被再次使用：可能是重放攻击，全部吊销
 		_ = s.repo.RevokeAllRefreshTokens(record.UserID)
-		return nil, errors.New("refresh token already used")
+		return nil, response.Public("refresh token already used")
 	}
 
 	if time.Now().After(record.ExpiresAt) {
-		return nil, errors.New("refresh token expired")
+		return nil, response.Public("refresh token expired")
 	}
 
 	u, err := s.repo.GetUserByID(claims.UserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found")
+			return nil, response.Public("user not found")
 		}
 		return nil, err
 	}
@@ -265,7 +283,7 @@ func (s *Service) ForgotPassword(req *ForgotPasswordRequest) (string, error) {
 		return "", err
 	}
 	if !exists {
-		return "", errors.New("email not found")
+		return "", response.Public("email not found")
 	}
 
 	// 获取用户
@@ -314,14 +332,14 @@ func (s *Service) ResetPassword(req *ResetPasswordRequest) error {
 	vt, err := s.repo.GetVerificationToken(req.Token, TokenTypePasswordReset)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("invalid or expired token")
+			return response.Public("invalid or expired token")
 		}
 		return err
 	}
 
 	// 检查令牌是否过期
 	if vt.IsExpired() {
-		return errors.New("token has expired")
+		return response.Public("token has expired")
 	}
 
 	// 获取用户
@@ -363,7 +381,7 @@ func (s *Service) ChangePassword(userID uuid.UUID, req *ChangePasswordRequest) e
 
 	// 验证旧密码
 	if !utils.CheckPasswordHash(req.OldPassword, u.Password) {
-		return errors.New("invalid old password")
+		return response.Public("invalid old password")
 	}
 
 	// 加密新密码
@@ -391,7 +409,7 @@ func (s *Service) SendEmailVerification(userID uuid.UUID) (string, error) {
 	}
 
 	if u.Email == "" {
-		return "", errors.New("user has no email")
+		return "", response.Public("user has no email")
 	}
 
 	// 删除用户之前的邮箱验证令牌
@@ -430,14 +448,14 @@ func (s *Service) VerifyEmail(req *VerifyEmailRequest) error {
 	vt, err := s.repo.GetVerificationToken(req.Code, TokenTypeEmailVerification)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("invalid or expired code")
+			return response.Public("invalid or expired code")
 		}
 		return err
 	}
 
 	// 检查令牌是否过期
 	if vt.IsExpired() {
-		return errors.New("code has expired")
+		return response.Public("code has expired")
 	}
 
 	// 删除已使用的令牌
@@ -501,7 +519,7 @@ func (s *Service) DeleteAccount(userID uuid.UUID, req *DeleteAccountRequest) err
 
 	// 验证密码
 	if !utils.CheckPasswordHash(req.Password, u.Password) {
-		return errors.New("invalid password")
+		return response.Public("invalid password")
 	}
 
 	// 删除用户（软删除）
@@ -522,7 +540,7 @@ func (s *Service) SendPhoneVerification(userID uuid.UUID, phone string) (string,
 			return "", err
 		}
 		if u.Phone != phone {
-			return "", errors.New("phone already in use")
+			return "", response.Public("phone already in use")
 		}
 	}
 
@@ -555,19 +573,19 @@ func (s *Service) UpdatePhone(userID uuid.UUID, req *UpdatePhoneRequest) error {
 	vt, err := s.repo.GetVerificationToken(req.Code, TokenTypePhoneVerification)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("invalid or expired code")
+			return response.Public("invalid or expired code")
 		}
 		return err
 	}
 
 	// 检查令牌是否过期
 	if vt.IsExpired() {
-		return errors.New("code has expired")
+		return response.Public("code has expired")
 	}
 
 	// 检查令牌是否属于当前用户
 	if vt.UserID != userID {
-		return errors.New("invalid code")
+		return response.Public("invalid code")
 	}
 
 	// 检查手机号是否已被其他用户使用
@@ -578,7 +596,7 @@ func (s *Service) UpdatePhone(userID uuid.UUID, req *UpdatePhoneRequest) error {
 	if exists {
 		u, err := s.repo.GetUserByPhone(req.Phone)
 		if err == nil && u.ID != userID {
-			return errors.New("phone already in use")
+			return response.Public("phone already in use")
 		}
 	}
 
@@ -604,19 +622,19 @@ func (s *Service) UpdateEmail(userID uuid.UUID, req *UpdateEmailRequest) error {
 	vt, err := s.repo.GetVerificationToken(req.Code, TokenTypeEmailVerification)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("invalid or expired code")
+			return response.Public("invalid or expired code")
 		}
 		return err
 	}
 
 	// 检查令牌是否过期
 	if vt.IsExpired() {
-		return errors.New("code has expired")
+		return response.Public("code has expired")
 	}
 
 	// 检查令牌是否属于当前用户
 	if vt.UserID != userID {
-		return errors.New("invalid code")
+		return response.Public("invalid code")
 	}
 
 	// 检查邮箱是否已被其他用户使用
@@ -627,7 +645,7 @@ func (s *Service) UpdateEmail(userID uuid.UUID, req *UpdateEmailRequest) error {
 	if exists {
 		u, err := s.repo.GetUserByEmail(req.Email)
 		if err == nil && u.ID != userID {
-			return errors.New("email already in use")
+			return response.Public("email already in use")
 		}
 	}
 

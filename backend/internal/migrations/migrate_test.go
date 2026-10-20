@@ -26,7 +26,7 @@ func TestUpCreatesSchemaOnFreshSQLite(t *testing.T) {
 
 	version, err := Version(sqlDB, "sqlite")
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), version)
+	assert.Equal(t, int64(2), version, "基线 + client_msg_id 迁移都应应用")
 
 	for _, table := range []string{"users", "messages", "conversation_members", "refresh_tokens"} {
 		var n int
@@ -62,16 +62,22 @@ func TestUpAdoptsLegacySchema(t *testing.T) {
 	require.NoError(t, err)
 	defer sqlDB.Close()
 
-	// 模拟旧版启动流程：只有业务表，没有 goose 表
+	// 模拟旧版 AutoMigrate 建的库：基线表都在，但没有 goose 版本表
 	require.NoError(t, sqlDB.Ping())
-	_, err = sqlDB.Exec(`CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT)`)
-	require.NoError(t, err)
+	for _, ddl := range []string{
+		`CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT)`,
+		`CREATE TABLE conversations (id TEXT PRIMARY KEY, type TEXT)`,
+		`CREATE TABLE messages (id TEXT PRIMARY KEY, conversation_id TEXT, content TEXT)`,
+	} {
+		_, err = sqlDB.Exec(ddl)
+		require.NoError(t, err)
+	}
 
 	require.NoError(t, Up(context.Background(), sqlDB, "sqlite"))
 
 	version, err := Version(sqlDB, "sqlite")
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), version, "旧库应被认领为基线版本")
+	assert.Equal(t, int64(2), version, "旧库应被认领为基线，并继续跑到最新版本")
 }
 
 // TestUnsupportedDriver 不支持的驱动应报错而不是静默跳过

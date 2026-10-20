@@ -1,7 +1,7 @@
 package chat
 
 import (
-	"errors"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -9,6 +9,7 @@ import (
 
 	"github.com/neochat/backend/pkg/logger"
 	"github.com/neochat/backend/pkg/redis"
+	"github.com/neochat/backend/pkg/response"
 )
 
 type Service struct {
@@ -30,7 +31,7 @@ func (s *Service) SetWebSocketHub(hub *WebSocketHub) {
 // CreateSingleConversation 创建单聊会话
 func (s *Service) CreateSingleConversation(userID1, userID2 uuid.UUID) (*Conversation, error) {
 	if userID1 == userID2 {
-		return nil, errors.New("cannot create conversation with yourself")
+		return nil, response.Public("cannot create conversation with yourself")
 	}
 
 	// 检查是否已存在
@@ -116,7 +117,7 @@ func (s *Service) GetConversation(convID, userID uuid.UUID) (*Conversation, erro
 		}
 	}
 	if !isMember {
-		return nil, errors.New("not a member of this conversation")
+		return nil, response.Public("not a member of this conversation")
 	}
 
 	// 写入缓存
@@ -158,19 +159,19 @@ func (s *Service) UpdateConversation(convID, userID uuid.UUID, name, avatar stri
 	// 验证用户是否是会话成员
 	member, err := s.repo.GetConversationMember(convID, userID)
 	if err != nil {
-		return nil, errors.New("not a member of this conversation")
+		return nil, response.Public("not a member of this conversation")
 	}
 
 	// 获取会话
 	conv, err := s.repo.GetConversationByID(convID)
 	if err != nil {
-		return nil, errors.New("conversation not found")
+		return nil, response.Public("conversation not found")
 	}
 
 	// 如果是群聊，验证权限（只有群主和管理员可以修改）
 	if conv.Type == ConversationTypeGroup {
 		if member.Role != MemberRoleOwner && member.Role != MemberRoleAdmin {
-			return nil, errors.New("not authorized to modify this conversation")
+			return nil, response.Public("not authorized to modify this conversation")
 		}
 	}
 
@@ -214,19 +215,19 @@ func (s *Service) DeleteConversation(convID, userID uuid.UUID) error {
 	// 验证用户是否是会话成员
 	member, err := s.repo.GetConversationMember(convID, userID)
 	if err != nil {
-		return errors.New("not a member of this conversation")
+		return response.Public("not a member of this conversation")
 	}
 
 	// 获取会话
 	conv, err := s.repo.GetConversationByID(convID)
 	if err != nil {
-		return errors.New("conversation not found")
+		return response.Public("conversation not found")
 	}
 
 	// 如果是群聊，验证权限（只有群主可以删除/解散）
 	if conv.Type == ConversationTypeGroup {
 		if member.Role != MemberRoleOwner {
-			return errors.New("only group owner can delete this conversation")
+			return response.Public("only group owner can delete this conversation")
 		}
 		// 同时删除群组记录
 		_ = s.repo.DeleteGroup(convID)
@@ -248,14 +249,25 @@ func (s *Service) DeleteConversation(convID, userID uuid.UUID) error {
 // ==================== Message Service Methods ====================
 
 // SendMessage 发送消息
-func (s *Service) SendMessage(convID, senderID uuid.UUID, msgType, content, mediaURL, fileName string, fileSize int64, replyToID *uuid.UUID) (*Message, error) {
+func (s *Service) SendMessage(convID, senderID uuid.UUID, msgType, content, mediaURL, fileName string, fileSize int64, replyToID *uuid.UUID, clientMsgID ...string) (*Message, error) {
+	// 幂等：同一个 client_msg_id 重复提交时直接返回已存在的那条，
+	// 这样客户端超时重试不会产生重复消息。
+	if len(clientMsgID) > 0 && clientMsgID[0] != "" {
+		if existing, err := s.repo.FindMessageByClientID(convID, clientMsgID[0]); err == nil {
+			return existing, nil
+		}
+	}
 	// 验证用户是否是会话成员
 	_, err := s.repo.GetConversationMember(convID, senderID)
 	if err != nil {
-		return nil, errors.New("not a member of this conversation")
+		return nil, response.Public("not a member of this conversation")
 	}
 
 	now := time.Now()
+	clientID := ""
+	if len(clientMsgID) > 0 {
+		clientID = clientMsgID[0]
+	}
 	msg := &Message{
 		ID:             uuid.New(),
 		ConversationID: convID,
@@ -265,6 +277,7 @@ func (s *Service) SendMessage(convID, senderID uuid.UUID, msgType, content, medi
 		MediaURL:       mediaURL,
 		FileName:       fileName,
 		FileSize:       fileSize,
+		ClientMsgID:    clientID,
 		ReplyToID:      replyToID,
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -425,7 +438,7 @@ func (s *Service) GetConversationMessages(convID, userID uuid.UUID, before *time
 	// 验证用户是否是会话成员
 	_, err := s.repo.GetConversationMember(convID, userID)
 	if err != nil {
-		return nil, errors.New("not a member of this conversation")
+		return nil, response.Public("not a member of this conversation")
 	}
 
 	return s.repo.GetConversationMessages(convID, before, limit)
@@ -447,7 +460,7 @@ func (s *Service) invalidateMemberListCaches(convID uuid.UUID) {
 // SetConversationPinned 设置当前用户对该会话的置顶状态
 func (s *Service) SetConversationPinned(convID, userID uuid.UUID, pinned bool) error {
 	if _, err := s.repo.GetConversationMember(convID, userID); err != nil {
-		return errors.New("not a member of this conversation")
+		return response.Public("not a member of this conversation")
 	}
 	if err := s.repo.SetConversationPinned(convID, userID, pinned); err != nil {
 		return err
@@ -465,7 +478,7 @@ func (s *Service) FindMessageByMediaURL(urls ...string) (*Message, error) {
 // SetConversationMuted 设置当前用户对该会话的免打扰状态
 func (s *Service) SetConversationMuted(convID, userID uuid.UUID, muted bool) error {
 	if _, err := s.repo.GetConversationMember(convID, userID); err != nil {
-		return errors.New("not a member of this conversation")
+		return response.Public("not a member of this conversation")
 	}
 	if err := s.repo.SetConversationMuted(convID, userID, muted); err != nil {
 		return err
@@ -486,15 +499,15 @@ func (s *Service) GetOfflineMessages(userID uuid.UUID, since time.Time, limit in
 func (s *Service) EditMessage(msgID, userID uuid.UUID, content string) (*Message, error) {
 	msg, err := s.repo.GetMessageByID(msgID)
 	if err != nil {
-		return nil, errors.New("message not found")
+		return nil, response.Public("message not found")
 	}
 
 	if msg.SenderID != userID {
-		return nil, errors.New("not the message sender")
+		return nil, response.Public("not the message sender")
 	}
 
 	if msg.Type != MessageTypeText {
-		return nil, errors.New("only text messages can be edited")
+		return nil, response.Public("only text messages can be edited")
 	}
 
 	msg.Content = content
@@ -515,7 +528,7 @@ func (s *Service) EditMessage(msgID, userID uuid.UUID, content string) (*Message
 func (s *Service) DeleteMessage(msgID, userID uuid.UUID) error {
 	msg, err := s.repo.GetMessageByID(msgID)
 	if err != nil {
-		return errors.New("message not found")
+		return response.Public("message not found")
 	}
 
 	// 验证是否是发送者或会话管理员
@@ -524,26 +537,41 @@ func (s *Service) DeleteMessage(msgID, userID uuid.UUID) error {
 		member, err := s.repo.GetConversationMember(msg.ConversationID, userID)
 		if err == nil {
 			if member.Role != MemberRoleAdmin && member.Role != MemberRoleOwner {
-				return errors.New("not authorized to delete this message")
+				return response.Public("not authorized to delete this message")
 			}
 		} else {
-			return errors.New("not authorized to delete this message")
+			return response.Public("not authorized to delete this message")
 		}
 	}
 
 	err = s.repo.DeleteMessage(msgID)
-	if err == nil {
-		// 失效会话缓存
-		_ = redis.InvalidateConversationCache(msg.ConversationID.String())
+	if err != nil {
+		return err
 	}
-	return err
+
+	_ = redis.InvalidateConversationCache(msg.ConversationID.String())
+
+	// 通知会话内其他成员：这条消息被撤回了。
+	// 之前只删库不发消息，对方要刷新才看得到。
+	if s.hub != nil {
+		s.hub.broadcast <- WSMessage{
+			Type:   WSMessageTypeMessageDeleted,
+			FromID: userID,
+			ConvID: msg.ConversationID,
+			Data: map[string]interface{}{
+				"id":              msg.ID.String(),
+				"conversation_id": msg.ConversationID.String(),
+			},
+		}
+	}
+	return nil
 }
 
 // MarkConversationAsRead 标记会话为已读
 func (s *Service) MarkConversationAsRead(convID, userID uuid.UUID) error {
 	_, err := s.repo.GetConversationMember(convID, userID)
 	if err != nil {
-		return errors.New("not a member of this conversation")
+		return response.Public("not a member of this conversation")
 	}
 
 	if err := s.repo.MarkConversationAsRead(convID, userID); err != nil {
@@ -578,7 +606,7 @@ func (s *Service) AddFavorite(userID, msgID uuid.UUID, note string) (*Favorite, 
 	// 检查消息是否存在
 	_, err := s.repo.GetMessageByID(msgID)
 	if err != nil {
-		return nil, errors.New("message not found")
+		return nil, response.Public("message not found")
 	}
 
 	// 检查是否已收藏
@@ -587,7 +615,7 @@ func (s *Service) AddFavorite(userID, msgID uuid.UUID, note string) (*Favorite, 
 		return nil, err
 	}
 	if exists {
-		return nil, errors.New("already favorited")
+		return nil, response.Public("already favorited")
 	}
 
 	fav := &Favorite{
@@ -633,7 +661,7 @@ func (s *Service) RemoveFavorite(favID, userID uuid.UUID) error {
 	}
 
 	if targetFav == nil {
-		return errors.New("favorite not found")
+		return response.Public("favorite not found")
 	}
 
 	return s.repo.RemoveFavorite(favID)
@@ -649,7 +677,7 @@ func (s *Service) GetUserFavorites(userID uuid.UUID) ([]*Favorite, error) {
 // CreateGroup 创建群组
 func (s *Service) CreateGroup(ownerID uuid.UUID, name, description, avatar string, memberIDs []uuid.UUID) (*Conversation, *Group, error) {
 	if name == "" {
-		return nil, nil, errors.New("group name is required")
+		return nil, nil, response.Public("group name is required")
 	}
 
 	now := time.Now()
@@ -731,12 +759,12 @@ func (s *Service) GetGroup(groupID, userID uuid.UUID) (*Group, error) {
 	// 验证用户是否是群成员
 	_, err := s.repo.GetConversationMember(groupID, userID)
 	if err != nil {
-		return nil, errors.New("not a member of this group")
+		return nil, response.Public("not a member of this group")
 	}
 
 	group, err := s.repo.GetGroupByID(groupID)
 	if err != nil {
-		return nil, errors.New("group not found")
+		return nil, response.Public("group not found")
 	}
 
 	// 获取成员数量
@@ -750,17 +778,17 @@ func (s *Service) GetGroup(groupID, userID uuid.UUID) (*Group, error) {
 func (s *Service) UpdateGroup(groupID, userID uuid.UUID, name, description, avatar string) (*Group, error) {
 	group, err := s.repo.GetGroupByID(groupID)
 	if err != nil {
-		return nil, errors.New("group not found")
+		return nil, response.Public("group not found")
 	}
 
 	// 验证权限（只有群主和管理员可以修改）
 	member, err := s.repo.GetConversationMember(groupID, userID)
 	if err != nil {
-		return nil, errors.New("not a member of this group")
+		return nil, response.Public("not a member of this group")
 	}
 
 	if member.Role != MemberRoleOwner && member.Role != MemberRoleAdmin {
-		return nil, errors.New("not authorized to modify group")
+		return nil, response.Public("not authorized to modify group")
 	}
 
 	if name != "" {
@@ -800,16 +828,28 @@ func (s *Service) UpdateGroup(groupID, userID uuid.UUID, name, description, avat
 
 // AddGroupMember 添加群成员
 func (s *Service) AddGroupMember(groupID, userID, newMemberID uuid.UUID) error {
+	// 群成员上限：max_members 字段一直存在，但此前从未校验
+	if group, err := s.repo.GetGroupByID(groupID); err == nil {
+		limit := group.MaxMembers
+		if limit <= 0 {
+			limit = 500
+		}
+		if members, err := s.repo.GetConversationMembers(groupID); err == nil {
+			if len(members) >= limit {
+				return response.Public(fmt.Sprintf("group is full (max %d members)", limit))
+			}
+		}
+	}
 	// 验证用户是否是群成员
 	_, err := s.repo.GetConversationMember(groupID, userID)
 	if err != nil {
-		return errors.New("not a member of this group")
+		return response.Public("not a member of this group")
 	}
 
 	// 检查新成员是否已经在群里
 	existing, _ := s.repo.GetConversationMember(groupID, newMemberID)
 	if existing != nil {
-		return errors.New("user already in group")
+		return response.Public("user already in group")
 	}
 
 	// 添加成员
@@ -834,26 +874,26 @@ func (s *Service) AddGroupMember(groupID, userID, newMemberID uuid.UUID) error {
 func (s *Service) RemoveGroupMember(groupID, userID, targetUserID uuid.UUID) error {
 	member, err := s.repo.GetConversationMember(groupID, userID)
 	if err != nil {
-		return errors.New("not a member of this group")
+		return response.Public("not a member of this group")
 	}
 
 	// 检查权限
 	if userID != targetUserID {
 		// 不是移除自己，需要群主或管理员权限
 		if member.Role != MemberRoleOwner && member.Role != MemberRoleAdmin {
-			return errors.New("not authorized to remove members")
+			return response.Public("not authorized to remove members")
 		}
 
 		// 管理员不能移除群主或其他管理员
 		targetMember, err := s.repo.GetConversationMember(groupID, targetUserID)
 		if err != nil {
-			return errors.New("target user not in group")
+			return response.Public("target user not in group")
 		}
 		if targetMember.Role == MemberRoleOwner {
-			return errors.New("cannot remove group owner")
+			return response.Public("cannot remove group owner")
 		}
 		if member.Role == MemberRoleAdmin && targetMember.Role == MemberRoleAdmin {
-			return errors.New("cannot remove other admins")
+			return response.Public("cannot remove other admins")
 		}
 	}
 
@@ -872,22 +912,22 @@ func (s *Service) RemoveGroupMember(groupID, userID, targetUserID uuid.UUID) err
 func (s *Service) UpdateMemberRole(groupID, userID, targetUserID uuid.UUID, role string) error {
 	member, err := s.repo.GetConversationMember(groupID, userID)
 	if err != nil {
-		return errors.New("not a member of this group")
+		return response.Public("not a member of this group")
 	}
 
 	// 只有群主可以修改角色
 	if member.Role != MemberRoleOwner {
-		return errors.New("only group owner can modify roles")
+		return response.Public("only group owner can modify roles")
 	}
 
 	targetMember, err := s.repo.GetConversationMember(groupID, targetUserID)
 	if err != nil {
-		return errors.New("target user not in group")
+		return response.Public("target user not in group")
 	}
 
 	// 不能修改群主的角色
 	if targetMember.Role == MemberRoleOwner {
-		return errors.New("cannot modify owner's role")
+		return response.Public("cannot modify owner's role")
 	}
 
 	targetMember.Role = role
@@ -903,12 +943,12 @@ func (s *Service) UpdateMemberRole(groupID, userID, targetUserID uuid.UUID, role
 func (s *Service) LeaveGroup(groupID, userID uuid.UUID) error {
 	member, err := s.repo.GetConversationMember(groupID, userID)
 	if err != nil {
-		return errors.New("not a member of this group")
+		return response.Public("not a member of this group")
 	}
 
 	// 群主不能直接退出，需要先转让群主或解散群组
 	if member.Role == MemberRoleOwner {
-		return errors.New("owner cannot leave group, transfer ownership or disband first")
+		return response.Public("owner cannot leave group, transfer ownership or disband first")
 	}
 
 	// 退出前先失效，退群者自己的列表也要刷新
@@ -926,12 +966,12 @@ func (s *Service) LeaveGroup(groupID, userID uuid.UUID) error {
 func (s *Service) DisbandGroup(groupID, userID uuid.UUID) error {
 	group, err := s.repo.GetGroupByID(groupID)
 	if err != nil {
-		return errors.New("group not found")
+		return response.Public("group not found")
 	}
 
 	// 只有群主可以解散群组
 	if group.OwnerID != userID {
-		return errors.New("only group owner can disband group")
+		return response.Public("only group owner can disband group")
 	}
 
 	// 删除群组记录前先失效（删除后查不到成员）
@@ -953,7 +993,7 @@ func (s *Service) GetGroupMembers(groupID, userID uuid.UUID) ([]*ConversationMem
 	// 验证用户是否是群成员
 	_, err := s.repo.GetConversationMember(groupID, userID)
 	if err != nil {
-		return nil, errors.New("not a member of this group")
+		return nil, response.Public("not a member of this group")
 	}
 
 	return s.repo.GetConversationMembers(groupID)
@@ -964,7 +1004,7 @@ func (s *Service) ForwardMessage(msgID, userID uuid.UUID, convIDs []uuid.UUID, a
 	// 获取原消息
 	originalMsg, err := s.repo.GetMessageByID(msgID)
 	if err != nil {
-		return nil, errors.New("original message not found")
+		return nil, response.Public("original message not found")
 	}
 
 	var forwardedMsgs []*Message
@@ -1042,18 +1082,18 @@ func (s *Service) ForwardMessage(msgID, userID uuid.UUID, convIDs []uuid.UUID, a
 // InitiateCall 发起通话
 func (s *Service) InitiateCall(callerID, calleeID uuid.UUID, callType string) (*CallRecord, error) {
 	if callerID == calleeID {
-		return nil, errors.New("cannot call yourself")
+		return nil, response.Public("cannot call yourself")
 	}
 
 	// 检查是否已有进行中的通话
 	activeCall, _ := s.repo.GetActiveCall(callerID)
 	if activeCall != nil {
-		return nil, errors.New("already in an active call")
+		return nil, response.Public("already in an active call")
 	}
 
 	activeCall, _ = s.repo.GetActiveCall(calleeID)
 	if activeCall != nil {
-		return nil, errors.New("callee is busy")
+		return nil, response.Public("callee is busy")
 	}
 
 	now := time.Now()
@@ -1084,15 +1124,15 @@ func (s *Service) InitiateCall(callerID, calleeID uuid.UUID, callType string) (*
 func (s *Service) AcceptCall(callID, userID uuid.UUID) (*CallRecord, error) {
 	record, err := s.repo.GetCallRecordByID(callID)
 	if err != nil {
-		return nil, errors.New("call not found")
+		return nil, response.Public("call not found")
 	}
 
 	if record.CalleeID != userID {
-		return nil, errors.New("not authorized to accept this call")
+		return nil, response.Public("not authorized to accept this call")
 	}
 
 	if record.Status != CallStatusCalling {
-		return nil, errors.New("call is not in calling state")
+		return nil, response.Public("call is not in calling state")
 	}
 
 	if err := s.repo.AnswerCall(callID); err != nil {
@@ -1106,15 +1146,15 @@ func (s *Service) AcceptCall(callID, userID uuid.UUID) (*CallRecord, error) {
 func (s *Service) RejectCall(callID, userID uuid.UUID) error {
 	record, err := s.repo.GetCallRecordByID(callID)
 	if err != nil {
-		return errors.New("call not found")
+		return response.Public("call not found")
 	}
 
 	if record.CalleeID != userID {
-		return errors.New("not authorized to reject this call")
+		return response.Public("not authorized to reject this call")
 	}
 
 	if record.Status != CallStatusCalling {
-		return errors.New("call is not in calling state")
+		return response.Public("call is not in calling state")
 	}
 
 	// 更新状态为已拒绝
@@ -1125,15 +1165,15 @@ func (s *Service) RejectCall(callID, userID uuid.UUID) error {
 func (s *Service) EndCall(callID, userID uuid.UUID) error {
 	record, err := s.repo.GetCallRecordByID(callID)
 	if err != nil {
-		return errors.New("call not found")
+		return response.Public("call not found")
 	}
 
 	if record.CallerID != userID && record.CalleeID != userID {
-		return errors.New("not authorized to end this call")
+		return response.Public("not authorized to end this call")
 	}
 
 	if record.Status != CallStatusCalling && record.Status != CallStatusInProgress {
-		return errors.New("call is not active")
+		return response.Public("call is not active")
 	}
 
 	return s.repo.EndCall(callID)
@@ -1143,11 +1183,11 @@ func (s *Service) EndCall(callID, userID uuid.UUID) error {
 func (s *Service) GetCallRecord(callID, userID uuid.UUID) (*CallRecord, error) {
 	record, err := s.repo.GetCallRecordByID(callID)
 	if err != nil {
-		return nil, errors.New("call not found")
+		return nil, response.Public("call not found")
 	}
 
 	if record.CallerID != userID && record.CalleeID != userID {
-		return nil, errors.New("not authorized to access this call")
+		return nil, response.Public("not authorized to access this call")
 	}
 
 	return record, nil
@@ -1170,7 +1210,7 @@ func (s *Service) MarkMentionAsRead(mentionID, userID uuid.UUID) error {
 	// 验证提及是否属于该用户
 	mentions, err := s.repo.GetUserMentions(userID, 100)
 	if err != nil {
-		return errors.New("mention not found")
+		return response.Public("mention not found")
 	}
 
 	var targetMention *Mention
@@ -1182,7 +1222,7 @@ func (s *Service) MarkMentionAsRead(mentionID, userID uuid.UUID) error {
 	}
 
 	if targetMention == nil {
-		return errors.New("mention not found")
+		return response.Public("mention not found")
 	}
 
 	return s.repo.MarkMentionAsRead(mentionID)

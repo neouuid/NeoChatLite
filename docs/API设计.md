@@ -557,6 +557,14 @@ Content-Type: application/json
 写操作会失效该用户的会话列表缓存。置顶会话在列表中最前：
 排序为 `pinned DESC, updated_at DESC`。
 
+#### 5.x 幂等
+
+`POST /chat/messages` 支持 `client_msg_id`（客户端生成，≤64 字符）：
+
+- 同一会话内重复提交同一个 `client_msg_id` → 返回已存在的那条消息（不重复落库）
+- 不传则每次都新建
+- 客户端发送队列重试时会自动携带
+
 #### 5.y 输入上限
 
 | 项 | 限制 |

@@ -82,6 +82,19 @@ class _ChatPageState extends State<ChatPage> {
       switch (event.type) {
         case 'new_message':
           _load();
+        case 'message_deleted':
+          // 对方撤回：直接从列表移除，不用整页重载
+          final deletedId = (event.data is Map)
+              ? (event.data as Map)['id'] as String?
+              : null;
+          if (deletedId != null) {
+            setState(() {
+              _messages.removeWhere((m) => m['id'] == deletedId);
+            });
+            _cacheCurrent();
+          } else {
+            _load();
+          }
         case 'typing':
           if (fromMe) return;
           _typingResetTimer?.cancel();

@@ -75,6 +75,26 @@
 
 修复前的实测数据：5 MB 文本消息直接 200 落库；`?limit=5000` 一次返回 3.3 MB。
 
+## 错误信息
+
+service 层用 `response.Public(...)` 标记「可以给用户看」的业务错误；
+handler 统一走 `response.Fail(c, err, 4xx)`：
+
+- 业务错误 → 原状态码 + 原始提示
+- 其它错误（数据库、约束冲突等）→ **记录日志**，只返回 `500 internal error`
+
+修复前是 `response.BadRequest(c, err.Error())`，会把
+`ERROR: duplicate key value violates unique constraint "idx_user_email" (SQLSTATE 23505)`
+这类内容直接抛给客户端。
+
+## 数据一致性
+
+- **消息幂等**：`POST /chat/messages` 接受 `client_msg_id`，
+  同一会话内重复提交返回已存在的那条消息（唯一索引兜底）。
+  客户端发送队列重试时携带同一个值。
+- **撤回广播**：撤回后通过 WS 发 `message_deleted`，对方界面直接移除该消息。
+- **群成员上限**：`groups.max_members`（默认 500）在拉人时校验。
+
 ## WebSocket 连接防护
 
 | 机制 | 取值 | 说明 |

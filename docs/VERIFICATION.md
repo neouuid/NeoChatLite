@@ -7,7 +7,7 @@
 | 1. 后端单元/集成 | `cd backend && RUN_INTEGRATION_TESTS=true go test ./...` | handler、service、缓存失效、安全 | ~5s |
 | 2. 客户端单元 | `cd client_app && flutter test` | 会话状态、缓存、刷新、群/好友/置顶 | ~2s |
 | 3. 接口契约 | `go test ./cmd/api-gateway/` | 路由是否注册、swagger 是否覆盖 | ~1s |
-| 4. 端到端（单实例） | `bash scripts/e2e_local.sh` | 29 步 HTTP + 7 步实时 WS | ~2min |
+| 4. 端到端（单实例） | `bash scripts/e2e_local.sh` | 30 步 HTTP + 8 步实时 WS | ~2min |
 | 5. 部署形态 | `bash scripts/verify_multi_instance.sh`、Web 验证 | 跨实例广播、浏览器运行时 | 各 ~1min |
 
 ## 跨实例广播（自动化，已验证通过）

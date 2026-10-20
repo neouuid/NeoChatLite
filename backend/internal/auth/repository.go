@@ -71,7 +71,7 @@ func (r *Repository) UpdateUser(u *user.User) error {
 // CheckUsernameExists 检查用户名是否存在
 func (r *Repository) CheckUsernameExists(username string) (bool, error) {
 	var count int64
-	err := r.db.Model(&user.User{}).Where("username = ?", username).Count(&count).Error
+	err := r.db.Unscoped().Model(&user.User{}).Where("username = ?", username).Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -84,7 +84,7 @@ func (r *Repository) CheckEmailExists(email string) (bool, error) {
 		return false, nil
 	}
 	var count int64
-	err := r.db.Model(&user.User{}).Where("email = ?", email).Count(&count).Error
+	err := r.db.Unscoped().Model(&user.User{}).Where("email = ?", email).Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -97,7 +97,7 @@ func (r *Repository) CheckPhoneExists(phone string) (bool, error) {
 		return false, nil
 	}
 	var count int64
-	err := r.db.Model(&user.User{}).Where("phone = ?", phone).Count(&count).Error
+	err := r.db.Unscoped().Model(&user.User{}).Where("phone = ?", phone).Count(&count).Error
 	if err != nil {
 		return false, err
 	}

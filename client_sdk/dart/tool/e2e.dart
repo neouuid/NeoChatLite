@@ -1413,6 +1413,47 @@ Future<void> main(List<String> args) async {
     fail('输入边界验证失败: $e');
   }
 
+  step('30. 消息幂等（重试不产生重复）');
+  try {
+    // 用 B 的令牌：A 的发送配额在第 27 步已经被打满
+    api.token = tokenB;
+    const idemKey = 'e2e-idem-key-1';
+
+    // 同一个 client_msg_id 发两次，服务端应返回同一条消息
+    final first = await api.postChatMessages(body: {
+      'conversation_id': convId,
+      'type': 'text',
+      'content': '幂等测试',
+      'client_msg_id': idemKey,
+    });
+    final second = await api.postChatMessages(body: {
+      'conversation_id': convId,
+      'type': 'text',
+      'content': '幂等测试',
+      'client_msg_id': idemKey,
+    });
+
+    final firstId = _data(first)['id'];
+    final secondId = _data(second)['id'];
+    if (firstId != null && firstId == secondId) {
+      ok('重复提交返回同一条消息（id=${firstId.toString().substring(0, 8)}…）');
+    } else {
+      fail('重复提交产生了不同的消息: $firstId vs $secondId');
+    }
+
+    // 列表里只应出现一条
+    final page = await api.getChatConversationsIdMessages(id: convId, limit: 50);
+    final items = (page is Map && page['data'] is List) ? page['data'] as List : const [];
+    final matched = items.where((m) => m is Map && m['content'] == '幂等测试').length;
+    if (matched == 1) {
+      ok('消息列表里只有一条（没有重复落库）');
+    } else {
+      fail('列表里出现了 $matched 条相同消息');
+    }
+  } catch (e) {
+    fail('幂等验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

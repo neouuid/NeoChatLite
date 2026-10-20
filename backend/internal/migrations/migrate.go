@@ -107,9 +107,27 @@ func adoptExistingSchema(ctx context.Context, db *sql.DB, dir string) (bool, err
 	if err != nil || hasGoose {
 		return false, err
 	}
-	hasUsers, err := tableExists(ctx, db, "users")
-	if err != nil || !hasUsers {
-		return false, err
+	// 认领的前提是「基线该有的表确实都在」。
+	// 只检查 users 会漏掉半成品库：那种库被认领成基线后，
+	// 后续迁移（ALTER TABLE messages ...）会因为没有表而失败。
+	required := []string{"users", "conversations", "messages"}
+	missing := make([]string, 0, len(required))
+	for _, table := range required {
+		exists, err := tableExists(ctx, db, table)
+		if err != nil {
+			return false, err
+		}
+		if !exists {
+			missing = append(missing, table)
+		}
+	}
+	if len(missing) == len(required) {
+		return false, nil // 全新库，交给 goose 从头建
+	}
+	if len(missing) > 0 {
+		return false, fmt.Errorf(
+			"数据库结构不完整：已存在部分表，但缺少 %v；请重建数据库或手工补齐后再启动",
+			missing)
 	}
 
 	var create string

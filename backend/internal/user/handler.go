@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -11,7 +12,7 @@ import (
 
 type Handler struct {
 	service *Service
-	hub     interface{
+	hub     interface {
 		SendFriendRequest(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string)
 		SendFriendAccepted(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string)
 	}
@@ -22,7 +23,7 @@ func NewHandler(service *Service) *Handler {
 }
 
 // SetWebSocketHub 设置WebSocket集线器
-func (h *Handler) SetWebSocketHub(hub interface{
+func (h *Handler) SetWebSocketHub(hub interface {
 	SendFriendRequest(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string)
 	SendFriendAccepted(toUserID uuid.UUID, fromUserID uuid.UUID, fromUserName string, fromUserAvatar string)
 }) {
@@ -132,11 +133,11 @@ func (h *Handler) SearchUsers(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"items":      users,
-		"total":      total,
-		"page":       page,
-		"page_size":  pageSize,
-		"has_more":   int64(page*pageSize) < total,
+		"items":     users,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
+		"has_more":  int64(page*pageSize) < total,
 	})
 }
 
@@ -214,7 +215,7 @@ func (h *Handler) SendFriendRequest(c *gin.Context) {
 
 	friend, err := h.service.SendFriendRequest(userID, friendID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -261,7 +262,7 @@ func (h *Handler) AcceptFriendRequest(c *gin.Context) {
 
 	friend, err := h.service.AcceptFriendRequest(userID, requestID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -308,7 +309,7 @@ func (h *Handler) RejectFriendRequest(c *gin.Context) {
 	}
 
 	if err := h.service.RejectFriendRequest(userID, requestID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -342,7 +343,7 @@ func (h *Handler) CancelFriendRequest(c *gin.Context) {
 	}
 
 	if err := h.service.CancelFriendRequest(userID, requestID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -431,7 +432,7 @@ func (h *Handler) DeleteFriend(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteFriend(userID, friendID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -475,7 +476,7 @@ func (h *Handler) UpdateFriendAlias(c *gin.Context) {
 
 	friend, err := h.service.UpdateFriendAlias(userID, friendID, req.Alias)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -520,7 +521,7 @@ func (h *Handler) BlockUser(c *gin.Context) {
 
 	block, err := h.service.BlockUser(userID, blockedID, req.Reason)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -554,7 +555,7 @@ func (h *Handler) UnblockUser(c *gin.Context) {
 	}
 
 	if err := h.service.UnblockUser(userID, blockedID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 

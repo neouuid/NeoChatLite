@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -72,7 +73,7 @@ func (h *Handler) CreateSingleConversation(c *gin.Context) {
 
 	conv, err := h.service.CreateSingleConversation(userID, targetUserID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -107,7 +108,7 @@ func (h *Handler) GetConversation(c *gin.Context) {
 
 	conv, err := h.service.GetConversation(convID, userID)
 	if err != nil {
-		response.NotFound(c, err.Error())
+		response.Fail(c, err, http.StatusNotFound)
 		return
 	}
 
@@ -169,6 +170,7 @@ func (h *Handler) SendMessage(c *gin.Context) {
 		FileName       string  `json:"file_name"`
 		FileSize       int64   `json:"file_size"`
 		ReplyToID      *string `json:"reply_to_id"`
+		ClientMsgID    string  `json:"client_msg_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "invalid request body")
@@ -211,9 +213,9 @@ func (h *Handler) SendMessage(c *gin.Context) {
 		}
 	}
 
-	msg, err := h.service.SendMessage(convID, userID, req.Type, req.Content, req.MediaURL, req.FileName, req.FileSize, replyToID)
+	msg, err := h.service.SendMessage(convID, userID, req.Type, req.Content, req.MediaURL, req.FileName, req.FileSize, replyToID, req.ClientMsgID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -264,7 +266,7 @@ func (h *Handler) GetConversationMessages(c *gin.Context) {
 
 	msgs, err := h.service.GetConversationMessages(convID, userID, before, limit)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -306,7 +308,7 @@ func (h *Handler) SetConversationPinned(c *gin.Context) {
 	}
 
 	if err := h.service.SetConversationPinned(convID, userID, req.Pinned); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -348,7 +350,7 @@ func (h *Handler) SetConversationMuted(c *gin.Context) {
 	}
 
 	if err := h.service.SetConversationMuted(convID, userID, req.Muted); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -455,7 +457,7 @@ func (h *Handler) EditMessage(c *gin.Context) {
 
 	msg, err := h.service.EditMessage(msgID, userID, req.Content)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -493,7 +495,7 @@ func (h *Handler) DeleteMessage(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteMessage(msgID, userID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -527,7 +529,7 @@ func (h *Handler) MarkConversationAsRead(c *gin.Context) {
 	}
 
 	if err := h.service.MarkConversationAsRead(convID, userID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -572,7 +574,7 @@ func (h *Handler) UpdateConversation(c *gin.Context) {
 
 	conv, err := h.service.UpdateConversation(convID, userID, req.Name, req.Avatar)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -606,7 +608,7 @@ func (h *Handler) DeleteConversation(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteConversation(convID, userID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -651,7 +653,7 @@ func (h *Handler) AddFavorite(c *gin.Context) {
 
 	fav, err := h.service.AddFavorite(userID, msgID, req.Note)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -685,7 +687,7 @@ func (h *Handler) RemoveFavorite(c *gin.Context) {
 	}
 
 	if err := h.service.RemoveFavorite(favID, userID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -764,7 +766,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 
 	conv, group, err := h.service.CreateGroup(userID, req.Name, req.Description, req.Avatar, memberIDs)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -802,7 +804,7 @@ func (h *Handler) GetGroup(c *gin.Context) {
 
 	group, err := h.service.GetGroup(groupID, userID)
 	if err != nil {
-		response.NotFound(c, err.Error())
+		response.Fail(c, err, http.StatusNotFound)
 		return
 	}
 
@@ -848,7 +850,7 @@ func (h *Handler) UpdateGroup(c *gin.Context) {
 
 	group, err := h.service.UpdateGroup(groupID, userID, req.Name, req.Description, req.Avatar)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -897,7 +899,7 @@ func (h *Handler) AddGroupMember(c *gin.Context) {
 	}
 
 	if err := h.service.AddGroupMember(groupID, userID, newMemberID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -939,7 +941,7 @@ func (h *Handler) RemoveGroupMember(c *gin.Context) {
 	}
 
 	if err := h.service.RemoveGroupMember(groupID, userID, targetUserID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -995,7 +997,7 @@ func (h *Handler) UpdateMemberRole(c *gin.Context) {
 	}
 
 	if err := h.service.UpdateMemberRole(groupID, userID, targetUserID, req.Role); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -1029,7 +1031,7 @@ func (h *Handler) LeaveGroup(c *gin.Context) {
 	}
 
 	if err := h.service.LeaveGroup(groupID, userID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -1063,7 +1065,7 @@ func (h *Handler) DisbandGroup(c *gin.Context) {
 	}
 
 	if err := h.service.DisbandGroup(groupID, userID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -1098,7 +1100,7 @@ func (h *Handler) GetGroupMembers(c *gin.Context) {
 
 	members, err := h.service.GetGroupMembers(groupID, userID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -1156,7 +1158,7 @@ func (h *Handler) ForwardMessage(c *gin.Context) {
 
 	msgs, err := h.service.ForwardMessage(msgID, userID, convIDs, req.AdditionalText)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -1206,7 +1208,7 @@ func (h *Handler) InitiateCall(c *gin.Context) {
 
 	record, err := h.service.InitiateCall(userID, calleeID, req.Type)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -1241,7 +1243,7 @@ func (h *Handler) AcceptCall(c *gin.Context) {
 
 	record, err := h.service.AcceptCall(callID, userID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -1275,7 +1277,7 @@ func (h *Handler) RejectCall(c *gin.Context) {
 	}
 
 	if err := h.service.RejectCall(callID, userID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -1309,7 +1311,7 @@ func (h *Handler) EndCall(c *gin.Context) {
 	}
 
 	if err := h.service.EndCall(callID, userID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -1344,7 +1346,7 @@ func (h *Handler) GetCallRecord(c *gin.Context) {
 
 	record, err := h.service.GetCallRecord(callID, userID)
 	if err != nil {
-		response.NotFound(c, err.Error())
+		response.Fail(c, err, http.StatusNotFound)
 		return
 	}
 
@@ -1526,7 +1528,7 @@ func (h *Handler) MarkMentionAsRead(c *gin.Context) {
 	}
 
 	if err := h.service.MarkMentionAsRead(mentionID, userID); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 

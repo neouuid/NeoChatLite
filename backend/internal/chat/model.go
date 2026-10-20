@@ -118,6 +118,8 @@ type Message struct {
 	FileName       string         `gorm:"type:varchar(255)" json:"file_name"`
 	FileSize       int64          `json:"file_size"`
 	ReplyToID      *uuid.UUID     `gorm:"type:uuid;index:idx_msg_reply_to" json:"reply_to_id"`
+	// ClientMsgID 客户端生成的幂等键：重试时携带同一个值，服务端据此去重
+	ClientMsgID string `gorm:"type:varchar(64);index:idx_msg_client_id" json:"client_msg_id,omitempty"`
 	IsEdited       bool           `gorm:"default:false" json:"is_edited"`
 	CreatedAt      time.Time      `gorm:"index:idx_msg_created_at" json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`

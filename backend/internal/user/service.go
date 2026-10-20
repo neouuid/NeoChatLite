@@ -1,9 +1,8 @@
 package user
 
 import (
-	"errors"
-
 	"github.com/google/uuid"
+	"github.com/neochat/backend/pkg/response"
 )
 
 type Service struct {
@@ -69,7 +68,7 @@ func (s *Service) UpdateProfile(userID uuid.UUID, nickname, bio, avatar string) 
 // SendFriendRequest 发送好友请求
 func (s *Service) SendFriendRequest(userID, friendID uuid.UUID) (*Friend, error) {
 	if userID == friendID {
-		return nil, errors.New("cannot add yourself as friend")
+		return nil, response.Public("cannot add yourself as friend")
 	}
 
 	// 检查是否已经是好友或有待处理的请求
@@ -79,7 +78,7 @@ func (s *Service) SendFriendRequest(userID, friendID uuid.UUID) (*Friend, error)
 	}
 
 	if status != "none" {
-		return nil, errors.New("friend request already exists or already friends")
+		return nil, response.Public("friend request already exists or already friends")
 	}
 
 	// 检查是否被拉黑
@@ -88,7 +87,7 @@ func (s *Service) SendFriendRequest(userID, friendID uuid.UUID) (*Friend, error)
 		return nil, err
 	}
 	if isBlocked {
-		return nil, errors.New("cannot send request to blocked user")
+		return nil, response.Public("cannot send request to blocked user")
 	}
 
 	friend := &Friend{
@@ -109,15 +108,15 @@ func (s *Service) SendFriendRequest(userID, friendID uuid.UUID) (*Friend, error)
 func (s *Service) AcceptFriendRequest(userID, requestID uuid.UUID) (*Friend, error) {
 	request, err := s.repo.GetFriendRequest(requestID)
 	if err != nil {
-		return nil, errors.New("friend request not found")
+		return nil, response.Public("friend request not found")
 	}
 
 	if request.FriendID != userID {
-		return nil, errors.New("unauthorized")
+		return nil, response.Public("unauthorized")
 	}
 
 	if request.Status != FriendStatusPending {
-		return nil, errors.New("request is not pending")
+		return nil, response.Public("request is not pending")
 	}
 
 	request.Status = FriendStatusAccepted
@@ -132,15 +131,15 @@ func (s *Service) AcceptFriendRequest(userID, requestID uuid.UUID) (*Friend, err
 func (s *Service) RejectFriendRequest(userID, requestID uuid.UUID) error {
 	request, err := s.repo.GetFriendRequest(requestID)
 	if err != nil {
-		return errors.New("friend request not found")
+		return response.Public("friend request not found")
 	}
 
 	if request.FriendID != userID {
-		return errors.New("unauthorized")
+		return response.Public("unauthorized")
 	}
 
 	if request.Status != FriendStatusPending {
-		return errors.New("request is not pending")
+		return response.Public("request is not pending")
 	}
 
 	return s.repo.DeleteFriend(requestID)
@@ -150,15 +149,15 @@ func (s *Service) RejectFriendRequest(userID, requestID uuid.UUID) error {
 func (s *Service) CancelFriendRequest(userID, requestID uuid.UUID) error {
 	request, err := s.repo.GetFriendRequest(requestID)
 	if err != nil {
-		return errors.New("friend request not found")
+		return response.Public("friend request not found")
 	}
 
 	if request.UserID != userID {
-		return errors.New("unauthorized")
+		return response.Public("unauthorized")
 	}
 
 	if request.Status != FriendStatusPending {
-		return errors.New("request is not pending")
+		return response.Public("request is not pending")
 	}
 
 	return s.repo.DeleteFriend(requestID)
@@ -205,11 +204,11 @@ func (s *Service) GetFriends(userID uuid.UUID) ([]*User, error) {
 func (s *Service) DeleteFriend(userID, friendID uuid.UUID) error {
 	friend, err := s.repo.GetFriendRequestByUsers(userID, friendID)
 	if err != nil {
-		return errors.New("friend not found")
+		return response.Public("friend not found")
 	}
 
 	if friend.Status != FriendStatusAccepted {
-		return errors.New("not friends")
+		return response.Public("not friends")
 	}
 
 	return s.repo.DeleteFriend(friend.ID)
@@ -219,11 +218,11 @@ func (s *Service) DeleteFriend(userID, friendID uuid.UUID) error {
 func (s *Service) UpdateFriendAlias(userID, friendID uuid.UUID, alias string) (*Friend, error) {
 	friend, err := s.repo.GetFriendRequestByUsers(userID, friendID)
 	if err != nil {
-		return nil, errors.New("friend not found")
+		return nil, response.Public("friend not found")
 	}
 
 	if friend.Status != FriendStatusAccepted {
-		return nil, errors.New("not friends")
+		return nil, response.Public("not friends")
 	}
 
 	// 只有发起好友请求的一方可以设置备注（或者两方都可以？这里简化处理）
@@ -240,13 +239,13 @@ func (s *Service) UpdateFriendAlias(userID, friendID uuid.UUID, alias string) (*
 // BlockUser 拉黑用户
 func (s *Service) BlockUser(userID, blockedID uuid.UUID, reason string) (*Blocklist, error) {
 	if userID == blockedID {
-		return nil, errors.New("cannot block yourself")
+		return nil, response.Public("cannot block yourself")
 	}
 
 	// 检查是否已经拉黑
 	existing, _ := s.repo.GetBlockByUsers(userID, blockedID)
 	if existing != nil {
-		return nil, errors.New("user already blocked")
+		return nil, response.Public("user already blocked")
 	}
 
 	block := &Blocklist{
@@ -273,7 +272,7 @@ func (s *Service) BlockUser(userID, blockedID uuid.UUID, reason string) (*Blockl
 func (s *Service) UnblockUser(userID, blockedID uuid.UUID) error {
 	block, err := s.repo.GetBlockByUsers(userID, blockedID)
 	if err != nil {
-		return errors.New("block not found")
+		return response.Public("block not found")
 	}
 
 	return s.repo.DeleteBlock(block.ID)

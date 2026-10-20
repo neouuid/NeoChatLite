@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -49,7 +50,7 @@ func (h *Handler) Register(c *gin.Context) {
 
 	resp, err := h.service.Register(&req)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -85,7 +86,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	resp, err := h.service.Login(&req)
 	if err != nil {
-		response.Unauthorized(c, err.Error())
+		response.Fail(c, err, http.StatusUnauthorized)
 		return
 	}
 
@@ -119,7 +120,7 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 
 	resp, err := h.service.RefreshToken(req.RefreshToken)
 	if err != nil {
-		response.Unauthorized(c, err.Error())
+		response.Fail(c, err, http.StatusUnauthorized)
 		return
 	}
 
@@ -193,7 +194,7 @@ func (h *Handler) ForgotPassword(c *gin.Context) {
 			response.Success(c, gin.H{"message": "if the email exists, a reset link has been sent"})
 			return
 		}
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -233,7 +234,7 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 	}
 
 	if err := h.service.ResetPassword(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -284,9 +285,9 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 
 	if err := h.service.ChangePassword(userID, &req); err != nil {
 		if err.Error() == "invalid old password" {
-			response.Unauthorized(c, err.Error())
+			response.Fail(c, err, http.StatusUnauthorized)
 		} else {
-			response.BadRequest(c, err.Error())
+			response.Fail(c, err, http.StatusBadRequest)
 		}
 		return
 	}
@@ -322,7 +323,7 @@ func (h *Handler) SendEmailVerification(c *gin.Context) {
 
 	token, err := h.service.SendEmailVerification(userID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -355,7 +356,7 @@ func (h *Handler) VerifyEmail(c *gin.Context) {
 	}
 
 	if err := h.service.VerifyEmail(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -402,9 +403,9 @@ func (h *Handler) DeleteAccount(c *gin.Context) {
 
 	if err := h.service.DeleteAccount(userID, &req); err != nil {
 		if err.Error() == "invalid password" {
-			response.Unauthorized(c, err.Error())
+			response.Fail(c, err, http.StatusUnauthorized)
 		} else {
-			response.BadRequest(c, err.Error())
+			response.Fail(c, err, http.StatusBadRequest)
 		}
 		return
 	}
@@ -441,7 +442,7 @@ func (h *Handler) SendPhoneVerification(c *gin.Context) {
 
 	token, err := h.service.SendPhoneVerification(userID, req.Phone)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -482,7 +483,7 @@ func (h *Handler) UpdatePhone(c *gin.Context) {
 	}
 
 	if err := h.service.UpdatePhone(userID, &req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -522,7 +523,7 @@ func (h *Handler) UpdateEmail(c *gin.Context) {
 	}
 
 	if err := h.service.UpdateEmail(userID, &req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -562,7 +563,7 @@ func (h *Handler) GetLoginHistory(c *gin.Context) {
 
 	history, total, err := h.service.GetUserLoginHistory(userID, page, pageSize)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 
@@ -590,7 +591,7 @@ func (h *Handler) GetDevices(c *gin.Context) {
 
 	devices, err := h.service.GetUserDevices(userID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.Fail(c, err, http.StatusBadRequest)
 		return
 	}
 

@@ -113,6 +113,21 @@ func (r *Repository) RemoveConversationMember(convID, userID uuid.UUID) error {
 
 // ==================== Message Repository Methods ====================
 
+// FindMessageByClientID 按幂等键查找消息（同一会话内）
+func (r *Repository) FindMessageByClientID(convID uuid.UUID, clientMsgID string) (*Message, error) {
+	if clientMsgID == "" {
+		return nil, gorm.ErrRecordNotFound
+	}
+	var msg Message
+	err := r.db.Where("conversation_id = ? AND client_msg_id = ?", convID, clientMsgID).
+		Preload("Sender").Preload("ReplyTo").
+		First(&msg).Error
+	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}
+
 // CreateMessage 创建消息
 func (r *Repository) CreateMessage(msg *Message) error {
 	return r.db.Create(msg).Error

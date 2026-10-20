@@ -209,7 +209,45 @@ Future<void> main(List<String> args) async {
     fail('已读验证失败: $e');
   }
 
-  step('7. 关闭连接');
+  step('7. 撤回消息会实时通知对方');
+  try {
+    api.token = tokenA;
+    final sent = await api.postChatMessages(
+      body: {'conversation_id': convId, 'type': 'text', 'content': '要被撤回的消息'},
+    );
+    final msgId = (sent is Map && sent['data'] is Map)
+        ? (sent['data'] as Map)['id'] as String?
+        : null;
+    if (msgId == null) {
+      fail('发送消息未返回 id');
+    } else {
+      // 等 B 收到新消息，再撤回
+      await _waitFor(
+        eventsB,
+        (e) => e.type == 'new_message' && e.convId == convId,
+      );
+
+      await api.deleteChatMessagesId(id: msgId);
+
+      final deleted = await _waitFor(
+        eventsB,
+        (e) =>
+            e.type == 'message_deleted' &&
+            e.convId == convId &&
+            e.data is Map &&
+            (e.data as Map)['id'] == msgId,
+      );
+      if (deleted != null) {
+        ok('B 收到 message_deleted（撤回会实时同步）');
+      } else {
+        fail('B 未收到 message_deleted，收到: ${eventsB.map((e) => e.type).toList()}');
+      }
+    }
+  } catch (e) {
+    fail('撤回通知验证失败: $e');
+  }
+
+  step('8. 关闭连接');
   for (final sub in subs) {
     await sub.cancel();
   }

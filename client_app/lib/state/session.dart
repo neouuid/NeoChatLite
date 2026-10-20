@@ -395,11 +395,15 @@ class NeoChatSession extends ChangeNotifier {
     required String preview,
   }) async {
     final pending = PendingMessage(
-      localId: 'local-${++_pendingSeq}',
+      // localId 同时作为服务端幂等键，必须跨设备/跨次启动唯一
+      localId: 'local-${DateTime.now().microsecondsSinceEpoch}-${++_pendingSeq}',
       conversationId: conversationId,
       body: body,
       preview: preview,
     );
+    // 幂等键一并放进请求体：重试时服务端据此去重，避免产生重复消息
+    pending.body['client_msg_id'] = pending.localId;
+
     _pending.putIfAbsent(conversationId, () => []).add(pending);
     notifyListeners();
 

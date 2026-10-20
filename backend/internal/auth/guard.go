@@ -3,8 +3,8 @@ package auth
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
+	"github.com/neochat/backend/pkg/response"
 	"strings"
 	"sync"
 	"time"
@@ -21,10 +21,10 @@ func hashToken(token string) string {
 // validatePassword 统一密码策略：8~72 字节（bcrypt 上限 72 字节）
 func validatePassword(password string) error {
 	if utf8.RuneCountInString(password) < 8 {
-		return errors.New("password must be at least 8 characters")
+		return response.Public("password must be at least 8 characters")
 	}
 	if len(password) > 72 {
-		return errors.New("password must be at most 72 bytes")
+		return response.Public("password must be at most 72 bytes")
 	}
 	return nil
 }
@@ -123,5 +123,5 @@ func errLocked(wait time.Duration) error {
 	if minutes < 1 {
 		minutes = 1
 	}
-	return fmt.Errorf("too many failed attempts, try again in %d minutes", minutes)
+	return response.Public(fmt.Sprintf("too many failed attempts, try again in %d minutes", minutes))
 }
