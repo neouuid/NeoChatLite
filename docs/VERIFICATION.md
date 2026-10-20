@@ -121,6 +121,19 @@ UUID 主键与时间戳比较、pgx 驱动下的连接池与迁移。
 - Go 单元测试仍跑在 SQLite 上（`TestConfig` 固定 sqlite）；
   Postgres 只覆盖了端到端链路，未覆盖每个 handler 的单测。
 
+## 客户端发送队列
+
+失败重试逻辑在状态层，用单测覆盖（`client_app/test/session_test.dart`，6 条）：
+
+- 网络失败时消息留在队列并标记失败
+- 4xx 不自动重试（避免无意义重试）
+- 手动重试成功后从队列移除
+- `flushPending` 在重连后补发
+- 放弃发送移除队列
+- 发送成功不残留
+
+端到端脚本直接用 SDK 打接口，不经过客户端状态层，因此这条链路靠单测 + 手工验证。
+
 ## 迁移与 WebSocket
 
 - 数据库迁移版本化（goose）的验证：见 [MIGRATIONS.md](MIGRATIONS.md)

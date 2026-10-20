@@ -191,6 +191,11 @@ class _FakeApi extends NeoChatApi {
 
   @override
   Future<dynamic> postChatMessages({required Map<String, dynamic> body}) async {
+    sendCalls++;
+    final status = failSendWithStatus;
+    if (status != null) {
+      throw ApiException(statusCode: status, message: 'send failed');
+    }
     lastMessageBody = body;
     return {'success': true, 'data': body};
   }
@@ -216,6 +221,10 @@ class _FakeApi extends NeoChatApi {
   Map<String, dynamic>? lastDeleteBody;
   String? lastForgotEmail;
   bool exposeResetToken = true;
+
+  /// 让 postChatMessages 失败（模拟断网 / 5xx / 4xx）
+  int? failSendWithStatus;
+  int sendCalls = 0;
 
   @override
   Future<dynamic> postAuthChangePassword({required Map<String, dynamic> body}) async {
@@ -727,6 +736,82 @@ void main() {
 
     expect(await session.deleteAccount('Passw0rd!'), isTrue);
     expect(session.isLoggedIn, isFalse);
+  });
+
+  test('网络失败时消息留在队列并标记失败', () async {
+    final api = _FakeApi()..failSendWithStatus = 0; // 0 = 网络层异常
+    final session = _newSession(api);
+    await session.login('alice', 'secret');
+
+    await session.sendMessage('conv-1', '你好');
+    final pending = session.pendingFor('conv-1');
+    expect(pending, hasLength(1));
+    expect(pending.first.isFailed, isTrue);
+    expect(pending.first.preview, '你好');
+    expect(session.pendingCount, 1, reason: '失败的消息不能丢');
+  });
+
+  test('4xx 不可重试（重试也没用）', () async {
+    final api = _FakeApi()..failSendWithStatus = 400;
+    final session = _newSession(api);
+    await session.login('alice', 'secret');
+
+    await session.sendMessage('conv-1', '参数错误');
+    final pending = session.pendingFor('conv-1').first;
+    expect(pending.isFailed, isTrue);
+    expect(pending.attempts, 1, reason: '4xx 不应自动重试');
+  });
+
+  test('手动重试成功后从队列移除', () async {
+    final api = _FakeApi()..failSendWithStatus = 500;
+    final session = _newSession(api);
+    await session.login('alice', 'secret');
+
+    await session.sendMessage('conv-1', '会失败');
+    final localId = session.pendingFor('conv-1').first.localId;
+    expect(session.pendingFor('conv-1').first.isFailed, isTrue);
+
+    api.failSendWithStatus = null; // 网络恢复
+    final ok = await session.retryPending(localId);
+    expect(ok, isTrue);
+    expect(session.pendingFor('conv-1'), isEmpty);
+    expect(session.pendingCount, 0);
+  });
+
+  test('flushPending 在重连后补发失败消息', () async {
+    final api = _FakeApi()..failSendWithStatus = 503;
+    final session = _newSession(api);
+    await session.login('alice', 'secret');
+
+    await session.sendMessage('conv-1', 'A');
+    await session.sendMessage('conv-1', 'B');
+    expect(session.pendingCount, 2);
+
+    api.failSendWithStatus = null;
+    await session.flushPending();
+    expect(session.pendingCount, 0, reason: '重连后应把失败的都补发掉');
+    expect(api.sendCalls, greaterThanOrEqualTo(4));
+  });
+
+  test('放弃发送会移除队列里的消息', () async {
+    final api = _FakeApi()..failSendWithStatus = 0;
+    final session = _newSession(api);
+    await session.login('alice', 'secret');
+
+    await session.sendMessage('conv-1', '不要了');
+    final localId = session.pendingFor('conv-1').first.localId;
+    session.discardPending(localId);
+    expect(session.pendingCount, 0);
+  });
+
+  test('发送成功的消息不会留在队列里', () async {
+    final api = _FakeApi();
+    final session = _newSession(api);
+    await session.login('alice', 'secret');
+
+    await session.sendMessage('conv-1', '正常消息');
+    expect(session.pendingCount, 0);
+    expect(api.sendCalls, 1);
   });
 
   test('登出后清空状态', () async {

@@ -9,6 +9,37 @@ import 'token_store.dart';
 /// 客户端会话状态：登录态、当前用户、离线同步游标。
 ///
 /// 只依赖 `neochat_api`（纯 Dart），不直接依赖具体页面，便于单独测试。
+/// 待发送消息的状态
+enum PendingSendStatus { sending, failed }
+
+/// 一条排队中 / 发送失败的消息。
+///
+/// 网络抖动或服务端 5xx 时不能把消息丢掉：先留在队列里，
+/// 自动退避重试，失败后仍然可见并可手动重试。
+class PendingMessage {
+  PendingMessage({
+    required this.localId,
+    required this.conversationId,
+    required this.body,
+    required this.preview,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  final String localId;
+  final String conversationId;
+  final Map<String, dynamic> body;
+
+  /// 气泡里显示的文本（媒体消息用「[图片]」这类占位）
+  final String preview;
+  final DateTime createdAt;
+
+  PendingSendStatus status = PendingSendStatus.sending;
+  int attempts = 0;
+  String? error;
+
+  bool get isFailed => status == PendingSendStatus.failed;
+}
+
 class NeoChatSession extends ChangeNotifier {
   NeoChatSession({
     String? baseUrl,
@@ -49,6 +80,19 @@ class NeoChatSession extends ChangeNotifier {
   final TokenStore _tokenStore;
   String? _refreshToken;
   final bool _enableRealtime;
+
+  /// conversationId -> 待发送/失败的消息（仅内存；重启后丢失）
+  final Map<String, List<PendingMessage>> _pending = {};
+  int _pendingSeq = 0;
+
+  /// 自动重试的最大尝试次数（首次发送算第 1 次）
+  static const int maxSendAttempts = 3;
+
+  /// 退避间隔：第 n 次失败后等待
+  static const List<Duration> retryBackoff = [
+    Duration(seconds: 2),
+    Duration(seconds: 5),
+  ];
 
   /// 服务端地址（拼接上传后的相对 URL 用）
   String get baseUrl => _baseUrl;
@@ -315,26 +359,168 @@ class NeoChatSession extends ChangeNotifier {
   }
 
   /// 发送文本消息；[replyToId] 非空时作为引用回复
+  /// 某会话的待发送/失败消息（按创建时间升序）
+  List<PendingMessage> pendingFor(String conversationId) =>
+      List.unmodifiable(_pending[conversationId] ?? const <PendingMessage>[]);
+
+  /// 所有会话的待发送数量（用于顶栏提示）
+  int get pendingCount =>
+      _pending.values.fold(0, (sum, list) => sum + list.length);
+
+  /// 发送文本消息。
+  ///
+  /// 消息先进入待发送队列，因此这里返回 true 表示「已受理」，
+  /// 真正的发送结果看 [pendingFor] 里的状态。
   Future<bool> sendMessage(
     String conversationId,
     String content, {
     String? replyToId,
   }) async {
+    return _enqueue(
+      conversationId,
+      {
+        'conversation_id': conversationId,
+        'content': content,
+        'type': 'text',
+        if (replyToId != null && replyToId.isNotEmpty) 'reply_to_id': replyToId,
+      },
+      preview: content,
+    );
+  }
+
+  /// 把消息放入队列并尝试发送。
+  Future<bool> _enqueue(
+    String conversationId,
+    Map<String, dynamic> body, {
+    required String preview,
+  }) async {
+    final pending = PendingMessage(
+      localId: 'local-${++_pendingSeq}',
+      conversationId: conversationId,
+      body: body,
+      preview: preview,
+    );
+    _pending.putIfAbsent(conversationId, () => []).add(pending);
+    notifyListeners();
+
+    await _attemptSend(pending);
+    return true;
+  }
+
+  /// 单次发送尝试；失败时按需安排退避重试
+  Future<void> _attemptSend(PendingMessage pending, {bool autoRetry = true}) async {
+    pending.status = PendingSendStatus.sending;
+    pending.error = null;
+    pending.attempts++;
+    notifyListeners();
+
     try {
-      await _api.postChatMessages(
-        body: {
-          'conversation_id': conversationId,
-          'content': content,
-          'type': 'text',
-          if (replyToId != null && replyToId.isNotEmpty) 'reply_to_id': replyToId,
-        },
-      );
-      return true;
+      await _api.postChatMessages(body: pending.body);
+      _removePending(pending);
+      return;
     } catch (e) {
-      _error = '发送失败：$e';
+      pending.status = PendingSendStatus.failed;
+      pending.error = _describeSendError(e);
+
+      final retryable = _isRetryable(e);
+      final canRetry = autoRetry &&
+          retryable &&
+          pending.attempts < maxSendAttempts &&
+          isLoggedIn;
+
       notifyListeners();
-      return false;
+
+      if (canRetry) {
+        // 退避后自动重试；期间用户也可以手动点重试，先移除旧的定时任务
+        final delay = retryBackoff[
+            (pending.attempts - 1).clamp(0, retryBackoff.length - 1)];
+        final seq = pending.attempts;
+        unawaited(Future<void>.delayed(delay, () async {
+          if (pending.attempts != seq) return; // 已被手动重试接手
+          if (!_pendingContains(pending)) return;
+          await _attemptSend(pending);
+        }));
+      }
     }
+  }
+
+  /// 重试一条失败的消息
+  Future<bool> retryPending(String localId) async {
+    // 快照：发送过程会修改 _pending，直接迭代会触发并发修改错误
+    for (final list in _pending.values.toList()) {
+      for (final pending in list.toList()) {
+        if (pending.localId != localId) continue;
+        pending.attempts = 0;
+        await _attemptSend(pending, autoRetry: false);
+        return !pending.isFailed;
+      }
+    }
+    return false;
+  }
+
+  /// 放弃一条失败的消息（从队列中移除）
+  void discardPending(String localId) {
+    final emptyKeys = <String>[];
+    for (final entry in _pending.entries) {
+      entry.value.removeWhere((p) => p.localId == localId);
+      if (entry.value.isEmpty) emptyKeys.add(entry.key);
+    }
+    for (final key in emptyKeys) {
+      _pending.remove(key);
+    }
+    notifyListeners();
+  }
+
+  /// 把某个会话（或全部）的失败消息重新发一遍，用于重连后补发
+  Future<void> flushPending([String? conversationId]) async {
+    final conversations = conversationId != null
+        ? [conversationId]
+        : _pending.keys.toList();
+    for (final convId in conversations) {
+      final items = List<PendingMessage>.from(_pending[convId] ?? const []);
+      for (final pending in items) {
+        if (pending.isFailed) {
+          pending.attempts = 0;
+          await _attemptSend(pending, autoRetry: false);
+        }
+      }
+    }
+  }
+
+  bool _pendingContains(PendingMessage target) {
+    for (final list in _pending.values.toList()) {
+      if (list.any((p) => p.localId == target.localId)) return true;
+    }
+    return false;
+  }
+
+  void _removePending(PendingMessage target) {
+    final emptyKeys = <String>[];
+    for (final entry in _pending.entries) {
+      entry.value.removeWhere((p) => p.localId == target.localId);
+      if (entry.value.isEmpty) emptyKeys.add(entry.key);
+    }
+    // 先收集再删除：在迭代 map 时删除会抛 ConcurrentModificationError
+    for (final key in emptyKeys) {
+      _pending.remove(key);
+    }
+    notifyListeners();
+  }
+
+  /// 只有网络错误 / 限流 / 服务端 5xx 值得重试；4xx 参数错误重试也没用
+  bool _isRetryable(Object error) {
+    if (error is! ApiException) return true; // 网络层异常，重试
+    final code = error.statusCode;
+    return code == 0 || code == 408 || code == 429 || code >= 500;
+  }
+
+  String _describeSendError(Object error) {
+    if (error is ApiException) {
+      if (error.statusCode == 429) return '发送过于频繁，稍后自动重试';
+      if (error.statusCode >= 500) return '服务暂时不可用，稍后自动重试';
+      return error.message;
+    }
+    return '网络异常，稍后自动重试';
   }
 
   /// 撤回（删除）一条消息
@@ -850,15 +1036,24 @@ class NeoChatSession extends ChangeNotifier {
       return false;
     }
 
-    final ok = await sendMessagePayload({
-      'conversation_id': conversationId,
-      'type': kind,
-      // 图片/语音/视频不需要把文件名当正文；普通文件展示文件名
-      'content': kind == 'file' ? filename : '',
-      'media_url': url,
-      'file_name': _asString(uploaded['file_name']) ?? filename,
-      'file_size': uploaded['file_size'] ?? bytes.length,
-    });
+    const previews = {
+      'image': '[图片]',
+      'audio': '[语音]',
+      'video': '[视频]',
+      'file': '[文件]',
+    };
+    final ok = await sendMessagePayload(
+      {
+        'conversation_id': conversationId,
+        'type': kind,
+        // 图片/语音/视频不需要把文件名当正文；普通文件展示文件名
+        'content': kind == 'file' ? filename : '',
+        'media_url': url,
+        'file_name': _asString(uploaded['file_name']) ?? filename,
+        'file_size': uploaded['file_size'] ?? bytes.length,
+      },
+      preview: kind == 'file' ? '[文件] $filename' : (previews[kind] ?? '[消息]'),
+    );
     return ok;
   }
 
@@ -891,15 +1086,12 @@ class NeoChatSession extends ChangeNotifier {
   }
 
   /// 发送一条自定义消息体（附件等场景复用）
-  Future<bool> sendMessagePayload(Map<String, dynamic> body) async {
-    try {
-      await _api.postChatMessages(body: body);
-      return true;
-    } catch (e) {
-      _error = '发送失败：$e';
-      notifyListeners();
-      return false;
-    }
+  Future<bool> sendMessagePayload(
+    Map<String, dynamic> body, {
+    String preview = '[消息]',
+  }) async {
+    final convId = (body['conversation_id'] as String?) ?? '';
+    return _enqueue(convId, body, preview: preview);
   }
 
   /// 离线消息补拉：带上上次同步得到的 server_time 作为游标。
@@ -924,8 +1116,10 @@ class NeoChatSession extends ChangeNotifier {
 
     _realtimeStatusSub = client.statusStream.listen((status) {
       // 断线重连成功时补拉这期间错过的消息
-      if (status == RealtimeStatus.connected && _lastSyncAt != null) {
-        unawaited(syncOfflineMessages());
+      if (status == RealtimeStatus.connected) {
+        if (_lastSyncAt != null) unawaited(syncOfflineMessages());
+        // 网络恢复后把之前失败的发送补一遍
+        unawaited(flushPending());
       }
     });
     _realtimeSub = client.events.listen((event) {
@@ -953,6 +1147,7 @@ class NeoChatSession extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _pending.clear();
     // 先通知服务端（失败也无所谓），再清本地
     try {
       await _api.postAuthLogout();

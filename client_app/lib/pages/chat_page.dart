@@ -43,6 +43,9 @@ class _ChatPageState extends State<ChatPage> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
+
+  /// 待发送/失败的乐观气泡（来自 session 的发送队列）
+  List<PendingMessage> _pending = const [];
   bool _loading = true;
   bool _loadingMore = false;
   Map<String, dynamic>? _replyTo;
@@ -58,10 +61,17 @@ class _ChatPageState extends State<ChatPage> {
 
   static const int _pageSize = 50;
 
+  void _onSessionChanged() {
+    if (!mounted) return;
+    _syncPending();
+  }
+
   @override
   void initState() {
     super.initState();
     _loadCached();
+    widget.session.addListener(_onSessionChanged);
+    _syncPending();
     _load();
     _scroll.addListener(_onScroll);
     // 实时事件：新消息 / 对方正在输入 / 对方已读
@@ -119,6 +129,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
+    widget.session.removeListener(_onSessionChanged);
     _typingResetTimer?.cancel();
     _typingSendTimer?.cancel();
     _input.removeListener(_onInputChanged);
@@ -225,19 +236,114 @@ class _ChatPageState extends State<ChatPage> {
     final text = _input.text.trim();
     if (text.isEmpty) return;
     _input.clear();
-    final ok = await widget.session.sendMessage(
+    await widget.session.sendMessage(
       widget.conversationId,
       text,
       replyToId: _replyTo?['id'] as String?,
     );
-    if (!ok) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(widget.session.error ?? '发送失败')),
-      );
+    _syncPending();
+    _scrollToBottom();
+    // 发送成功的消息通过 _load() 从服务端拉回来；失败的留在队列里显示重试入口
+    await _load();
+  }
+
+  /// 把 session 里的待发送队列同步到本地列表（用于渲染乐观气泡）
+  void _syncPending() {
+    final items = widget.session.pendingFor(widget.conversationId);
+    if (items.length == _pending.length &&
+        items.every((p) => _pending.any((q) => q.localId == p.localId))) {
+      // 数量与 id 都没变，只需要刷新状态（发送中 → 失败）
+      if (mounted) setState(() {});
       return;
     }
-    await _load();
+    if (mounted) setState(() => _pending = items);
+  }
+
+  Widget _buildPendingBubble(PendingMessage pending) {
+    final failed = pending.isFailed;
+    final scheme = Theme.of(context).colorScheme;
+    return Align(
+      alignment: Alignment.centerRight,
+      child: GestureDetector(
+        onTap: failed
+            ? () async {
+                await widget.session.retryPending(pending.localId);
+                _syncPending();
+                await _load();
+              }
+            : null,
+        onLongPress: failed
+            ? () => _confirmDiscardPending(pending)
+            : null,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.72,
+          ),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer,
+            borderRadius: BorderRadius.circular(12),
+            border: failed ? Border.all(color: scheme.error, width: 1) : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(pending.preview),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (failed)
+                    Icon(Icons.error_outline, size: 14, color: scheme.error)
+                  else
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  const SizedBox(width: 6),
+                  Text(
+                    failed
+                        ? '发送失败${pending.attempts > 1 ? '（已试 ${pending.attempts} 次）' : ''} · 点击重试'
+                        : '发送中…',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: failed ? scheme.error : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDiscardPending(PendingMessage pending) async {
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('放弃发送'),
+        content: Text('这条消息没能发出去：\n\n${pending.preview}\n\n要放弃吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('继续保留'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('放弃'),
+          ),
+        ],
+      ),
+    );
+    if (discard == true) {
+      widget.session.discardPending(pending.localId);
+      _syncPending();
+    }
   }
 
   static String _quotePreview(Map<String, dynamic> msg) {
@@ -707,7 +813,7 @@ class _ChatPageState extends State<ChatPage> {
                     : ListView.builder(
                         controller: _scroll,
                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                        itemCount: _messages.length + 1,
+                        itemCount: _messages.length + 1 + _pending.length,
                         itemBuilder: (context, index) {
                           if (index == 0) {
                             if (_loadingMore) {
@@ -735,6 +841,14 @@ class _ChatPageState extends State<ChatPage> {
                             }
                             return const SizedBox.shrink();
                           }
+                          // 末尾是待发送/失败的消息（乐观展示）
+                          final pendingIndex =
+                              index - 1 - _messages.length;
+                          if (pendingIndex >= 0 &&
+                              pendingIndex < _pending.length) {
+                            return _buildPendingBubble(_pending[pendingIndex]);
+                          }
+
                           final msg = _messages[index - 1];
                           final isMine = me != null && msg['sender_id'] == me;
                           final content = msg['content'] as String? ?? '';
