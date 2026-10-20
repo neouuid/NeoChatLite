@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +39,10 @@ func newTestRouter(t *testing.T) *gin.Engine {
 func routeSet(r *gin.Engine) map[string]bool {
 	set := make(map[string]bool, len(r.Routes()))
 	for _, route := range r.Routes() {
-		set[route.Method+" "+route.Path] = true
+		// 通配参数 gin 写作 *path，与 OpenAPI 的 {path} 语义一致，
+		// 统一成 :path 便于和文档比对。
+		path := strings.ReplaceAll(route.Path, "*", ":")
+		set[route.Method+" "+path] = true
 	}
 	return set
 }

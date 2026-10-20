@@ -32,7 +32,10 @@ func loadSwaggerPaths(t *testing.T) map[string]bool {
 	braces := regexp.MustCompile(`\{([A-Za-z0-9_]+)\}`)
 	paths := make(map[string]bool, len(spec.Paths))
 	for path, ops := range spec.Paths {
+		// OpenAPI 的 {path} 与 gin 的 :path / *path 是同一件事（后者可含斜杠），
+		// 比较前统一成 :path 形式。
 		ginPath := braces.ReplaceAllString(path, ":$1")
+		ginPath = strings.ReplaceAll(ginPath, "*", ":")
 		for method := range ops {
 			paths[strings.ToUpper(method)+" "+ginPath] = true
 		}
