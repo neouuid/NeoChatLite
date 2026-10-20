@@ -220,6 +220,9 @@ Future<void> main(List<String> args) async {
   print('');
   if (_failed == 0) {
     print('✅ 实时 E2E 全部通过');
+    // 显式退出：脚本里可能还挂着 HTTP keep-alive / WS 重连定时器，
+    // 不 exit 的话 Dart VM 不会自行结束，CI 里表现为步骤挂住。
+    exit(0);
   } else {
     print('❌ 实时 E2E 有 $_failed 个步骤失败');
     exit(1);
