@@ -544,6 +544,17 @@ Content-Type: application/json
 写操作会失效该用户的会话列表缓存。置顶会话在列表中最前：
 排序为 `pinned DESC, updated_at DESC`。
 
+#### 5.y 限流
+
+发送消息与上传文件按**用户**限流（令牌桶）：
+
+| 接口 | 默认限额 | 超限响应 |
+|---|---|---|
+| `POST /chat/messages` | 20 条 / 10 秒 | `429` + `Retry-After` |
+| `POST /upload` | 10 次 / 分钟 | `429` + `Retry-After` |
+
+阈值可通过 `server.message_rate_limit_per_10s` / `server.upload_rate_limit_per_minute` 调整。
+
 ### 6. 消息模块 (Messages)
 
 #### 6.1 获取消息列表

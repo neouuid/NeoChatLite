@@ -1,8 +1,12 @@
 package middleware
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -36,4 +40,34 @@ func TestRateLimiterRefills(t *testing.T) {
 	now = now.Add(30 * time.Second)
 	assert.True(t, rl.Allow("ip"))
 	assert.False(t, rl.Allow("ip"))
+}
+
+// TestRateLimitByUserIsolatesUsers 限流按用户隔离：一个用户被限不影响另一个
+func TestRateLimitByUserIsolatesUsers(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	// 模拟认证中间件：从查询参数取 user_id
+	r.Use(func(c *gin.Context) {
+		c.Set("user_id", c.Query("u"))
+		c.Next()
+	})
+	r.POST("/m", RateLimitByUser(2, time.Minute), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	})
+
+	call := func(user string) int {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/m?u="+user, nil)
+		r.ServeHTTP(w, req)
+		return w.Code
+	}
+
+	assert.Equal(t, http.StatusOK, call("alice"))
+	assert.Equal(t, http.StatusOK, call("alice"))
+	assert.Equal(t, http.StatusTooManyRequests, call("alice"), "同一用户超出上限应 429")
+
+	// 另一个用户不受影响
+	assert.Equal(t, http.StatusOK, call("bob"))
+	assert.Equal(t, http.StatusOK, call("bob"))
+	assert.Equal(t, http.StatusTooManyRequests, call("bob"))
 }

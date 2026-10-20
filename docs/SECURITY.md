@@ -24,6 +24,8 @@
 |---|---|---|
 | 账号锁定 | 同一标识连续失败 5 次 → 锁 15 分钟 | `internal/auth/guard.go` |
 | 认证接口限流 | 每 IP 每分钟 `server.auth_rate_limit_per_minute`（默认 20） | `pkg/middleware/ratelimit.go` |
+| 消息发送限流 | **每用户** 10 秒 `server.message_rate_limit_per_10s`（默认 20 条） | 同上 |
+| 上传限流 | **每用户** 每分钟 `server.upload_rate_limit_per_minute`（默认 10 次） | 同上 |
 | 密码策略 | 8 ~ 72 字节（bcrypt 上限） | `internal/auth/guard.go` |
 | 密码哈希 | bcrypt（默认 cost） | `pkg/utils/password.go` |
 | 错误文案 | 统一 `invalid credentials`，不区分账号是否存在 | `internal/auth/service.go` |
@@ -46,6 +48,15 @@
 - 响应带 `X-Content-Type-Options: nosniff`、`Cache-Control: private`
 - `?token=` 是为了 `<img>/<video>/<audio>` 无法自定义请求头的取舍，
   代价是 token 可能出现在 URL / 日志里；如需更强隔离应改为短期签名 URL
+
+### 限流维度为什么不同
+
+- 认证接口按 **IP**：目的是挡撞库，同一 IP 的失败尝试要合并计数
+- 消息与上传按 **用户**：已登录后的高频写操作，按 IP 会让同一 NAT 后面的
+  大量用户互相牵连，按用户则精确限制刷屏者
+
+超限返回 `429` 并带 `Retry-After` 头；限流是令牌桶，窗口内会平滑补充。
+多实例部署时这些计数器在进程内存里，实际阈值 = 实例数 × 配置值。
 
 ## WebSocket 连接防护
 

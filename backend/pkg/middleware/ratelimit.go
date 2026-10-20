@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -88,6 +89,38 @@ func RateLimitByIP(limit int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !limiter.Allow(c.ClientIP()) {
 			c.Header("Retry-After", "60")
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"success": false,
+				"message": "too many requests, please slow down",
+			})
+			return
+		}
+		c.Next()
+	}
+}
+
+// RateLimitByUser 按用户维度限流（需在认证中间件之后使用）。
+//
+// 认证接口按 IP 限流是为了挡撞库；而消息、上传这类"已登录后的高频写操作"
+// 应该按用户限流：同一 NAT 后面的大量用户不该被互相牵连，
+// 但单个账号刷屏必须被挡住。
+func RateLimitByUser(limit int, window time.Duration) gin.HandlerFunc {
+	limiter := NewRateLimiter(limit, window)
+	return func(c *gin.Context) {
+		userIDVal, exists := c.Get("user_id")
+		userID, _ := userIDVal.(string)
+		if !exists || userID == "" {
+			// 理论上不会发生（认证中间件已拦截），这里保守放行
+			c.Next()
+			return
+		}
+
+		if !limiter.Allow(userID) {
+			retryAfter := int(window.Seconds())
+			if retryAfter < 1 {
+				retryAfter = 1
+			}
+			c.Header("Retry-After", strconv.Itoa(retryAfter))
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"success": false,
 				"message": "too many requests, please slow down",

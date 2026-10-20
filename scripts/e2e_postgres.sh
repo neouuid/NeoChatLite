@@ -98,6 +98,8 @@ server:
   write_timeout: 30
   log_level: warn
   auth_rate_limit_per_minute: 1000
+  message_rate_limit_per_10s: 20
+  upload_rate_limit_per_minute: 10
   cors:
     allow_origins:
       - "*"

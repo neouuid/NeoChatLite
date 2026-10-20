@@ -65,6 +65,16 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 		if authLimit <= 0 {
 			authLimit = 20
 		}
+
+		// 已登录后的高频写操作按用户限流
+		msgLimit := deps.Cfg.Server.MessageRateLimitPer10s
+		if msgLimit <= 0 {
+			msgLimit = 20
+		}
+		uploadLimit := deps.Cfg.Server.UploadRateLimitPerMinute
+		if uploadLimit <= 0 {
+			uploadLimit = 10
+		}
 		authGroup := api.Group("/auth", middleware.RateLimitByIP(authLimit, time.Minute))
 		{
 			authGroup.POST("/register", deps.AuthHandler.Register)
@@ -164,7 +174,9 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			chatGroup.PUT("/conversations/:id/messages/:message_id", deps.ChatHandler.EditMessage)
 			chatGroup.DELETE("/conversations/:id/messages/:message_id", deps.ChatHandler.DeleteMessage)
 
-			chatGroup.POST("/messages", deps.ChatHandler.SendMessage)
+			chatGroup.POST("/messages",
+				middleware.RateLimitByUser(msgLimit, 10*time.Second),
+				deps.ChatHandler.SendMessage)
 			chatGroup.PUT("/messages/:id", deps.ChatHandler.EditMessage)
 			chatGroup.DELETE("/messages/:id", deps.ChatHandler.DeleteMessage)
 
@@ -173,7 +185,9 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			chatGroup.POST("/conversation/single", deps.ChatHandler.CreateSingleConversation)
 			chatGroup.POST("/conversation/:id/read", deps.ChatHandler.MarkConversationAsRead)
 			chatGroup.GET("/conversation/:id/messages", deps.ChatHandler.GetConversationMessages)
-			chatGroup.POST("/message", deps.ChatHandler.SendMessage)
+			chatGroup.POST("/message",
+				middleware.RateLimitByUser(msgLimit, 10*time.Second),
+				deps.ChatHandler.SendMessage)
 			chatGroup.PUT("/message/:id", deps.ChatHandler.EditMessage)
 			chatGroup.DELETE("/message/:id", deps.ChatHandler.DeleteMessage)
 
@@ -216,7 +230,10 @@ func SetupRoutes(r *gin.Engine, deps *HandlerDependencies) {
 			filesGroup.GET("/*path", deps.ChatHandler.DownloadFile)
 		}
 
-		uploadGroup := api.Group("/upload", deps.AuthMiddleware.AuthMiddleware())
+		uploadGroup := api.Group("/upload",
+			deps.AuthMiddleware.AuthMiddleware(),
+			middleware.RateLimitByUser(uploadLimit, time.Minute),
+		)
 		{
 			uploadGroup.POST("", deps.UploadHandler.UploadFile)
 		}

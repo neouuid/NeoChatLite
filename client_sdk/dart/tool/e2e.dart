@@ -1186,6 +1186,73 @@ Future<void> main(List<String> args) async {
     fail('置顶验证失败: $e');
   }
 
+  step('27. 消息发送限流（每用户 20 条 / 10 秒）');
+  try {
+    api.token = tokenA;
+
+    // 等令牌桶回满，避免被前面步骤的发送影响
+    await Future<void>.delayed(const Duration(seconds: 11));
+
+    var okCount = 0;
+    var limited = 0;
+    for (var i = 0; i < 25; i++) {
+      try {
+        await api.postChatMessages(body: {
+          'conversation_id': convId,
+          'type': 'text',
+          'content': 'burst-$i',
+        });
+        okCount++;
+      } on ApiException catch (e) {
+        if (e.statusCode == 429) {
+          limited++;
+        } else {
+          fail('非预期错误: ${e.statusCode} ${e.message}');
+          break;
+        }
+      }
+    }
+
+    if (limited > 0) {
+      ok('超出上限的请求被拒绝（429 共 $limited 次）');
+    } else {
+      fail('连续发送 25 条竟然没有被限流');
+    }
+    if (okCount >= 18) {
+      ok('限额内的 $okCount 条正常发送');
+    } else {
+      fail('限额内只成功 $okCount 条，说明限流过于激进');
+    }
+
+    // 换个用户不受影响（限流是按用户而不是全局限流）
+    api.token = tokenB;
+    await api.postChatMessages(body: {
+      'conversation_id': convId,
+      'type': 'text',
+      'content': 'B 不受 A 的限流影响',
+    });
+    ok('另一个用户不受影响');
+
+    // 再发一次确认仍然是 429（窗口内未恢复）
+    api.token = tokenA;
+    try {
+      await api.postChatMessages(body: {
+        'conversation_id': convId,
+        'type': 'text',
+        'content': 'still-limited',
+      });
+      fail('窗口内仍然可以发送，限流未生效');
+    } on ApiException catch (e) {
+      if (e.statusCode == 429) {
+        ok('窗口内继续被拒绝（429）');
+      } else {
+        fail('预期 429，实际 ${e.statusCode}');
+      }
+    }
+  } catch (e) {
+    fail('限流验证失败: $e');
+  }
+
   print('');
   if (_failed == 0) {
     print('✅ E2E 全部通过');

@@ -27,6 +27,10 @@ type ServerConfig struct {
 	CORS         CORSConfig
 	// AuthRateLimitPerMinute 认证接口每 IP 每分钟允许的请求数
 	AuthRateLimitPerMinute int
+	// MessageRateLimitPer10s 每用户 10 秒内允许发送的消息数
+	MessageRateLimitPer10s int
+	// UploadRateLimitPerMinute 每用户每分钟允许的上传次数
+	UploadRateLimitPerMinute int
 }
 
 type DatabaseConfig struct {
@@ -106,11 +110,13 @@ func Load() *Config {
 
 	config := &Config{
 		Server: ServerConfig{
-			Port:                   viper.GetInt("server.port"),
-			ReadTimeout:            viper.GetInt("server.read_timeout"),
-			WriteTimeout:           viper.GetInt("server.write_timeout"),
-			LogLevel:               viper.GetString("server.log_level"),
-			AuthRateLimitPerMinute: viper.GetInt("server.auth_rate_limit_per_minute"),
+			Port:                     viper.GetInt("server.port"),
+			ReadTimeout:              viper.GetInt("server.read_timeout"),
+			WriteTimeout:             viper.GetInt("server.write_timeout"),
+			LogLevel:                 viper.GetString("server.log_level"),
+			AuthRateLimitPerMinute:   viper.GetInt("server.auth_rate_limit_per_minute"),
+			MessageRateLimitPer10s:   viper.GetInt("server.message_rate_limit_per_10s"),
+			UploadRateLimitPerMinute: viper.GetInt("server.upload_rate_limit_per_minute"),
 			CORS: CORSConfig{
 				AllowOrigins: viper.GetStringSlice("server.cors.allow_origins"),
 				AllowMethods: viper.GetStringSlice("server.cors.allow_methods"),
@@ -195,6 +201,8 @@ func setDefaults() {
 	viper.SetDefault("jwt.expiry_hour", 24)
 
 	viper.SetDefault("server.auth_rate_limit_per_minute", 20)
+	viper.SetDefault("server.message_rate_limit_per_10s", 20)
+	viper.SetDefault("server.upload_rate_limit_per_minute", 10)
 	viper.SetDefault("storage.upload_dir", "./uploads")
 	viper.SetDefault("storage.max_file_size", 104857600)
 	viper.SetDefault("storage.max_image_size", 10485760)
@@ -257,11 +265,13 @@ func (c *DatabaseConfig) DSN() string {
 func TestConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port:                   8080,
-			ReadTimeout:            30,
-			WriteTimeout:           30,
-			LogLevel:               "error",
-			AuthRateLimitPerMinute: 1000,
+			Port:                     8080,
+			ReadTimeout:              30,
+			WriteTimeout:             30,
+			LogLevel:                 "error",
+			AuthRateLimitPerMinute:   1000,
+			MessageRateLimitPer10s:   1000,
+			UploadRateLimitPerMinute: 1000,
 			CORS: CORSConfig{
 				AllowOrigins: []string{"*"},
 				AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
